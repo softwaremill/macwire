@@ -11,8 +11,7 @@ object MacwireMacros {
   def wire_impl[T: c.WeakTypeTag](c: Context): c.Expr[T] = {
     import c.universe._
 
-    // TODO: this should check if the found value uses wired[]; now any value of the desired type will be returned
-    def findWiredOfType(t: Type): Option[Name] = {
+    def findValueOfType(t: Type): Option[Name] = {
       @tailrec
       def doFind(trees: List[Tree]): Option[Name] = trees match {
         case Nil => {
@@ -69,44 +68,40 @@ object MacwireMacros {
         }
       })
 
-      /*c.enclosingClass.tpe.members.foreach(m => {
-        println(m.typeSignature, t, m.typeSignature =:= t)
-      })*/
-
-      //println(c.enclosingRun.units.toList.map(_.body))
-
       println("---")
 
       doFind(body)
     }
 
-    val tType = implicitly[c.WeakTypeTag[T]]
-    val tConstructorOpt = tType.tpe.members.find(_.name.decoded == "<init>")
-    val result = tConstructorOpt match {
-      case None => {
-        c.error(c.enclosingPosition, "Cannot find constructor for " + tType)
-        reify { null.asInstanceOf[T] }
-      }
-      case Some(tConstructor) => {
-        val params = tConstructor.asMethod.paramss.flatten
-
-        val newT = Select(New(Ident(tType.tpe.typeSymbol)), nme.CONSTRUCTOR)
-
-        val constructorParams = for (param <- params) yield {
-          val wireTo = findWiredOfType(param.typeSignature)
-            // If we cannot find a value of the given type, trying a by-name match, using the same name as the
-            // constructor's parameter.
-            .getOrElse(param.name)
-
-          Ident(wireTo)
+    def createNewTargetWithParams(): Expr[T] = {
+      val targetType = implicitly[c.WeakTypeTag[T]]
+      val targetConstructorOpt = targetType.tpe.members.find(_.name.decoded == "<init>")
+      val result = targetConstructorOpt match {
+        case None => {
+          c.error(c.enclosingPosition, "Cannot find constructor for " + targetType)
+          reify { null.asInstanceOf[T] }
         }
+        case Some(targetConstructor) => {
+          val targetConstructorParams = targetConstructor.asMethod.paramss.flatten
 
-        val newTWithParams = Apply(newT, constructorParams)
-        c.info(c.enclosingPosition, s"Generated code: ${c.universe.show(newTWithParams)}", force = false)
-        c.Expr(newTWithParams)
+          val newT = Select(New(Ident(targetType.tpe.typeSymbol)), nme.CONSTRUCTOR)
+
+          val constructorParams = for (param <- targetConstructorParams) yield {
+            val wireToOpt = findValueOfType(param.typeSignature).map(Ident(_))
+
+            // If no value is found, an error has been already reported.
+            wireToOpt.getOrElse(reify(null).tree)
+          }
+
+          val newTWithParams = Apply(newT, constructorParams)
+          c.info(c.enclosingPosition, s"Generated code: ${c.universe.show(newTWithParams)}", force = false)
+          c.Expr(newTWithParams)
+        }
       }
+
+      result
     }
 
-    result
+    createNewTargetWithParams()
   }
 }
