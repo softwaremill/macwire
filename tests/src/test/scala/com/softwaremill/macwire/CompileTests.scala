@@ -12,7 +12,7 @@ class CompileTests extends FlatSpec with ShouldMatchers {
   val EmptyResult = "\n\n()"
 
   val tests = List(
-    ("simpleValsOk", Nil),
+    ("simpleValsOkInTrait", Nil),
     ("simpleValsErrorMissingValue", List("Cannot find a value of type B")),
     ("simpleValsErrorDuplicateValue", List("Found multiple values of type B", "theB1", "theB2"))
   )
