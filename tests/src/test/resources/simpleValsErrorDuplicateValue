@@ -1,0 +1,8 @@
+#include commonClasses
+
+trait Test {
+    val theA = wire[A]
+    val theB1 = wire[B]
+    val theB2 = wire[B]
+    val theC = wire[C]
+}

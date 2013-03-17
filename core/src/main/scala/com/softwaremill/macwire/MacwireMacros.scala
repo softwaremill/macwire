@@ -11,21 +11,23 @@ object MacwireMacros {
   def wire_impl[T: c.WeakTypeTag](c: Context): c.Expr[T] = {
     import c.universe._
 
-    def findValueOfType(t: Type): Option[Name] = {
+    def findValuesOfTypeInEnclosingClass(t: Type): List[Name] = {
       @tailrec
-      def doFind(trees: List[Tree]): Option[Name] = trees match {
-        case Nil => {
-          c.error(c.enclosingPosition, s"Cannot find a value of type ${t}")
-          None
-        }
+      def doFind(trees: List[Tree], acc: List[Name]): List[Name] = trees match {
+        case Nil => acc
         case tree :: tail => tree match {
           // TODO: subtyping
-          case ValDef(_, name, tpt, _) if tpt.tpe == t => Some(name.encodedName)
-          case _ => doFind(tail)
+          case ValDef(_, name, tpt, _) if tpt.tpe == t => doFind(tail, name.encodedName :: acc)
+          case _ => doFind(tail, acc)
         }
       }
 
-      val ClassDef(_, name, _, Template(parents, _, body)) = c.enclosingClass
+      val ClassDef(_, _, _, Template(_, _, body)) = c.enclosingClass
+      doFind(body, Nil)
+    }
+
+    def findValueOfType(t: Type): Option[Name] = {
+      val ClassDef(_, _, _, Template(parents, _, _)) = c.enclosingClass
 
       println("---")
 
@@ -70,7 +72,23 @@ object MacwireMacros {
 
       println("---")
 
-      doFind(body)
+      // ^-- cleanup above
+
+      val namesOpt = firstNotEmpty(
+        () => findValuesOfTypeInEnclosingClass(t)
+      )
+
+      namesOpt match {
+        case None => {
+          c.error(c.enclosingPosition, s"Cannot find a value of type ${t}")
+          None
+        }
+        case Some(List(name)) => Some(name)
+        case Some(names) => {
+          c.error(c.enclosingPosition, s"Found multiple values of type ${t}: $names")
+          None
+        }
+      }
     }
 
     def createNewTargetWithParams(): Expr[T] = {
@@ -103,5 +121,14 @@ object MacwireMacros {
     }
 
     createNewTargetWithParams()
+  }
+
+  def firstNotEmpty[T](fs: (() => List[T])*): Option[List[T]] = {
+    for (f <- fs) {
+      val r = f()
+      if (!r.isEmpty) return Some(r)
+    }
+
+    None
   }
 }
