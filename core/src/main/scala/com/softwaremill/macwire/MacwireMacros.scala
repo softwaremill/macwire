@@ -1,4 +1,4 @@
-package com.softwaremill.di
+package com.softwaremill.macwire
 
 import language.experimental.macros
 
@@ -16,7 +16,7 @@ object MacwireMacros {
       @tailrec
       def doFind(trees: List[Tree]): Option[Name] = trees match {
         case Nil => {
-          c.error(c.enclosingPosition, s"Cannot find a wired value of type ${t}")
+          c.error(c.enclosingPosition, s"Cannot find a value of type ${t}")
           None
         }
         case tree :: tail => tree match {

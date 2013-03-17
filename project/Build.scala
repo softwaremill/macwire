@@ -61,6 +61,7 @@ object MacwireBuild extends Build {
     file("tests"),
     settings = buildSettings ++ Seq(
       publishArtifact := false,
-      libraryDependencies ++= Seq(scalatest))
+      libraryDependencies ++= Seq(scalatest),
+      libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-compiler" % _ % "test"))
   ) dependsOn(core)
 }
