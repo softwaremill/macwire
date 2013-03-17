@@ -22,12 +22,27 @@ object MacwireMacros {
         }
       }
 
-      val ClassDef(_, _, _, Template(_, _, body)) = c.enclosingClass
-      doFind(body, Nil)
+      val enclosingClassBody = c.enclosingClass match {
+        case ClassDef(_, _, _, Template(_, _, body)) => body
+        case ModuleDef(_, _, Template(_, _, body)) => body
+        case e => {
+          c.error(c.enclosingPosition, s"Unknown type of enclosing class: ${e.getClass}")
+          Nil
+        }
+      }
+
+      doFind(enclosingClassBody, Nil)
     }
 
     def findValueOfType(t: Type): Option[Name] = {
-      val ClassDef(_, _, _, Template(parents, _, _)) = c.enclosingClass
+      val parents = c.enclosingClass match {
+        case ClassDef(_, _, _, Template(parents, _, _)) => parents
+        case ModuleDef(_, _, Template(parents, _, _)) => parents
+        case e => {
+          c.error(c.enclosingPosition, s"Unknown type of enclosing class: ${e.getClass}")
+          Nil
+        }
+      }
 
       println("---")
 

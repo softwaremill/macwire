@@ -1,0 +1,10 @@
+#include commonClasses
+
+trait Test {
+    val theA = wire[A]
+    val theB = wire[B]
+    val theC = wire[C]
+
+    require(theC.a != null)
+    require(theC.b != null)
+}
