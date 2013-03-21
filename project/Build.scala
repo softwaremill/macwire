@@ -63,6 +63,8 @@ object MacwireBuild extends Build {
       publishArtifact := false,
       libraryDependencies ++= Seq(scalatest),
       libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-compiler" % _ % "test"),
+      // Otherwise when running tests in sbt, the macro is not visible
+      // (both macro and usages are compiled in the same compiler run)
       fork in test := true)
   ) dependsOn(core)
 }
