@@ -1,6 +1,6 @@
 package com.softwaremill.macwire
 
-private[macwire] class MacwireDebug {
+private[macwire] class Debug {
   var ident = 0
 
   def apply(msg: => String) {
