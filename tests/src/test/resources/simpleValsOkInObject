@@ -1,6 +1,6 @@
 #include commonClasses
 
-trait Test {
+object Test {
     val theA = wire[A]
     val theB = wire[B]
     val theC = wire[C]
