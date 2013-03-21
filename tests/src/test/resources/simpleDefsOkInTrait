@@ -1,0 +1,10 @@
+#include commonClasses
+
+trait Test {
+    def theA = wire[A]
+    def theB = wire[B]
+    def theC = wire[C]
+
+    require(theC.a != null)
+    require(theC.b != null)
+}

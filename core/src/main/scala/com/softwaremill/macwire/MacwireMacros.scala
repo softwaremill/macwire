@@ -8,16 +8,45 @@ import annotation.tailrec
 object MacwireMacros {
   def wire[T]: T = macro wire_impl[T]
 
+  private val debug = new MacwireDebug()
+
   def wire_impl[T: c.WeakTypeTag](c: Context): c.Expr[T] = {
     import c.universe._
 
     def findValuesOfTypeInEnclosingClass(t: Type): List[Name] = {
+      def checkCandidate(name: Name, tpe: Type, rhs: Tree, acc: List[Name], candidateDebugName: String): List[Name] = {
+        debug.withBlock(s"Checking $candidateDebugName: [$name]") {
+          val rhsTpe = if (tpe != null) {
+            tpe
+          } else {
+            // Disabling macros, no to get into an infinite loop.
+            // Duplicating the tree, not to modify the original.
+            debug(s"The type is not yet available. Trying a type-check ...")
+            val calculatedType = c.typeCheck(rhs.duplicate, silent = true, withMacrosDisabled = true).tpe
+            debug(s"Result of type-check: [$calculatedType]")
+            calculatedType
+          }
+
+          if (rhsTpe == t) {
+            debug(s"Found a match in enclosing class/trait!")
+            name.encodedName :: acc
+          } else {
+            acc
+          }
+        }
+      }
+
       @tailrec
       def doFind(trees: List[Tree], acc: List[Name]): List[Name] = trees match {
         case Nil => acc
         case tree :: tail => tree match {
           // TODO: subtyping
-          case ValDef(_, name, tpt, _) if tpt.tpe == t => doFind(tail, name.encodedName :: acc)
+          case x@ValDef(_, name, tpt, rhs) => {
+            doFind(tail, checkCandidate(name, tpt.tpe, rhs, acc, "val"))
+          }
+          case x@DefDef(_, name, _, _, tpt, rhs) => {
+            doFind(tail, checkCandidate(name, tpt.tpe, rhs, acc, "def"))
+          }
           case _ => doFind(tail, acc)
         }
       }
@@ -31,10 +60,12 @@ object MacwireMacros {
         }
       }
 
+      debug("Looking in the enclosing class/trait")
       doFind(enclosingClassBody, Nil)
     }
 
     def findValueOfType(t: Type): Option[Name] = {
+      /*
       val parents = c.enclosingClass match {
         case ClassDef(_, _, _, Template(parents, _, _)) => parents
         case ModuleDef(_, _, Template(parents, _, _)) => parents
@@ -86,59 +117,64 @@ object MacwireMacros {
       })
 
       println("---")
-
+      */
       // ^-- cleanup above
 
-      val namesOpt = firstNotEmpty(
-        () => findValuesOfTypeInEnclosingClass(t)
-      )
+      debug.withBlock(s"Trying to find value of type: [$t]") {
+        val namesOpt = firstNotEmpty(
+          () => findValuesOfTypeInEnclosingClass(t)
+        )
 
-      namesOpt match {
-        case None => {
-          c.error(c.enclosingPosition, s"Cannot find a value of type ${t}")
-          None
-        }
-        case Some(List(name)) => Some(name)
-        case Some(names) => {
-          c.error(c.enclosingPosition, s"Found multiple values of type ${t}: $names")
-          None
+        namesOpt match {
+          case None => {
+            c.error(c.enclosingPosition, s"Cannot find a value of type: [$t]")
+            None
+          }
+          case Some(List(name)) => {
+            debug(s"Found single value: [$name] of type [$t]")
+            Some(name)
+          }
+          case Some(names) => {
+            c.error(c.enclosingPosition, s"Found multiple values of type [$t]: [$names]")
+            None
+          }
         }
       }
     }
 
     def createNewTargetWithParams(): Expr[T] = {
       val targetType = implicitly[c.WeakTypeTag[T]]
-      val targetConstructorOpt = targetType.tpe.members.find(_.name.decoded == "<init>")
-      val result = targetConstructorOpt match {
-        case None => {
-          c.error(c.enclosingPosition, "Cannot find constructor for " + targetType)
-          reify { null.asInstanceOf[T] }
-        }
-        case Some(targetConstructor) => {
-          val targetConstructorParams = targetConstructor.asMethod.paramss.flatten
-
-          val newT = Select(New(Ident(targetType.tpe.typeSymbol)), nme.CONSTRUCTOR)
-
-          val constructorParams = for (param <- targetConstructorParams) yield {
-            val wireToOpt = findValueOfType(param.typeSignature).map(Ident(_))
-
-            // If no value is found, an error has been already reported.
-            wireToOpt.getOrElse(reify(null).tree)
+      debug.withBlock(s"Trying to find parameters to create new instance of: [${targetType.tpe}]") {
+        val targetConstructorOpt = targetType.tpe.members.find(_.name.decoded == "<init>")
+        targetConstructorOpt match {
+          case None => {
+            c.error(c.enclosingPosition, "Cannot find constructor for " + targetType)
+            reify { null.asInstanceOf[T] }
           }
+          case Some(targetConstructor) => {
+            val targetConstructorParams = targetConstructor.asMethod.paramss.flatten
 
-          val newTWithParams = Apply(newT, constructorParams)
-          c.info(c.enclosingPosition, s"Generated code: ${c.universe.show(newTWithParams)}", force = false)
-          c.Expr(newTWithParams)
+            val newT = Select(New(Ident(targetType.tpe.typeSymbol)), nme.CONSTRUCTOR)
+
+            val constructorParams = for (param <- targetConstructorParams) yield {
+              val wireToOpt = findValueOfType(param.typeSignature).map(Ident(_))
+
+              // If no value is found, an error has been already reported.
+              wireToOpt.getOrElse(reify(null).tree)
+            }
+
+            val newTWithParams = Apply(newT, constructorParams)
+            debug(s"Generated code: ${c.universe.show(newTWithParams)}")
+            c.Expr(newTWithParams)
+          }
         }
       }
-
-      result
     }
 
     createNewTargetWithParams()
   }
 
-  def firstNotEmpty[T](fs: (() => List[T])*): Option[List[T]] = {
+  private def firstNotEmpty[T](fs: (() => List[T])*): Option[List[T]] = {
     for (f <- fs) {
       val r = f()
       if (!r.isEmpty) return Some(r)
