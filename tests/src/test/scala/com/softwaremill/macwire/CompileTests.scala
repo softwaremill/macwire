@@ -38,7 +38,7 @@ class CompileTests extends FlatSpec with ShouldMatchers {
       } catch {
         case e: ToolBoxError => {
           if (expectedErrors == Nil) {
-            fail(s"Expected compilation & evaluation to be successful, but got an error", e)
+            fail(s"Expected compilation & evaluation to be successful, but got an error: ${e.message}", e)
           } else {
             expectedErrors.foreach(expectedError => e.message should include (expectedError))
           }
