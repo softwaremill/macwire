@@ -49,7 +49,7 @@ will be `null`.
 Scopes
 ------
 
-* singleton: `lazy val`
+* singleton: `lazy val` / `val`
 * dependent - separate instance for each dependency usage: `def`
 
 More scopes to come!
@@ -58,7 +58,7 @@ Installation, using with SBT
 ----------------------------
 
 The jars are deployed to [Sonatype's OSS repository](https://oss.sonatype.org/content/repositories/snapshots/com/softwaremill/macwire/).
-To use MacWire in your projec   t, add a dependency:
+To use MacWire in your project, add a dependency:
 
     resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
     libraryDependencies += "com.softwaremill.macwire" %% "core" % "0.1-SNAPSHOT"
@@ -92,3 +92,4 @@ TODO
 * subtyping support
 * parent support
 * testing docs
+* factories
