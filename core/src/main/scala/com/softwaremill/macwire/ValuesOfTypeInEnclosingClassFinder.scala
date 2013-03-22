@@ -12,27 +12,31 @@ private[macwire] class ValuesOfTypeInEnclosingClassFinder[C <: Context](val c: C
       case Nil => acc
       case tree :: tail => tree match {
         // TODO: subtyping
-        case x@ValDef(_, name, tpt, rhs) => {
-          doFind(tail, checkCandidate(name, tpt.tpe, rhs, acc, "val"))
+        case ValDef(_, name, tpt, rhs) => {
+          doFind(tail, checkCandidate(name, tpt, treeToCheck(tree, rhs), acc, "val"))
         }
-        case x@DefDef(_, name, _, _, tpt, rhs) => {
-          doFind(tail, checkCandidate(name, tpt.tpe, rhs, acc, "def"))
+        case DefDef(_, name, _, _, tpt, rhs) => {
+          doFind(tail, checkCandidate(name, tpt, treeToCheck(tree, rhs), acc, "def"))
         }
         case _ => doFind(tail, acc)
       }
     }
 
-    def checkCandidate(name: Name, tpe: Type, rhs: Tree, acc: List[Name], candidateDebugName: String): List[Name] = {
+    def checkCandidate(name: Name, tpt: Tree, treeToCheck: Tree, acc: List[Name], candidateDebugName: String): List[Name] = {
       debug.withBlock(s"Checking $candidateDebugName: [$name]") {
-        val rhsTpe = if (tpe != null) {
-          tpe
+        val rhsTpe = if (tpt.tpe != null) {
+          tpt.tpe
         } else {
           // Disabling macros, no to get into an infinite loop.
           // Duplicating the tree, not to modify the original.
           debug(s"The type is not yet available. Trying a type-check ...")
-          val calculatedType = c.typeCheck(rhs.duplicate, silent = true, withMacrosDisabled = true).tpe
-          debug(s"Result of type-check: [$calculatedType]")
-          calculatedType
+          val calculatedType = c.typeCheck(treeToCheck.duplicate, silent = true, withMacrosDisabled = true).tpe
+          // In case of abstract definitions, when we check the tree (not the rhs), the result is in tpt.tpe. Otherwise,
+          // it's in calculatedType.
+          val result = if (tpt.tpe == null) calculatedType else tpt.tpe
+          debug(s"Result of type-check: [$result]")
+
+          result
         }
 
         if (rhsTpe == t) {
@@ -42,6 +46,12 @@ private[macwire] class ValuesOfTypeInEnclosingClassFinder[C <: Context](val c: C
           acc
         }
       }
+    }
+
+    def treeToCheck(tree: Tree, rhs: Tree) = {
+      // If possible, we check the definition (rhs). We can't always check the tree, as it would cause recursive
+      // type ascription needed errors from the compiler.
+      if (rhs.isEmpty) tree else rhs
     }
 
     val enclosingClassBody = c.enclosingClass match {

@@ -3,7 +3,6 @@ package com.softwaremill.macwire
 import language.experimental.macros
 
 import reflect.macros.Context
-import annotation.tailrec
 
 object MacwireMacros {
   def wire[T]: T = macro wire_impl[T]

@@ -1,0 +1,16 @@
+#include commonClasses
+
+trait Test {
+    def theA: A
+    def theB: B
+    lazy val theC = wire[C]
+}
+
+
+val t = new Test {
+    lazy val theA = new A
+    lazy val theB = new B
+}
+
+require(t.theC.a != null)
+require(t.theC.b != null)
