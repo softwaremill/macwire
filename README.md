@@ -1,4 +1,4 @@
-macwire
+MacWire
 =======
 
 Notes
@@ -16,3 +16,10 @@ When referencing wired values within the trait, e.g.:
 to avoid recursive type compiler errors, the referenced wired value needs a type ascription, e.g.:
 
    lazy val theA: A = wire[A]
+
+Debugging
+---------
+
+The print debugging information on what MacWire does when looking for values, and what code is generated, set the
+`macwire.debug` system property. E.g. with SBT, just add a `System.setProperty("macwire.debug", "")` line to your
+build file.

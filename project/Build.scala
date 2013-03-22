@@ -67,4 +67,7 @@ object MacwireBuild extends Build {
       // (both macro and usages are compiled in the same compiler run)
       fork in test := true)
   ) dependsOn(core)
+
+  // Enabling debug project-wide. Can't find a better way to pass options to scalac.
+  System.setProperty("macwire.debug", "")
 }

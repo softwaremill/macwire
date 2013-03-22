@@ -4,8 +4,10 @@ private[macwire] class Debug {
   var ident = 0
 
   def apply(msg: => String) {
-    val prefix = "   " * (ident - 1)
-    println(s"$prefix[debug] $msg")
+    if (enabled) {
+      val prefix = "   " * (ident - 1)
+      println(s"$prefix[debug] $msg")
+    }
   }
 
 
@@ -24,4 +26,6 @@ private[macwire] class Debug {
   def endBlock() {
     ident -= 1
   }
+
+  private val enabled = System.getProperty("macwire.debug") != null
 }
