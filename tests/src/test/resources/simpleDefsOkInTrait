@@ -1,10 +1,12 @@
-#include commonClasses
+#include commonSimpleClasses
 
 trait Test {
     def theA = wire[A]
     def theB = wire[B]
     def theC = wire[C]
-
-    require(theC.a != null)
-    require(theC.b != null)
 }
+
+val t = new Test {}
+
+require(t.theC.a != null)
+require(t.theC.b != null)

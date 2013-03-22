@@ -1,10 +1,9 @@
-#include commonClasses
+#include commonSimpleClasses
 
 trait Test {
     lazy val theA = wire[A]
     lazy val theB = wire[B]
     lazy val theC = wire[C]
-
-    require(theC.a != null)
-    require(theC.b != null)
 }
+
+#include commonSimpleNotNullCheck

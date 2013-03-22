@@ -1,4 +1,4 @@
-#include commonClasses
+#include commonSimpleClasses
 
 object Test {
     val theA = wire[A]
@@ -8,3 +8,9 @@ object Test {
     require(theC.a != null)
     require(theC.b != null)
 }
+
+require(Test.theC.a != null)
+require(Test.theC.b != null)
+
+require(Test.theC.a eq Test.theA)
+require(Test.theC.b eq Test.theB)

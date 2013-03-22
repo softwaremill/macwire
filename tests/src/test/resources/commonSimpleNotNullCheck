@@ -1,0 +1,7 @@
+val t = new Test {}
+
+require(t.theC.a != null)
+require(t.theC.b != null)
+
+require(t.theC.a eq t.theA)
+require(t.theC.b eq t.theB)
