@@ -17,10 +17,10 @@ during compilation.
 
 Example usage:
 
-    case class A()
-    case class B()
-    case class C(a: A, b: B)
-    case class D(c: C)
+    class A()
+    class B()
+    class C(a: A, b: B)
+    class D(c: C)
 
     trait Test {
         import com.softwaremill.macwire.MacwireMacros._
@@ -59,8 +59,8 @@ Notes
 
 When referencing wired values within the trait, e.g.:
 
-    case class A()
-    case class B(a: A)
+    class A()
+    class B(a: A)
 
     lazy val theA = wire[A]
      // reference to theA; if for some reason we need explicitly write the constructor call
