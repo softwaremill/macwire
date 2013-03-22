@@ -19,7 +19,9 @@ class CompileTests extends FlatSpec with ShouldMatchers {
     ("simpleValsErrorDuplicateValue", List("Found multiple values of type [B]", "theB1", "theB2")),
     ("simpleDefsOkInTrait", Nil),
     ("simpleLazyValsOkInTrait", Nil),
-    ("simpleWithAbstractOk", Nil)
+    ("simpleWithAbstractOk", Nil),
+    ("simpleValsReferenceWithAscriptionOk", Nil),
+    ("simpleLazyValsNotInOrderOk", Nil)
   )
 
   for ((testName, expectedErrors) <- tests) {

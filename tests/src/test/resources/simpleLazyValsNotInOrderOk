@@ -1,0 +1,13 @@
+#include commonSimpleClasses
+
+trait Test {
+    lazy val theD = wire[D]
+    lazy val theC = wire[C]
+    lazy val theB = wire[B]
+    lazy val theA = wire[A]
+}
+
+#include commonSimpleNotNullCheck
+
+require(t.theD.c != null)
+require(t.theD.c eq t.theC)

@@ -1,3 +1,4 @@
 case class A()
 case class B()
 case class C(a: A, b: B)
+case class D(c: C) // not always used

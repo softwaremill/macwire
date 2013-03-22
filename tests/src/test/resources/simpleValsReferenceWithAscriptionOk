@@ -1,0 +1,10 @@
+#include commonSimpleClasses
+
+trait Test {
+    val theA = wire[A]
+    val theB = wire[B]
+    val theC: C = wire[C]
+    val theD = new D(theC) // reference
+}
+
+#include commonSimpleNotNullCheck
