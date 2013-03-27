@@ -93,3 +93,4 @@ TODO
 * parent support
 * testing docs
 * factories
+* inject a list of dependencies - of a given type
