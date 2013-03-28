@@ -11,7 +11,6 @@ private[macwire] class ValuesOfTypeInEnclosingClassFinder[C <: Context](val c: C
     def doFind(trees: List[Tree], acc: List[Name]): List[Name] = trees match {
       case Nil => acc
       case tree :: tail => tree match {
-        // TODO: subtyping
         case ValDef(_, name, tpt, rhs) => {
           doFind(tail, checkCandidate(name, tpt, treeToCheck(tree, rhs), acc, "val"))
         }
