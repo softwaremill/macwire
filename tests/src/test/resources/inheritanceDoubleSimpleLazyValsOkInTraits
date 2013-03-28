@@ -1,0 +1,15 @@
+#include commonSimpleClasses
+
+trait Base1 {
+    lazy val theA = wire[A]
+}
+
+trait Base2 {
+    lazy val theB = wire[B]
+}
+
+trait Test extends Base1 with Base2 {
+    lazy val theC = wire[C]
+}
+
+#include commonSimpleNotNullCheck

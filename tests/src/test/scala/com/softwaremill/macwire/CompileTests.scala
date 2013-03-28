@@ -22,7 +22,11 @@ class CompileTests extends FlatSpec with ShouldMatchers {
     ("simpleWithAbstractOk", Nil),
     ("simpleValsReferenceWithAscriptionOk", Nil),
     ("simpleLazyValsNotInOrderOk", Nil),
-    ("classesWithTraitsLazyValsOkInTrait", Nil)
+    ("classesWithTraitsLazyValsOkInTrait", Nil),
+    ("inheritanceSimpleLazyValsOkInTraits", Nil),
+    ("inheritanceTwoLevelSimpleLazyValsOkInTraits", Nil),
+    ("inheritanceDoubleSimpleLazyValsOkInTraits", Nil),
+    ("inheritanceClassesWithTraitsLazyValsOkInTraits", Nil)
   )
 
   for ((testName, expectedErrors) <- tests) {

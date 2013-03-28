@@ -1,0 +1,25 @@
+#include commonSimpleClasses
+
+trait Base1 {
+    lazy val theA = wire[A]
+    lazy val theB = wire[B]
+}
+
+trait Base2 extends Base1 {
+    lazy val theC = wire[C]
+}
+
+trait Test extends Base2 {
+    lazy val theD = wire[D]
+    lazy val theE = wire[E]
+}
+
+#include commonSimpleNotNullCheck
+
+require(t.theD.c != null)
+require(t.theD.c eq t.theC)
+
+require(t.theE.a != null)
+require(t.theE.c != null)
+require(t.theE.a eq t.theA)
+require(t.theE.c eq t.theC)
