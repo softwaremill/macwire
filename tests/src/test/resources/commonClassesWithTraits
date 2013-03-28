@@ -1,0 +1,10 @@
+trait A
+class AImpl extends A
+
+trait B
+class BImpl extends B
+
+trait C
+class CImpl(val a: A, val b: B) extends C
+
+class DImpl(val c: C)

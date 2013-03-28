@@ -21,7 +21,8 @@ class CompileTests extends FlatSpec with ShouldMatchers {
     ("simpleLazyValsOkInTrait", Nil),
     ("simpleWithAbstractOk", Nil),
     ("simpleValsReferenceWithAscriptionOk", Nil),
-    ("simpleLazyValsNotInOrderOk", Nil)
+    ("simpleLazyValsNotInOrderOk", Nil),
+    ("classesWithTraitsLazyValsOkInTrait", Nil)
   )
 
   for ((testName, expectedErrors) <- tests) {
@@ -63,7 +64,7 @@ class CompileTests extends FlatSpec with ShouldMatchers {
     DirectiveRegexp.findAllMatchIn(in).foldLeft(in)((acc, m) => {
       val includeName = m.group(1)
       val replacement = loadResource(includeName)
-      acc.replaceAll("#include " + includeName, replacement)
+      acc.replaceAll("#include " + includeName + "(?!\\w)", replacement)
     })
   }
 }

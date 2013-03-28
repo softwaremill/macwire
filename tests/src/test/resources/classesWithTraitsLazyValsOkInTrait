@@ -1,0 +1,10 @@
+#include commonClassesWithTraits
+
+trait Test {
+    lazy val theA = wire[AImpl]
+    lazy val theB = wire[BImpl]
+    lazy val theC = wire[CImpl]
+    lazy val theD = wire[DImpl]
+}
+
+#include commonClassesWithTraitsNotNullCheck
