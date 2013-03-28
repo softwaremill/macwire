@@ -63,8 +63,8 @@ To use MacWire in your project, add a dependency:
     resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
     libraryDependencies += "com.softwaremill.macwire" %% "core" % "0.1-SNAPSHOT"
 
-Notes
------
+Limitations
+-----------
 
 When referencing wired values within the trait, e.g.:
 
