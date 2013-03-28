@@ -79,6 +79,9 @@ to avoid recursive type compiler errors, the referenced wired value needs a type
 
     lazy val theA: A = wire[A]
 
+Also, wiring will probably not work properly for traits and classes defined inside the containing trait/class, or in
+super traits/classes.
+
 Debugging
 ---------
 
