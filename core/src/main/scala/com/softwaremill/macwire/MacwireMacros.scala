@@ -16,7 +16,8 @@ object MacwireMacros {
     def findValueOfType(t: Type): Option[Name] = {
       debug.withBlock(s"Trying to find value of type: [$t]") {
         val namesOpt = firstNotEmpty[Name](
-          () => new ValuesOfTypeInEnclosingClassFinder[c.type](c, debug).find(t)
+          () => new ValuesOfTypeInEnclosingClassFinder[c.type](c, debug).find(t),
+          () => new ValuesOfTypeInParentsFinder[c.type](c, debug).find(t)
         )
 
         namesOpt match {
