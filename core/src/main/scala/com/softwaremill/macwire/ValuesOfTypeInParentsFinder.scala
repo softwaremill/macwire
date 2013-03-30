@@ -7,11 +7,25 @@ private[macwire] class ValuesOfTypeInParentsFinder[C <: Context](val c: C, debug
   import c.universe._
 
   def find(t: Type): List[Name] = {
+    def checkCandidate(tpt: Type): Boolean = {
+      val typesToCheck = tpt :: (tpt match {
+        case NullaryMethodType(resultType) => {
+          List(resultType)
+        }
+        case MethodType(_, resultType) => {
+          List(resultType)
+        }
+        case _ => Nil
+      })
+
+      typesToCheck.exists(_ <:< t)
+    }
+
     def findInParent(parent: Tree): Set[Name] = {
       debug.withBlock(s"Checking parent: [${parent.tpe}]") {
         val result = parent.tpe.members
-          .filter(symbol => symbol.typeSignature <:< t)
-          .map(symbol => symbol.name)
+          .filter(symbol => checkCandidate(symbol.typeSignature))
+          .map(_.name)
           // For (lazy) vals, the names have a space at the end of the name (probably some compiler internals).
           // Hence the trim.
           .map(name => newTermName(name.decoded.trim()))

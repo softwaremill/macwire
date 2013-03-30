@@ -1,0 +1,15 @@
+#include commonSimpleClasses
+
+trait Base {
+    def theA = wire[A]
+    def theB = wire[B]
+}
+
+trait Test extends Base {
+    def theC = wire[C]
+}
+
+val t = new Test {}
+
+require(t.theC.a != null)
+require(t.theC.b != null)
