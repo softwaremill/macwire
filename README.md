@@ -41,7 +41,7 @@ will generate:
 
 For testing, just extend the base module and override any dependencies with mocks/stubs etc, e.g.:
 
-    trait UserModuleForTests extends Module1 {
+    trait UserModuleForTests extends UserModule {
         override lazy val theDatabaseAccess = mockDatabaseAccess
         override lazy val theSecurityFilter = mockSecurityFilter
     }
