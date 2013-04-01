@@ -32,7 +32,7 @@ Example usage:
 
 will generate:
 
-    trait Module1 {
+    trait UserModule {
         lazy val theDatabaseAccess   = new DatabaseAccess()
         lazy val theSecurityFilter   = new SecurityFilter()
         lazy val theUserFinder       = new UserFinder(theDatabaseAccess, theSecurityFilter)
@@ -41,7 +41,7 @@ will generate:
 
 For testing, just extend the base module and override any dependencies with mocks/stubs etc, e.g.:
 
-    trait Module1ForTests extends Module1 {
+    trait UserModuleForTests extends Module1 {
         override lazy val theDatabaseAccess = mockDatabaseAccess
         override lazy val theSecurityFilter = mockSecurityFilter
     }
@@ -54,6 +54,22 @@ For more motivation behind the project see also these blogs:
 * [Dependency injection with Scala macros: auto-wiring](http://www.warski.org/blog/2013/03/dependency-injection-with-scala-macros-auto-wiring/)
 
 A similar project for Java is [Dagger](https://github.com/square/dagger).
+
+How wiring works
+----------------
+
+For each constructor parameter of the given class, MacWire tries to find a value of the parameter's type in the
+enclosing scope (trait/class/object):
+
+* first it tries to find a unique value declared in the scope itself
+* then it tries to find a unique value in parent scopes
+
+A compile-time error occurs if:
+
+* there are multiple values of a given type declared in the scope, or in parent scopes
+* there is no value of a given type
+
+The generated code is then once again type-checked by the Scala compiler.
 
 `lazy val` vs. `val`
 --------------------
