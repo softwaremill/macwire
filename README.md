@@ -106,7 +106,7 @@ When referencing wired values within the trait, e.g.:
 
     lazy val theA = wire[A]
      // reference to theA; if for some reason we need explicitly write the constructor call
-    lazy val theB = new B(thaA)
+    lazy val theB = new B(theA)
 
 to avoid recursive type compiler errors, the referenced wired value needs a type ascription, e.g.:
 
