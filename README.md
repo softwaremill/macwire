@@ -12,7 +12,7 @@ Classes that should be wired should be organized in "modules", which can be Scal
 Multiple modules can be combined using inheritance; values from the inherited modules are also used for wiring.
 
 MacWire can be in many cases a replacement for DI containers, offering greater control on when and how classes are
-instantiated, and using only language (Scala) mechanisms.
+instantiated, typesafety and using only language (Scala) mechanisms.
 
 Example usage:
 
