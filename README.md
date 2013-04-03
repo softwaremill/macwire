@@ -16,35 +16,41 @@ instantiated, typesafety and using only language (Scala) mechanisms.
 
 Example usage:
 
-    class DatabaseAccess()
-    class SecurityFilter()
-    class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
-    class UserStatusReader(userFinder: UserFinder)
+````scala
+class DatabaseAccess()
+class SecurityFilter()
+class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
+class UserStatusReader(userFinder: UserFinder)
 
-    trait UserModule {
-        import com.softwaremill.macwire.MacwireMacros._
+trait UserModule {
+    import com.softwaremill.macwire.MacwireMacros._
 
-        lazy val theDatabaseAccess   = wire[DatabaseAccess]
-        lazy val theSecurityFilter   = wire[SecurityFilter]
-        lazy val theUserFinder       = wire[UserFinder]
-        lazy val theUserStatusReader = wire[UserStatusReader]
-    }
+    lazy val theDatabaseAccess   = wire[DatabaseAccess]
+    lazy val theSecurityFilter   = wire[SecurityFilter]
+    lazy val theUserFinder       = wire[UserFinder]
+    lazy val theUserStatusReader = wire[UserStatusReader]
+}
+````
 
 will generate:
 
-    trait UserModule {
-        lazy val theDatabaseAccess   = new DatabaseAccess()
-        lazy val theSecurityFilter   = new SecurityFilter()
-        lazy val theUserFinder       = new UserFinder(theDatabaseAccess, theSecurityFilter)
-        lazy val theUserStatusReader = new theUserStatusReader(theUserFinder)
-    }
+````scala
+trait UserModule {
+    lazy val theDatabaseAccess   = new DatabaseAccess()
+    lazy val theSecurityFilter   = new SecurityFilter()
+    lazy val theUserFinder       = new UserFinder(theDatabaseAccess, theSecurityFilter)
+    lazy val theUserStatusReader = new theUserStatusReader(theUserFinder)
+}
+````
 
 For testing, just extend the base module and override any dependencies with mocks/stubs etc, e.g.:
 
-    trait UserModuleForTests extends UserModule {
-        override lazy val theDatabaseAccess = mockDatabaseAccess
-        override lazy val theSecurityFilter = mockSecurityFilter
-    }
+````scala
+trait UserModuleForTests extends UserModule {
+    override lazy val theDatabaseAccess = mockDatabaseAccess
+    override lazy val theSecurityFilter = mockSecurityFilter
+}
+````
 
 The library has no dependencies, and itself is not a runtime dependency. It only needs to be available on the classpath
 during compilation.
@@ -91,8 +97,10 @@ Installation, using with SBT
 The jars are deployed to [Sonatype's OSS repository](https://oss.sonatype.org/content/repositories/snapshots/com/softwaremill/macwire/).
 To use MacWire in your project, add a dependency:
 
-    resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
-    libraryDependencies += "com.softwaremill.macwire" %% "core" % "0.1-SNAPSHOT"
+````scala
+resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+libraryDependencies += "com.softwaremill.macwire" %% "core" % "0.1-SNAPSHOT"
+````
 
 MacWire works with Scala 2.10+.
 
@@ -101,16 +109,20 @@ Limitations
 
 When referencing wired values within the trait, e.g.:
 
-    class A()
-    class B(a: A)
+````scala
+class A()
+class B(a: A)
 
-    lazy val theA = wire[A]
-     // reference to theA; if for some reason we need explicitly write the constructor call
-    lazy val theB = new B(theA)
+lazy val theA = wire[A]
+// reference to theA; if for some reason we need explicitly write the constructor call
+lazy val theB = new B(theA)
+````
 
 to avoid recursive type compiler errors, the referenced wired value needs a type ascription, e.g.:
 
-    lazy val theA: A = wire[A]
+````scala
+lazy val theA: A = wire[A]
+````
 
 Also, wiring will probably not work properly for traits and classes defined inside the containing trait/class, or in
 super traits/classes.
