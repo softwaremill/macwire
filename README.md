@@ -64,11 +64,13 @@ A similar project for Java is [Dagger](https://github.com/square/dagger).
 How wiring works
 ----------------
 
-For each constructor parameter of the given class, MacWire tries to find a value of the parameter's type in the
-enclosing scope (trait/class/object):
+For each constructor parameter of the given class, MacWire tries to find a value which is a subtype of the parameter's
+type in the enclosing scope (trait/class/object):
 
 * first it tries to find a unique value declared in the scope itself
 * then it tries to find a unique value in parent scopes
+
+Here value means either a `val` or a no-parameter `def`, as long as the return type matches.
 
 A compile-time error occurs if:
 
