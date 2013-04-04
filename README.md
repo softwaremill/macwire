@@ -1,8 +1,8 @@
 MacWire
 =======
 
-MacWire generates `new` instance creation code of given classes, using values in scope for constructor parameters,
-with the help of [Scala Macros](http://scalamacros.org/).
+MacWire generates `new` instance creation code of given classes, using values in the enclosing type for constructor
+parameters, with the help of [Scala Macros](http://scalamacros.org/).
 
 MacWire helps to implement the Dependency Injection (DI) pattern, by removing the need to write the
 class-wiring code by hand. Instead, it is enough to declare which classes should be wired, and how the instances
@@ -65,16 +65,16 @@ How wiring works
 ----------------
 
 For each constructor parameter of the given class, MacWire tries to find a value which is a subtype of the parameter's
-type in the enclosing scope (trait/class/object):
+type in the enclosing trait/class/object:
 
-* first it tries to find a unique value declared in the scope itself
-* then it tries to find a unique value in parent scopes
+* first it tries to find a unique value declared in the enclosing type itself
+* then it tries to find a unique value in parent types (traits/classes)
 
 Here value means either a `val` or a no-parameter `def`, as long as the return type matches.
 
 A compile-time error occurs if:
 
-* there are multiple values of a given type declared in the scope, or in parent scopes
+* there are multiple values of a given type declared in the enclosing type, or in parent types
 * there is no value of a given type
 
 The generated code is then once again type-checked by the Scala compiler.
