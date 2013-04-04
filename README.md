@@ -39,7 +39,7 @@ trait UserModule {
     lazy val theDatabaseAccess   = new DatabaseAccess()
     lazy val theSecurityFilter   = new SecurityFilter()
     lazy val theUserFinder       = new UserFinder(theDatabaseAccess, theSecurityFilter)
-    lazy val theUserStatusReader = new theUserStatusReader(theUserFinder)
+    lazy val theUserStatusReader = new UserStatusReader(theUserFinder)
 }
 ````
 
