@@ -148,3 +148,6 @@ Future development
 * factories (defs with parameters)
 * configuration values - by-name wiring
 * inject a list of dependencies - of a given type
+* request/session scopes
+* qualifiers?
+* getInstance(Class)/getBean(Class) map generation for Play2/other frameworks integration?
