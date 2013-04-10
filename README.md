@@ -52,6 +52,8 @@ trait UserModuleForTests extends UserModule {
 }
 ````
 
+Instead of importing the wire method in each module you can also extend com.softwaremill.macwire.Macwire trait.
+
 The library has no dependencies, and itself is not a runtime dependency. It only needs to be available on the classpath
 during compilation.
 
