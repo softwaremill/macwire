@@ -30,7 +30,12 @@ class CompileTests extends FlatSpec with ShouldMatchers {
     ("inheritanceClassesWithTraitsLazyValsOkInTraits", Nil)
   )
 
-  for ((testName, expectedErrors) <- tests) {
+  for ((testName, expectedErrors) <- tests)
+    addTest(testName, expectedErrors)
+
+  addTest("simpleValsOkInTraitExtendingMacwire", Nil, "/* Note no additional import needed */")
+
+  def addTest(testName: String, expectedErrors: List[String], imports: String = GlobalImports) {
     it should s"$testName should ${if (expectedErrors == Nil) "compile & run" else "cause a compile error"}" in {
       import scala.reflect.runtime._
       val cm = universe.runtimeMirror(getClass.getClassLoader)
@@ -38,7 +43,7 @@ class CompileTests extends FlatSpec with ShouldMatchers {
       import scala.tools.reflect.ToolBox
       val tb = cm.mkToolBox()
 
-      val source = loadTest(testName)
+      val source = loadTest(testName, imports)
 
       try {
         tb.eval(tb.parse(source))
@@ -57,7 +62,7 @@ class CompileTests extends FlatSpec with ShouldMatchers {
     }
   }
 
-  def loadTest(name: String) = GlobalImports + resolveDirectives(loadResource(name)) + EmptyResult
+  def loadTest(name: String, imports: String) = imports + resolveDirectives(loadResource(name)) + EmptyResult
 
   def loadResource(name: String) = {
     val resource = this.getClass.getResourceAsStream("/" + name)

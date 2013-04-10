@@ -1,0 +1,11 @@
+#include commonSimpleClasses
+
+import com.softwaremill.macwire.Macwire
+
+trait Test extends Macwire {
+    val theA = wire[A]
+    val theB = wire[B]
+    val theC = wire[C]
+}
+
+#include commonSimpleNotNullCheck
