@@ -4,9 +4,11 @@ import language.experimental.macros
 
 import reflect.macros.Context
 
-object MacwireMacros {
-  def wire[T]: T = macro wire_impl[T]
+trait Macwire {
+  def wire[T]: T = macro MacwireMacros.wire_impl[T]
+}
 
+object MacwireMacros extends Macwire {
   private val debug = new Debug()
   import Util._
 
