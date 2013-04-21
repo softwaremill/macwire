@@ -36,7 +36,8 @@ object BuildSettings {
 }
 
 object Dependencies {
-  val scalatest     = "org.scalatest" %% "scalatest" % "1.9.1" % "test"
+  val scalatest     = "org.scalatest" %% "scalatest"  % "1.9.1"       % "test"
+  val javassist     = "org.javassist" % "javassist"   % "3.17.1-GA"
 }
 
 object MacwireBuild extends Build {
@@ -55,6 +56,13 @@ object MacwireBuild extends Build {
     settings = buildSettings ++ Seq(
       libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-reflect" % _))
   )
+
+  lazy val scopes: Project = Project(
+    "scopes",
+    file("scopes"),
+    settings = buildSettings ++ Seq(
+      libraryDependencies ++= Seq(javassist, scalatest))
+  ) dependsOn(core % "test")
 
   lazy val tests: Project = Project(
     "tests",
