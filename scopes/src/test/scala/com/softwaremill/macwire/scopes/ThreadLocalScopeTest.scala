@@ -13,7 +13,7 @@ translated to:
 
 new Cls(a, b, c) {
    key = "123-123-123"
-   override def a(b, c) = scope.getOrElse(key, new Cls(a, b, c))
+   override def x(y, z) = scope.getOrElse(key, new Cls(a, b, c)).x(y, z)
 }
 
 but:
