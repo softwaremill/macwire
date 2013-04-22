@@ -10,13 +10,14 @@ private[macwire] class Debug {
     }
   }
 
-
-  def withBlock[T](msg: => String)(block: => T) = {
+  def withBlock[T](msg: => String)(block: => T): T = {
     apply(msg)
     beginBlock()
-    val result = block
-    endBlock()
-    result
+    try {
+      block
+    } finally {
+      endBlock()
+    }
   }
 
   def beginBlock() {
