@@ -1,0 +1,16 @@
+<%@ val service1status: String %>
+<%@ val service2status: String %>
+
+<p>
+    <strong>Service 1 status: </strong> <%= service1status %>
+    <br />
+    <strong>Service 2 status: </strong> <%= service2status %>
+</p>
+
+<p>
+    <form action="">
+        Data: <input type="text" name="data" />
+        <br />
+        <input type="submit" value="Submit" />
+    </form>
+</p>

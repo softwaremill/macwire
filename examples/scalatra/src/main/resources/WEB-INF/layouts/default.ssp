@@ -1,0 +1,20 @@
+<%@ val body: String %>
+<html>
+<head>
+    <title>MacWire+Scalatra example</title>
+</head>
+<body>
+    <a href="https://github.com/adamw/macwire"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub"></a>
+
+    <h1>MacWire+Scalatra example</h1>
+
+    <%= unescape(body) %>
+
+    <p>
+        <a href="?">Refresh</a> |
+        <a href="/auth/loginForm">Login</a> |
+        <a href="/auth/logout">Logout</a> |
+        <a href="/">Home</a>
+    </p>
+</body>
+</html>

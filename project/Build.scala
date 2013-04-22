@@ -48,7 +48,7 @@ object MacwireBuild extends Build {
     "root",
     file("."),
     settings = buildSettings ++ Seq(publishArtifact := false)
-  ) aggregate(core, tests)
+  ) aggregate(core, scopes, examplesScalatra, tests)
 
   lazy val core: Project = Project(
     "core",
@@ -75,6 +75,25 @@ object MacwireBuild extends Build {
       // (both macro and usages are compiled in the same compiler run)
       fork in test := true)
   ) dependsOn(core)
+
+  lazy val examplesScalatra: Project = {
+    val ScalatraVersion = "2.2.1"
+    val scalatraCore = "org.scalatra" %% "scalatra" % ScalatraVersion
+    val scalatraScalate = "org.scalatra" %% "scalatra-scalate" % ScalatraVersion
+    val logback = "ch.qos.logback" % "logback-classic" % "1.0.6"
+    val jetty = "org.eclipse.jetty" % "jetty-webapp" % "8.1.7.v20120910" % "compile"
+    val servletApi = "org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "compile" artifacts (Artifact("javax.servlet", "jar", "jar"))
+
+    Project(
+      "examples-scalatra",
+      file("examples/scalatra"),
+      settings = buildSettings ++ Seq(
+        publishArtifact := false,
+        classpathTypes ~= (_ + "orbit"),
+        libraryDependencies ++= Seq(scalatraCore, scalatraScalate, jetty, servletApi, logback)
+      )
+    )
+  }
 
   // Enabling debug project-wide. Can't find a better way to pass options to scalac.
   System.setProperty("macwire.debug", "")
