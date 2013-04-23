@@ -92,7 +92,7 @@ object MacwireBuild extends Build {
         classpathTypes ~= (_ + "orbit"),
         libraryDependencies ++= Seq(scalatraCore, scalatraScalate, jetty, servletApi, logback)
       )
-    )
+    ) dependsOn(core)
   }
 
   // Enabling debug project-wide. Can't find a better way to pass options to scalac.

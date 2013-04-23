@@ -1,9 +1,11 @@
 package com.softwaremill.macwire.examples.scalatra.logic
 
-trait LogicModule {
-  lazy val loggedInUser = new LoggedInUser
-  lazy val submittedData = new SubmittedData
-  lazy val service1 = new Service1(loggedInUser, submittedData)
-  lazy val service2 = new Service2(submittedData, service3, loggedInUser)
-  lazy val service3 = new Service3
+import com.softwaremill.macwire.Macwire
+
+trait LogicModule extends Macwire {
+  lazy val loggedInUser = wire[LoggedInUser]
+  lazy val submittedData = wire[SubmittedData]
+  lazy val service1 = wire[Service1]
+  lazy val service2 = wire[Service2]
+  lazy val service3 = wire[Service3]
 }
