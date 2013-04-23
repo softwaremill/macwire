@@ -23,7 +23,30 @@ private[macwire] class ValuesOfTypeInParentsFinder[C <: Context](val c: C, debug
 
     def findInParent(parent: Tree): Set[Name] = {
       debug.withBlock(s"Checking parent: [${parent.tpe}]") {
-        val result = parent.tpe.members
+        val parentType = if (parent.tpe == null) {
+          /*
+          It sometimes happens that the parent type is not yet calculated; this seems to be the case if for example
+          the parent is in the same compilation unit, but different package.
+
+          To get the type we need to invoke type-checking on some expression that has the type of the parent. There's
+          a lot of expressions to choose from, here we are using the expression "identity[<parent>](null)".
+
+          In order to construct the tree, we borrow some elements from a reified expression for String. To get the
+          desired expression we need to swap the String part with parent.
+           */
+
+          val identityInvWithString = reify { identity[String](null) }
+          val Expr(Apply(TypeApply(identityInvFun, _), identityInvArgs)) = identityInvWithString
+
+          val identityInvWithParent = Apply(TypeApply(identityInvFun, List(parent)), identityInvArgs)
+          val identityInvTypeChecked = c.typeCheck(identityInvWithParent)
+
+          identityInvTypeChecked.tpe
+        } else {
+          parent.tpe
+        }
+
+        val result = parentType.members
           .filter(symbol => checkCandidate(symbol.typeSignature))
           .map(_.name)
           // For (lazy) vals, the names have a space at the end of the name (probably some compiler internals).
