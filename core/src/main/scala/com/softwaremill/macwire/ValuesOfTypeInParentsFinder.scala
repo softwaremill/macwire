@@ -70,8 +70,8 @@ private[macwire] class ValuesOfTypeInParentsFinder[C <: Context](val c: C, debug
     }
 
     val parents = c.enclosingClass match {
-      case ClassDef(_, _, _, Template(parents, _, _)) => parents
-      case ModuleDef(_, _, Template(parents, _, _)) => parents
+      case ClassDef(_, _, _, Template(pp, _, _)) => pp
+      case ModuleDef(_, _, Template(pp, _, _)) => pp
       case e => {
         c.error(c.enclosingPosition, s"Unknown type of enclosing class: ${e.getClass}")
         Nil
