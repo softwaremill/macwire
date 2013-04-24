@@ -8,8 +8,6 @@ class ScopeFilter(requestScope: ThreadLocalScope, sessionScope: ThreadLocalScope
   def init(filterConfig: FilterConfig) {}
 
   def doFilter(request: ServletRequest, response: ServletResponse, chain: FilterChain) {
-    println("IN FILTER!")
-
     val httpRequest = request.asInstanceOf[HttpServletRequest]
 
     val sessionScopeStorage = new ScopeStorage {
