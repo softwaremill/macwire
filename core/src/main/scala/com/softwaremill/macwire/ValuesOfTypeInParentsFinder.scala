@@ -6,6 +6,8 @@ import annotation.tailrec
 private[macwire] class ValuesOfTypeInParentsFinder[C <: Context](val c: C, debug: Debug) {
   import c.universe._
 
+  private val typeCheckUtil = new TypeCheckUtil[c.type](c, debug)
+
   def find(t: Type): List[Name] = {
     def checkCandidate(tpt: Type): Boolean = {
       val typesToCheck = tpt :: (tpt match {
@@ -36,14 +38,7 @@ private[macwire] class ValuesOfTypeInParentsFinder[C <: Context](val c: C, debug
           In order to construct the tree, we borrow some elements from a reified expression for String. To get the
           desired expression we need to swap the String part with parent.
            */
-
-          val identityInvWithString = reify { identity[String](null) }
-          val Expr(Apply(TypeApply(identityInvFun, _), identityInvArgs)) = identityInvWithString
-
-          val identityInvWithParent = Apply(TypeApply(identityInvFun, List(parent)), identityInvArgs)
-          val identityInvTypeChecked = c.typeCheck(identityInvWithParent)
-
-          identityInvTypeChecked.tpe
+          typeCheckUtil.typeCheckExpressionOfType(parent)
         } else {
           parent.tpe
         }

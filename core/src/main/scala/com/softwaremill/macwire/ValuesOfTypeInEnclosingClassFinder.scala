@@ -6,6 +6,8 @@ import annotation.tailrec
 private[macwire] class ValuesOfTypeInEnclosingClassFinder[C <: Context](val c: C, debug: Debug) {
   import c.universe._
 
+  private val typeCheckUtil = new TypeCheckUtil[c.type](c, debug)
+
   def find(t: Type): List[Name] = {
     @tailrec
     def doFind(trees: List[Tree], acc: List[Name]): List[Name] = trees match {
@@ -33,9 +35,18 @@ private[macwire] class ValuesOfTypeInEnclosingClassFinder[C <: Context](val c: C
           // In case of abstract definitions, when we check the tree (not the rhs), the result is in tpt.tpe. Otherwise,
           // it's in calculatedType.
           val result = if (tpt.tpe == null) calculatedType else tpt.tpe
-          debug(s"Result of type-check: [$result]")
 
-          result
+          if (result == NoType) {
+            debug("Type check didn't resolve to a type. Trying to type-check an expression of the given type.")
+            val result2 = typeCheckUtil.typeCheckExpressionOfType(tpt)
+
+            debug(s"Result of second type-check: [$result2]")
+
+            result2
+          } else {
+            debug(s"Result of type-check: [$result]")
+            result
+          }
         }
 
         if (rhsTpe <:< t) {
