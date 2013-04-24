@@ -48,7 +48,7 @@ object MacwireBuild extends Build {
     "root",
     file("."),
     settings = buildSettings ++ Seq(publishArtifact := false)
-  ) aggregate(core, scopes, examplesScalatra, tests)
+  ) aggregate(core, scopes, examplesScalatra, tests, tests2)
 
   lazy val core: Project = Project(
     "core",
@@ -71,6 +71,18 @@ object MacwireBuild extends Build {
       publishArtifact := false,
       libraryDependencies ++= Seq(scalatest),
       libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-compiler" % _ % "test"),
+      // Otherwise when running tests in sbt, the macro is not visible
+      // (both macro and usages are compiled in the same compiler run)
+      fork in test := true)
+  ) dependsOn(core)
+
+  // The tests here are that the tests compile.
+  lazy val tests2: Project = Project(
+    "tests2",
+    file("tests2"),
+    settings = buildSettings ++ Seq(
+      publishArtifact := false,
+      libraryDependencies ++= Seq(scalatest),
       // Otherwise when running tests in sbt, the macro is not visible
       // (both macro and usages are compiled in the same compiler run)
       fork in test := true)
