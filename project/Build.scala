@@ -74,7 +74,7 @@ object MacwireBuild extends Build {
       // Otherwise when running tests in sbt, the macro is not visible
       // (both macro and usages are compiled in the same compiler run)
       fork in test := true)
-  ) dependsOn(core)
+  ) dependsOn(core, scopes)
 
   // The tests here are that the tests compile.
   lazy val tests2: Project = Project(
@@ -86,7 +86,7 @@ object MacwireBuild extends Build {
       // Otherwise when running tests in sbt, the macro is not visible
       // (both macro and usages are compiled in the same compiler run)
       fork in test := true)
-  ) dependsOn(core)
+  ) dependsOn(core, scopes)
 
   lazy val examplesScalatra: Project = {
     val ScalatraVersion = "2.2.1"
