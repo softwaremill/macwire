@@ -7,6 +7,8 @@ trait ServletModule extends LogicModule {
   lazy val servlet1: Servlet1 = wire[Servlet1]
   lazy val authServlet: AuthServlet = wire[AuthServlet]
 
-  def session = new ThreadLocalScope
-  def request = new ThreadLocalScope
+  lazy val scopeFilter = new ScopeFilter(request, session)
+
+  lazy val request = new ThreadLocalScope
+  lazy val session = new ThreadLocalScope
 }

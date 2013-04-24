@@ -3,7 +3,7 @@ package com.softwaremill.macwire.scopes
 import scala.collection.mutable
 
 trait ThreadLocalScopeStorage extends Scope {
-  private val theStorage = new ThreadLocal[collection.mutable.Map[String, Any]]()
+  private val theStorage = new ThreadLocal[ScopeStorage]()
 
   def get[T](key: String, createT: => T): T = {
     val storage = theStorage.get()
@@ -16,18 +16,22 @@ trait ThreadLocalScopeStorage extends Scope {
       case Some(obj) => obj.asInstanceOf[T]
       case None => {
         val obj = createT
-        storage(key) = obj
+        storage.set(key, obj)
         obj
       }
     }
   }
 
-  def associate(storage: collection.mutable.Map[String, Any]) {
+  def associate(storage: ScopeStorage) {
     if (theStorage.get() != null) {
       throw new IllegalStateException("This thread is already associated with a storage!")
     }
 
     theStorage.set(storage)
+  }
+
+  def associate(storage: collection.mutable.Map[String, Any]) {
+    associate(new MapScopeStorage(storage))
   }
 
   def associate(storage: java.util.Map[String, Any]) {
@@ -47,17 +51,25 @@ trait ThreadLocalScopeStorage extends Scope {
     theStorage.remove()
   }
 
+  def withStorage[T](storage: ScopeStorage)(body: => T): T = {
+    withStorage(() => associate(storage))(body)
+  }
+
+  def withStorage[T](storage: java.util.Map[String, Any])(body: => T): T = {
+    import scala.collection.JavaConverters._
+    withStorage(() => associate(storage.asScala))(body)
+  }
+
   def withStorage[T](storage: collection.mutable.Map[String, Any])(body: => T): T = {
-    associate(storage)
-    try {
-      body
-    } finally {
-      disassociate()
-    }
+    withStorage(() => associate(storage))(body)
   }
 
   def withEmptyStorage[T](body: => T): T = {
-    associateWithEmptyStorage()
+    withStorage(() => associateWithEmptyStorage())(body)
+  }
+
+  private def withStorage[T](associateWithStorage: () => Unit)(body: => T): T = {
+    associateWithStorage()
     try {
       body
     } finally {
