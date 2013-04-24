@@ -4,8 +4,8 @@ import com.softwaremill.macwire.examples.scalatra.logic.LogicModule
 import com.softwaremill.macwire.scopes.ThreadLocalScope
 
 trait ServletModule extends LogicModule {
-  lazy val servlet1 = wire[Servlet1]
-  lazy val authServlet = wire[AuthServlet]
+  lazy val servlet1: Servlet1 = wire[Servlet1]
+  lazy val authServlet: AuthServlet = wire[AuthServlet]
 
   def session = new ThreadLocalScope
   def request = new ThreadLocalScope
