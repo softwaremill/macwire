@@ -1,4 +1,4 @@
-package com.softwaremill.macwire.examples.scalatra
+package com.softwaremill.macwire.examples.scalatra.servlet
 
 import org.scalatra.ScalatraServlet
 import org.scalatra.scalate.ScalateSupport

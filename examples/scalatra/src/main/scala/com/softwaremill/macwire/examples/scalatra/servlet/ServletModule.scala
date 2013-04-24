@@ -1,4 +1,4 @@
-package com.softwaremill.macwire.examples.scalatra
+package com.softwaremill.macwire.examples.scalatra.servlet
 
 import com.softwaremill.macwire.examples.scalatra.logic.LogicModule
 import com.softwaremill.macwire.scopes.ThreadLocalScope

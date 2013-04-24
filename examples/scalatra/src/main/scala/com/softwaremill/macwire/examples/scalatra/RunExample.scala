@@ -3,6 +3,7 @@ package com.softwaremill.macwire.examples.scalatra
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.webapp.WebAppContext
 import org.eclipse.jetty.servlet.ServletHolder
+import com.softwaremill.macwire.examples.scalatra.servlet.ServletModule
 
 object RunExample extends App {
   val port = if (System.getenv("PORT") != null) System.getenv("PORT").toInt else 8080
