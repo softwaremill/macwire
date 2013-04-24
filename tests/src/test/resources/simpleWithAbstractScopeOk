@@ -1,0 +1,8 @@
+import com.softwaremill.macwire.scopes.Scope
+
+class A(s: Scope)
+
+trait Test {
+    val a: A = wire[A]
+    def s: Scope
+}
