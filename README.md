@@ -90,9 +90,9 @@ When:
 * using multiple modules in the same compilation unit
 * using multiple modules with scopes
 
-due to limitations of the current macro implementation (for more details see for example
+due to limitations of the current macros implementation in Scala (for more details see
 [this discussion](https://groups.google.com/forum/?fromgroups=#!topic/scala-user/k_2KCvO5g04))
-to avoid compilation errors it is necessary to add a type ascription. This is way of helping
+to avoid compilation errors it is necessary to add a type ascriptions to the dependencies. This is a way of helping
 the type-checker that is invoked by the macro figuring out the types of the values which
 can be wired.
 
@@ -122,7 +122,7 @@ will be `null`. With `lazy val` the correct order of initialization is resolved 
 Scopes
 ------
 
-Depending on how the dependency is defined:
+Scopes depending on how the dependency is defined:
 * singleton: `lazy val` / `val`
 * dependent - separate instance for each dependency usage: `def`
 
@@ -160,6 +160,9 @@ For example usage see the
 sources.
 
 You can run the example with `sbt examples-scalatra/run` and going to [http://localhost:8080](http://localhost:8080).
+
+Note that the `scopes` subproject does not depend on MacWire core, and can be used stand-alone with manual wiring or any other
+frameworks.
 
 Installation, using with SBT
 ----------------------------
