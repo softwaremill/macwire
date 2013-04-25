@@ -93,7 +93,7 @@ When:
 due to limitations of the current macros implementation in Scala (for more details see
 [this discussion](https://groups.google.com/forum/?fromgroups=#!topic/scala-user/k_2KCvO5g04))
 to avoid compilation errors it is necessary to add a type ascriptions to the dependencies. This is a way of helping
-the type-checker that is invoked by the macro figuring out the types of the values which
+the type-checker that is invoked by the macro to figure out the types of the values which
 can be wired.
 
 For example:
