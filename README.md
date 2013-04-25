@@ -54,12 +54,12 @@ trait UserModuleForTests extends UserModule {
 
 Instead of importing the wire method in each module you can also extend com.softwaremill.macwire.Macwire trait.
 
-The library has no dependencies, and itself is not a runtime dependency. It only needs to be available on the classpath
-during compilation.
+The core library has no dependencies.
 
 For more motivation behind the project see also these blogs:
 
 * [Dependency injection with Scala macros: auto-wiring](http://www.warski.org/blog/2013/03/dependency-injection-with-scala-macros-auto-wiring/)
+* [MacWire 0.1: Framework-less Dependency Injection with Scala Macros](http://www.warski.org/blog/2013/04/macwire-0-1-framework-less-dependency-injection-with-scala-macros/)
 
 A similar project for Java is [Dagger](https://github.com/square/dagger).
 
@@ -81,6 +81,38 @@ A compile-time error occurs if:
 
 The generated code is then once again type-checked by the Scala compiler.
 
+Limitations
+-----------
+
+When:
+
+* referencing wired values within the trait/class/object
+* using multiple modules in the same compilation unit
+* using multiple modules with scopes
+
+due to limitations of the current macro implementation (for more details see for example
+[this discussion](https://groups.google.com/forum/?fromgroups=#!topic/scala-user/k_2KCvO5g04))
+to avoid compilation errors it is necessary to add a type ascription. This is way of helping
+the type-checker that is invoked by the macro figuring out the types of the values which
+can be wired.
+
+For example:
+
+````scala
+class A()
+class B(a: A)
+
+// note the explicit type. Without it wiring would fail with recursive type compile errors
+lazy val theA: A = wire[A]
+// reference to theA; if for some reason we need explicitly write the constructor call
+lazy val theB = new B(theA)
+````
+
+This is a major inconvenience, but hopefully will get resolved once post-typer macros are introduced to the language.
+
+Also, wiring will probably not work properly for traits and classes defined inside the containing trait/class, or in
+super traits/classes.
+
 `lazy val` vs. `val`
 --------------------
 
@@ -90,10 +122,44 @@ will be `null`. With `lazy val` the correct order of initialization is resolved 
 Scopes
 ------
 
+Depending on how the dependency is defined:
 * singleton: `lazy val` / `val`
 * dependent - separate instance for each dependency usage: `def`
 
-More scopes to come!
+MacWire also supports user-defined scopes, which can be used to implement request or session scopes in web applications.
+The `scopes` subproject defines a `Scope` trait, which has two methods:
+
+* `apply`, to create a scoped value
+* `get`, to get or create the current value from the scope
+
+To define a dependency as scoped, we need a scope instance, e.g.:
+
+```scala
+trait WebModule {
+   lazy val loggedInUser = session(new LoggedInUser)
+
+   def session: Scope
+}
+```
+
+With abstract scopes as above, it is possible to use no-op scopes for testing (`NoOpScope`).
+
+There's an implementation of `Scope` targeted at classical synchronous frameworks, `ThreadLocalScope`. The apply method
+of this scope creates a proxy (using [javassist](http://www.csg.is.titech.ac.jp/~chiba/javassist/)); the get method
+stores the value in a thread local. The proxy should be defined as a `val` or `lazy val`.
+
+In a web application, the scopes have to be associated and disassociated with storages.
+This can be done for example in a servlet filter.
+To implement a:
+
+* request scope, we need a new empty storage for every request. The `associateWithEmptyStorage` is useful here
+* session scope, the storage (a `Map`) should be stored in the `HttpSession`. The `associate(Map)` method is useful here
+
+For example usage see the
+[MacWire+Scalatra example](https://github.com/adamw/macwire/tree/master/examples/scalatra/src/main/scala/com/softwaremill/macwire/examples/scalatra)
+sources.
+
+You can run the example with `sbt examples-scalatra/run` and going to [http://localhost:8080](http://localhost:8080).
 
 Installation, using with SBT
 ----------------------------
@@ -110,32 +176,10 @@ To use the snapshot version:
 ````scala
 resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 libraryDependencies += "com.softwaremill.macwire" %% "core" % "0.2-SNAPSHOT"
+libraryDependencies += "com.softwaremill.macwire" %% "scopes" % "0.2-SNAPSHOT"
 ````
 
 MacWire works with Scala 2.10+.
-
-Limitations
------------
-
-When referencing wired values within the trait, e.g.:
-
-````scala
-class A()
-class B(a: A)
-
-lazy val theA = wire[A]
-// reference to theA; if for some reason we need explicitly write the constructor call
-lazy val theB = new B(theA)
-````
-
-to avoid recursive type compiler errors, the referenced wired value needs a type ascription, e.g.:
-
-````scala
-lazy val theA: A = wire[A]
-````
-
-Also, wiring will probably not work properly for traits and classes defined inside the containing trait/class, or in
-super traits/classes.
 
 Debugging
 ---------
@@ -150,6 +194,5 @@ Future development
 * factories (defs with parameters)
 * configuration values - by-name wiring
 * inject a list of dependencies - of a given type
-* request/session scopes
 * qualifiers?
 * getInstance(Class)/getBean(Class) map generation for Play2/other frameworks integration?
