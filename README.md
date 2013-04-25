@@ -92,7 +92,7 @@ When:
 
 due to limitations of the current macros implementation in Scala (for more details see
 [this discussion](https://groups.google.com/forum/?fromgroups=#!topic/scala-user/k_2KCvO5g04))
-to avoid compilation errors it is necessary to add a type ascriptions to the dependencies. This is a way of helping
+to avoid compilation errors it is necessary to add type ascriptions to the dependencies. This is a way of helping
 the type-checker that is invoked by the macro to figure out the types of the values which
 can be wired.
 
@@ -122,7 +122,7 @@ will be `null`. With `lazy val` the correct order of initialization is resolved 
 Scopes
 ------
 
-Scopes depending on how the dependency is defined:
+There are two "built-in" scopes, depending on how the dependency is defined:
 * singleton: `lazy val` / `val`
 * dependent - separate instance for each dependency usage: `def`
 
