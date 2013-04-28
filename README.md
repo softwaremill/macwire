@@ -93,7 +93,7 @@ When:
 
 due to limitations of the current macros implementation in Scala (for more details see
 [this discussion](https://groups.google.com/forum/?fromgroups=#!topic/scala-user/k_2KCvO5g04))
-to avoid compilation errors it is necessary to add type ascriptions to the dependencies. This is a way of helping
+to avoid compilation errors it is recommended to add type ascriptions to the dependencies. This is a way of helping
 the type-checker that is invoked by the macro to figure out the types of the values which
 can be wired.
 
@@ -113,6 +113,9 @@ This is a major inconvenience, but hopefully will get resolved once post-typer m
 
 Also, wiring will probably not work properly for traits and classes defined inside the containing trait/class, or in
 super traits/classes.
+
+Note that the type ascription may be a subtype of the wired type. This can be useful if you want to expose e.g. a trait
+that the wired class extends, instead of the full implementation.
 
 `lazy val` vs. `val`
 --------------------
@@ -199,6 +202,7 @@ build file.
 Future development
 ------------------
 
+* relax type ascription requirements
 * factories (defs with parameters)
 * configuration values - by-name wiring
 * inject a list of dependencies - of a given type
