@@ -14,4 +14,8 @@ class TypeCheckUtil[C <: Context](val c: C, debug: Debug) {
 
     identityInvTypeChecked.tpe
   }
+
+  def candidateTypeOk(tpe: Type) = {
+    !(tpe =:= typeOf[Nothing]) && !(tpe =:= typeOf[Null])
+  }
 }

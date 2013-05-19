@@ -49,7 +49,7 @@ private[macwire] class ValuesOfTypeInEnclosingClassFinder[C <: Context](val c: C
           }
         }
 
-        if (rhsTpe <:< t !(rhsTpe =:= typeOf[Nothing]) && !(rhsTpe =:= typeOf[Null])) {
+        if (rhsTpe <:< t && typeCheckUtil.candidateTypeOk(rhsTpe)) {
           debug(s"Found a match in enclosing class/trait!")
           name.encodedName :: acc
         } else {

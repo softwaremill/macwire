@@ -20,7 +20,7 @@ private[macwire] class ValuesOfTypeInParentsFinder[C <: Context](val c: C, debug
         case _ => Nil
       })
 
-      typesToCheck.exists(ty => <:< t && !(ty =:= typeOf[Nothing]) && !(ty =:= typeOf[Null]))
+      typesToCheck.exists(ty => ty <:< t && typeCheckUtil.candidateTypeOk(ty))
     }
 
     def findInParent(parent: Tree): Set[Name] = {
