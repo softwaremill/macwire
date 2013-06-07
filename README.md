@@ -68,9 +68,10 @@ How wiring works
 ----------------
 
 For each constructor parameter of the given class, MacWire tries to find a value which is a subtype of the parameter's
-type in the enclosing trait/class/object:
+type in the enclosing method and trait/class/object:
 
-* first it tries to find a unique value declared in the enclosing type itself
+* first it tries to find a value declared in the enclosing method; if multiple values are found, a by name-match is attempted
+* then it tries to find a unique value declared in the enclosing type
 * then it tries to find a unique value in parent types (traits/classes)
 
 Here value means either a `val` or a no-parameter `def`, as long as the return type matches.
@@ -81,6 +82,42 @@ A compile-time error occurs if:
 * there is no value of a given type
 
 The generated code is then once again type-checked by the Scala compiler.
+
+Factories
+---------
+
+A factory is simply a method. The constructor of the wired class can contain parameters both from
+the factory (method) parameters, and from the enclosing/super type(s).
+
+Unlike wiring in other places, if multiple values of the desired type are found, they are additionally filtered by-name.
+In general this could give unpredictable results, but should be safe in the scope of a method.
+
+For example:
+
+````scala
+class DatabaseAccess()
+class TaxDeductionLibrary(databaseAccess: DatabaseAccess)
+class TaxCalculator(taxBase: Double, taxFreeAmount: Double, taxDeductionLibrary: TaxDeductionLibrary)
+
+trait TaxModule {
+    import com.softwaremill.macwire.MacwireMacros._
+
+    lazy val theDatabaseAccess      = wire[DatabaseAccess]
+    lazy val theTaxDeductionLibrary = wire[TaxDeductionLibrary]
+    def taxCalculator(taxBase: Double, taxFreeAmount: Double) = wire[TaxCalculator]
+}
+````
+
+will generate:
+
+````scala
+trait TaxModule {
+    lazy val theDatabaseAccess      = new DatabaseAccess()
+    lazy val theTaxDeductionLibrary = new TaxDeductionLibrary(theDatabaseAccess)
+    def taxCalculator(taxBase: Double, taxFreeAmount: Double) =
+       new TaxCalculator(taxBase: Double, taxFreeAmount: Double, theTaxDeductionLibrary)
+}
+````
 
 Limitations
 -----------
@@ -203,7 +240,6 @@ Future development
 ------------------
 
 * relax type ascription requirements
-* factories (defs with parameters)
 * configuration values - by-name wiring
 * inject a list of dependencies - of a given type
 * qualifiers?
