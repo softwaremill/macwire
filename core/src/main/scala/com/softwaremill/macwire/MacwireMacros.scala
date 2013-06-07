@@ -15,9 +15,10 @@ object MacwireMacros extends Macwire {
   def wire_impl[T: c.WeakTypeTag](c: Context): c.Expr[T] = {
     import c.universe._
 
-    def findValueOfType(t: Type): Option[Name] = {
-      debug.withBlock(s"Trying to find value of type: [$t]") {
+    def findValueOfType(n: Name, t: Type): Option[Name] = {
+      debug.withBlock(s"Trying to find value [$n] of type: [$t]") {
         val namesOpt = firstNotEmpty[Name](
+          () => new ValuesOfTypeInEnclosingMethodFinder[c.type](c, debug).find(n, t),
           () => new ValuesOfTypeInEnclosingClassFinder[c.type](c, debug).find(t),
           () => new ValuesOfTypeInParentsFinder[c.type](c, debug).find(t)
         )
@@ -54,7 +55,7 @@ object MacwireMacros extends Macwire {
             val newT = Select(New(Ident(targetType.tpe.typeSymbol)), nme.CONSTRUCTOR)
 
             val constructorParams = for (param <- targetConstructorParams) yield {
-              val wireToOpt = findValueOfType(param.typeSignature).map(Ident(_))
+              val wireToOpt = findValueOfType(param.name, param.typeSignature).map(Ident(_))
 
               // If no value is found, an error has been already reported.
               wireToOpt.getOrElse(reify(null).tree)
