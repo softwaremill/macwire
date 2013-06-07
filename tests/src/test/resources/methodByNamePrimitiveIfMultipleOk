@@ -1,0 +1,14 @@
+case class B(a1: Int, a2: Int)
+
+class Test {
+    def theB(a2: Int, a1: Int) = wire[B]
+}
+
+val t = new Test
+val b = t.theB(20, 10)
+
+require(b != null)
+
+require(b.a1 == 10)
+require(b.a2 == 20)
+
