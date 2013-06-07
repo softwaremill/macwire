@@ -115,7 +115,7 @@ trait TaxModule {
     lazy val theDatabaseAccess      = new DatabaseAccess()
     lazy val theTaxDeductionLibrary = new TaxDeductionLibrary(theDatabaseAccess)
     def taxCalculator(taxBase: Double, taxFreeAmount: Double) =
-       new TaxCalculator(taxBase: Double, taxFreeAmount: Double, theTaxDeductionLibrary)
+       new TaxCalculator(taxBase, taxFreeAmount, theTaxDeductionLibrary)
 }
 ````
 
