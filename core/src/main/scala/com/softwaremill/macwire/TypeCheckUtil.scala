@@ -6,13 +6,17 @@ class TypeCheckUtil[C <: Context](val c: C, debug: Debug) {
   import c.universe._
 
   def typeCheckExpressionOfType(typeTree: Tree): Type = {
-    val identityInvWithString = reify { identity[String](null) }
-    val Expr(Apply(TypeApply(identityInvFun, _), identityInvArgs)) = identityInvWithString
+    val someValueOfTypeString = reify {
+      def x[T](): T = throw new Exception
+      x[String]()
+    }
 
-    val identityInvWithParent = Apply(TypeApply(identityInvFun, List(typeTree)), identityInvArgs)
-    val identityInvTypeChecked = c.typeCheck(identityInvWithParent)
+    val Expr(Block(stats, Apply(TypeApply(someValueFun, _), someTypeArgs))) = someValueOfTypeString
 
-    identityInvTypeChecked.tpe
+    val someValueOfGivenType = Block(stats, Apply(TypeApply(someValueFun, List(typeTree)), someTypeArgs))
+    val someValueOfGivenTypeChecked = c.typeCheck(someValueOfGivenType)
+
+    someValueOfGivenTypeChecked.tpe
   }
 
   def candidateTypeOk(tpe: Type) = {
