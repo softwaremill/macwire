@@ -108,7 +108,6 @@ class Stateful1 {
 }
 
 class Stateful2(x: String, y: Int) {
-  println("A", x, y)
   var data = "1"
 }
 

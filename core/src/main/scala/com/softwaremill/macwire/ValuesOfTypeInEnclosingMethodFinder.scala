@@ -27,6 +27,7 @@ private[macwire] class ValuesOfTypeInEnclosingMethodFinder[C <: Context](val c: 
     }
 
     val methodParams = c.enclosingMethod match {
+      case null => Nil
       case DefDef(_, _, _, vparamss, _, _) => vparamss.flatten
       case e => {
         c.error(c.enclosingPosition, s"Unknown tree for enclosing method: ${e.getClass}")
