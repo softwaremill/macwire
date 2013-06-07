@@ -1,0 +1,17 @@
+#include commonSimpleClasses
+
+class Test {
+    lazy val theA = wire[A]
+    def theC(someB: B) = wire[C]
+}
+
+val t = new Test
+val b = new B
+val c = t.theC(b)
+
+require(c != null)
+require(c.a != null)
+require(c.b != null)
+
+require(c.a eq t.theA)
+require(c.b eq b)

@@ -1,0 +1,15 @@
+case class A()
+case class B(a: A)
+
+class Test {
+    def theB(someA: A) = wire[B]
+}
+
+val t = new Test
+val a = new A
+val b = t.theB(a)
+
+require(b != null)
+require(b.a != null)
+
+require(b.a eq a)

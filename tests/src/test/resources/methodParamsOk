@@ -1,0 +1,17 @@
+#include commonSimpleClasses
+
+class Test {
+    def theC(someB: B, someA: A) = wire[C]
+}
+
+val t = new Test
+val a = new A
+val b = new B
+val c = t.theC(b, a)
+
+require(c != null)
+require(c.a != null)
+require(c.b != null)
+
+require(c.a eq a)
+require(c.b eq b)
