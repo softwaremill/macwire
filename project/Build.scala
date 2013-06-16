@@ -4,7 +4,7 @@ import Keys._
 object BuildSettings {
   val buildSettings = Defaults.defaultSettings ++ Seq (
     organization  := "com.softwaremill.macwire",
-    version       := "0.3",
+    version       := "0.4-SNAPSHOT",
     scalaVersion  := "2.10.2",
     // Sonatype OSS deployment
     publishTo <<= version { (v: String) =>
