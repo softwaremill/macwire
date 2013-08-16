@@ -33,7 +33,11 @@ class CompileTests extends FlatSpec with ShouldMatchers {
     ("methodParamsOk", Nil),
     ("methodMixedOk", Nil),
     ("methodByNameIfMultipleOk", Nil),
-    ("methodByNamePrimitiveIfMultipleOk", Nil)
+    ("methodByNamePrimitiveIfMultipleOk", Nil),
+    ("valsByClassSimple", Nil),
+    ("valsByClassLazy", Nil),
+    ("valsByClassWired", Nil),
+    ("valsByClassInherited", Nil)
   )
 
   for ((testName, expectedErrors) <- tests)

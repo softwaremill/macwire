@@ -1,0 +1,15 @@
+#include commonSimpleClasses
+
+class Test {
+    lazy val theA = new A
+    lazy val theB = new B
+    lazy val theS = "ss"
+}
+
+val map = valsByClass(new Test)
+
+require(map.contains(classOf[A]))
+require(map.contains(classOf[B]))
+require(map.contains(classOf[String]))
+
+require(map(classOf[String]) == "ss")

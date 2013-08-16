@@ -1,0 +1,15 @@
+#include commonSimpleClasses
+
+object Test {
+    val theA = new A
+    val theB = new B
+    val theS = "ss"
+}
+
+val map = valsByClass(Test)
+
+require(map.contains(classOf[A]))
+require(map.contains(classOf[B]))
+require(map.contains(classOf[String]))
+
+require(map(classOf[String]) == "ss")

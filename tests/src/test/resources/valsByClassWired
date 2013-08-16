@@ -1,0 +1,13 @@
+#include commonSimpleClasses
+
+object Test {
+    val theA = wire[A]
+    val theB = wire[B]
+    val theC = wire[C]
+}
+
+val map = valsByClass(Test)
+
+require(map.contains(classOf[A]))
+require(map.contains(classOf[B]))
+require(map.contains(classOf[C]))
