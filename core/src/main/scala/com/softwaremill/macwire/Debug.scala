@@ -5,7 +5,7 @@ private[macwire] class Debug {
 
   def apply(msg: => String) {
     if (enabled) {
-      val prefix = "   " * (ident - 1)
+      val prefix = "   " * ident
       println(s"$prefix[debug] $msg")
     }
   }

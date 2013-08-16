@@ -6,6 +6,7 @@ import reflect.macros.Context
 
 trait Macwire {
   def wire[T]: T = macro MacwireMacros.wire_impl[T]
+  def valsByClass(in: AnyRef): Map[Class[_], AnyRef] = macro MacwireMacros.valsByClass_impl
 }
 
 object MacwireMacros extends Macwire {
@@ -70,5 +71,31 @@ object MacwireMacros extends Macwire {
     }
 
     createNewTargetWithParams()
+  }
+
+  def valsByClass_impl(c: Context)(in: c.Expr[AnyRef]): c.Expr[Map[Class[_], AnyRef]] = {
+    import c.universe._
+
+    debug.withBlock(s"Generating vals-by-class map for ${in.tree}") {
+      // Ident(scala.Predef)
+      val Expr(predefIdent) = reify { Predef }
+
+      val tpe = in.tree.tpe
+      val members = tpe.members
+
+      val pairs = members.filter(_.isTerm).filter(!_.isMethod).map { member =>
+        val key = Literal(Constant(member.typeSignature))
+        val value = Select(in.tree, newTermName(member.name.decoded.trim))
+
+        debug(s"Found a mapping: $key -> $value")
+
+        // Generating: key -> value
+        Apply(Select(Apply(Select(predefIdent, newTermName("any2ArrowAssoc")), List(key)),
+          newTermName("$minus$greater")), List(value))
+      }
+
+      val tt: Tree = Apply(Select(Select(predefIdent, newTermName("Map")), newTermName("apply")), pairs.toList)
+      c.Expr[Map[Class[_], AnyRef]](tt)
+    }
   }
 }
