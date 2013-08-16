@@ -76,15 +76,32 @@ object MacwireMacros extends Macwire {
   def valsByClass_impl(c: Context)(in: c.Expr[AnyRef]): c.Expr[Map[Class[_], AnyRef]] = {
     import c.universe._
 
-    debug.withBlock(s"Generating vals-by-class map for ${in.tree}") {
-      // Ident(scala.Predef)
-      val Expr(predefIdent) = reify { Predef }
+    // Ident(scala.Predef)
+    val Expr(predefIdent) = reify { Predef }
 
-      val tpe = in.tree.tpe
-      val members = tpe.members
+    def extractTypeFromNullaryType(tpe: Type) = {
+      tpe match {
+        case NullaryMethodType(underlying) => Some(underlying)
+        case _ => None
+      }
+    }
 
-      val pairs = members.filter(_.isTerm).filter(!_.isMethod).map { member =>
-        val key = Literal(Constant(member.typeSignature))
+    def valsByClassInTree(tree: Tree): List[Tree] = {
+      val members = tree.tpe.members
+
+      val pairs = members
+        .filter(_.toString.startsWith("value ")) // ugly hack, but how else to find out what is a val/lazy val?
+        .filter(_.isMethod)
+        .flatMap { m =>
+        extractTypeFromNullaryType(m.typeSignature) match {
+          case Some(tpe) => Some((m, tpe))
+          case None => {
+            debug(s"Cannot extract type from ${m.typeSignature} for member $m!")
+            None
+          }
+        }
+      }.map { case (member, tpe) =>
+        val key = Literal(Constant(tpe))
         val value = Select(in.tree, newTermName(member.name.decoded.trim))
 
         debug(s"Found a mapping: $key -> $value")
@@ -94,7 +111,13 @@ object MacwireMacros extends Macwire {
           newTermName("$minus$greater")), List(value))
       }
 
-      val tt: Tree = Apply(Select(Select(predefIdent, newTermName("Map")), newTermName("apply")), pairs.toList)
+      pairs.toList
+    }
+
+    debug.withBlock(s"Generating vals-by-class map for ${in.tree}") {
+      val pairs = valsByClassInTree(in.tree)
+
+      val tt: Tree = Apply(Select(Select(predefIdent, newTermName("Map")), newTermName("apply")), pairs)
       c.Expr[Map[Class[_], AnyRef]](tt)
     }
   }
