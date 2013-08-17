@@ -206,6 +206,51 @@ You can run the example with `sbt examples-scalatra/run` and going to [http://lo
 Note that the `scopes` subproject does not depend on MacWire core, and can be used stand-alone with manual wiring or any other
 frameworks.
 
+Instance maps
+-------------
+
+To integrate with some frameworks, e.g. [Play 2](http://www.playframework.com/), it is necessary to have a map of the
+instances keyed by the instance class (`Map[Class[_], AnyRef]`). MacWire contains a utility macro, `valsByClass`, to
+generate such a map, basing on the fields of the passed instance. E.g.:
+
+````scala
+object MyApp {
+    lazy val theDatabaseAccess   = new DatabaseAccess()
+    lazy val theSecurityFilter   = new SecurityFilter()
+}
+
+import MacwireMacros._
+val instanceMap = valsByClass(MyApp)
+
+require(instanceMap.size() == 2)
+require(instanceMap(classOf[DatabaseAccess]) == MyApp.theDatabaseAccess)
+````
+
+The macro works with arbitrary objects and arbitrary `val` inside the objects: they can be hand-wired, wired using
+`wired`, or a result of any computation.
+
+To lookup instances by classes, superclasses and traits, you can use `InstanceLookup`. It takes an instance map, and
+computes for which classes/traits what instances correspond (as opposed to the map creation, this is done at run-time).
+
+For example:
+
+````scala
+trait DatabaseConnector
+class MysqlDatabaseConnector extends DatabaseConnector
+
+class MyApp {
+    val databaseConnector = new MysqlDatabaseConnector()
+}
+
+import MacwireMacros._
+val instanceMap = valsByClass(new MyApp)
+val instanceLookup = InstanceLookup(instanceMap)
+
+// Returns the mysql database connector, even though its type is MysqlDatabaseConnector, which is assignable to
+// DatabaseConnector.
+instanceLookup.lookup(classOf[DatabaseConnector])
+````
+
 Installation, using with SBT
 ----------------------------
 
@@ -244,4 +289,3 @@ Future development
 * configuration values - by-name wiring
 * inject a list of dependencies - of a given type
 * qualifiers?
-* getInstance(Class)/getBean(Class) map generation for Play2/other frameworks integration?
