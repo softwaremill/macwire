@@ -211,7 +211,7 @@ Instance maps
 
 To integrate with some frameworks, e.g. [Play 2](http://www.playframework.com/), it is necessary to have a map of the
 instances keyed by the instance class (`Map[Class[_], AnyRef]`). MacWire contains a utility macro, `valsByClass`, to
-generate such a map, basing on the fields of the passed instance. E.g.:
+generate such a map, basing on the `val`s/`lazy val`s of the passed instance. E.g.:
 
 ````scala
 object MyApp {
