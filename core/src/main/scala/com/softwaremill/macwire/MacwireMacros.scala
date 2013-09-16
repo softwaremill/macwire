@@ -51,20 +51,23 @@ object MacwireMacros extends Macwire {
             reify { null.asInstanceOf[T] }
           }
           case Some(targetConstructor) => {
-            val targetConstructorParams = targetConstructor.asMethod.paramss.flatten
+            val targetConstructorParamss = targetConstructor.asMethod.paramss
 
-            val newT = Select(New(Ident(targetType.tpe.typeSymbol)), nme.CONSTRUCTOR)
+            var newT: Tree = Select(New(Ident(targetType.tpe.typeSymbol)), nme.CONSTRUCTOR)
 
-            val constructorParams = for (param <- targetConstructorParams) yield {
-              val wireToOpt = findValueOfType(param.name, param.typeSignature).map(Ident(_))
+            for (targetConstructorParams <- targetConstructorParamss) {
+              val constructorParams = for (param <- targetConstructorParams) yield {
+                val wireToOpt = findValueOfType(param.name, param.typeSignature).map(Ident(_))
 
-              // If no value is found, an error has been already reported.
-              wireToOpt.getOrElse(reify(null).tree)
+                // If no value is found, an error has been already reported.
+                wireToOpt.getOrElse(reify(null).tree)
+              }
+
+              newT = Apply(newT, constructorParams)
             }
 
-            val newTWithParams = Apply(newT, constructorParams)
-            debug(s"Generated code: ${c.universe.show(newTWithParams)}")
-            c.Expr(newTWithParams)
+            debug(s"Generated code: ${c.universe.show(newT)}")
+            c.Expr(newT)
           }
         }
       }

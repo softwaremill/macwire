@@ -1,0 +1,23 @@
+#include commonSimpleClasses
+
+case class F(a: A, b: B)(val c: C)(val d: D)
+
+trait Test {
+    val theA = wire[A]
+    val theB = wire[B]
+    val theC = wire[C]
+    val theD = wire[D]
+    val theF = wire[F]
+}
+
+#include commonSimpleNotNullCheck
+
+require(t.theF.a != null)
+require(t.theF.b != null)
+require(t.theF.c != null)
+require(t.theF.d != null)
+
+require(t.theF.a eq t.theA)
+require(t.theF.b eq t.theB)
+require(t.theF.c eq t.theC)
+require(t.theF.d eq t.theD)
