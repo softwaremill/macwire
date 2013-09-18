@@ -1,0 +1,22 @@
+#include commonSimpleClasses
+
+case class F(a: A)(implicit val b: B)
+
+object Implicits {
+    implicit val theB = wire[B]
+}
+
+trait Test {
+    import Implicits._
+
+    val theA = wire[A]
+    val theF = wire[F]
+}
+
+val t = new Test {}
+
+require(t.theF.a != null)
+require(t.theF.b != null)
+
+require(t.theF.a eq t.theA)
+require(t.theF.b eq Implicits.theB)

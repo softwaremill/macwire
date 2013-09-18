@@ -55,7 +55,12 @@ object MacwireMacros extends Macwire {
 
             var newT: Tree = Select(New(Ident(targetType.tpe.typeSymbol)), nme.CONSTRUCTOR)
 
-            for (targetConstructorParams <- targetConstructorParamss) {
+            for {
+              targetConstructorParams <- targetConstructorParamss
+              // If the parameter list is implicit, then the symbols will be implicit as well. Not attempting to
+              // generate code for implicit parameter lists.
+              if !targetConstructorParams.exists(_.isImplicit)
+            } {
               val constructorParams = for (param <- targetConstructorParams) yield {
                 val wireToOpt = findValueOfType(param.name, param.typeSignature).map(Ident(_))
 
