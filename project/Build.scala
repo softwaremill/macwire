@@ -48,21 +48,21 @@ object MacwireBuild extends Build {
     "root",
     file("."),
     settings = buildSettings ++ Seq(publishArtifact := false)
-  ) aggregate(core, scopes, examplesScalatra, tests, tests2)
+  ) aggregate(macros, runtime, examplesScalatra, tests, tests2)
 
-  lazy val core: Project = Project(
-    "core",
-    file("core"),
+  lazy val macros: Project = Project(
+    "macros",
+    file("macros"),
     settings = buildSettings ++ Seq(
       libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-reflect" % _))
   )
 
-  lazy val scopes: Project = Project(
-    "scopes",
-    file("scopes"),
+  lazy val runtime: Project = Project(
+    "runtime",
+    file("runtime"),
     settings = buildSettings ++ Seq(
       libraryDependencies ++= Seq(javassist, scalatest))
-  ) dependsOn(core % "test")
+  ) dependsOn(macros % "test")
 
   lazy val tests: Project = Project(
     "tests",
@@ -74,7 +74,7 @@ object MacwireBuild extends Build {
       // Otherwise when running tests in sbt, the macro is not visible
       // (both macro and usages are compiled in the same compiler run)
       fork in test := true)
-  ) dependsOn(core, scopes)
+  ) dependsOn(macros, runtime)
 
   // The tests here are that the tests compile.
   lazy val tests2: Project = Project(
@@ -86,7 +86,7 @@ object MacwireBuild extends Build {
       // Otherwise when running tests in sbt, the macro is not visible
       // (both macro and usages are compiled in the same compiler run)
       fork in test := true)
-  ) dependsOn(core, scopes)
+  ) dependsOn(macros, runtime)
 
   lazy val examplesScalatra: Project = {
     val ScalatraVersion = "2.2.1"
@@ -104,7 +104,7 @@ object MacwireBuild extends Build {
         classpathTypes ~= (_ + "orbit"),
         libraryDependencies ++= Seq(scalatraCore, scalatraScalate, jetty, servletApi, logback)
       )
-    ) dependsOn(core, scopes)
+    ) dependsOn(macros, runtime)
   }
 
   // Enabling debug project-wide. Can't find a better way to pass options to scalac.

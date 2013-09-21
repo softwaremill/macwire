@@ -269,9 +269,9 @@ To use the snapshot version:
 ````scala
 resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
-libraryDependencies += "com.softwaremill.macwire" %% "core" % "0.5-SNAPSHOT"
+libraryDependencies += "com.softwaremill.macwire" %% "macros" % "0.5-SNAPSHOT"
 
-libraryDependencies += "com.softwaremill.macwire" %% "scopes" % "0.5-SNAPSHOT"
+libraryDependencies += "com.softwaremill.macwire" %% "runtime" % "0.5-SNAPSHOT"
 ````
 
 MacWire works with Scala 2.10+.
