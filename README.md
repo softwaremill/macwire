@@ -170,7 +170,7 @@ There are two "built-in" scopes, depending on how the dependency is defined:
 * dependent - separate instance for each dependency usage: `def`
 
 MacWire also supports user-defined scopes, which can be used to implement request or session scopes in web applications.
-The `scopes` subproject defines a `Scope` trait, which has two methods:
+The `runtime` subproject defines a `Scope` trait, which has two methods:
 
 * `apply`, to create a scoped value
 * `get`, to get or create the current value from the scope
@@ -251,6 +251,60 @@ val instanceLookup = InstanceLookup(instanceMap)
 // DatabaseConnector.
 instanceLookup.lookup(classOf[DatabaseConnector])
 ````
+
+Interceptors
+------------
+
+MacWire contains an implementation of interceptors, which can be applied to class instances in the modules.
+Similarly to scopes, the `runtime` subproject defines an `Interceptor` trait, which has only one method: `apply`.
+When applied to an instance, it should return an instance of the same class, but with the interceptor applied.
+
+There are two implementations of the `Interceptor` trait provided:
+
+* `NoOpInterceptor`: returns the given instance without changes
+* `ProxyingInterceptor`: proxies the instance, and returns the proxy. A provided function is called
+with information on the invocation
+
+Interceptors can be abstract in modules. E.g.:
+
+```scala
+trait BusinessLogicModule {
+   lazy val moneyTransferer = transactional(wire[MoneyTransferer])
+
+   def transactional: Interceptor
+}
+```
+
+During tests, you can then use the `NoOpInterceptor`. In production code or integration tests, you can specify a real
+interceptor, either by extending the `ProxyingInterceptor` trait, or by passing a function to the
+`ProxyingInterceptor` object:
+
+```scala
+object MyApplication extends BusinessLogicModule {
+    lazy val tm = wire[TransactionManager]
+
+    lazy val transactional = ProxyingInterceptor { ctx =>
+
+    try {
+        tm.begin()
+        val result = ctx.proceed()
+        tm.commit()
+
+        result
+    } catch {
+        case e: Exception => tm.rollback()
+    }
+   }
+}
+```
+
+The `ctx` is an instance of an `InvocationContext`, and contains information on the parameters passed to the method,
+the method itself, and the target object. It also allows to proceed with the invocation with the same or changed
+parameters.
+
+For more general AOP, e.g. if you want to apply an interceptor to all methods matching a given pointcut expression,
+you should use [AspectJ](http://eclipse.org/aspectj/) or an equivalent library. The interceptors that are implement
+in MacWire correspond to annotation-based interceptors in Java.
 
 Installation, using with SBT
 ----------------------------
