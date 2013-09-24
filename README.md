@@ -204,7 +204,7 @@ sources.
 
 You can run the example with `sbt examples-scalatra/run` and going to [http://localhost:8080](http://localhost:8080).
 
-Note that the `scopes` subproject does not depend on MacWire core, and can be used stand-alone with manual wiring or any other
+Note that the `runtime` subproject does not depend on MacWire core, and can be used stand-alone with manual wiring or any other
 frameworks.
 
 Instance maps
