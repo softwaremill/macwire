@@ -2,6 +2,8 @@ package com.softwaremill.macwire.examples.scalatra.servlet
 
 import com.softwaremill.macwire.examples.scalatra.logic.LogicModule
 import com.softwaremill.macwire.scopes.ThreadLocalScope
+import com.softwaremill.macwire.aop.ProxyingInterceptor
+import com.softwaremill.macwire.examples.scalatra.util.TimingInterceptor
 
 trait ServletModule extends LogicModule {
   lazy val servlet1: Servlet1 = wire[Servlet1]
@@ -11,4 +13,6 @@ trait ServletModule extends LogicModule {
 
   lazy val request = new ThreadLocalScope
   lazy val session = new ThreadLocalScope
+
+  lazy val timed = TimingInterceptor
 }
