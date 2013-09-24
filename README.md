@@ -303,7 +303,7 @@ the method itself, and the target object. It also allows to proceed with the inv
 parameters.
 
 For more general AOP, e.g. if you want to apply an interceptor to all methods matching a given pointcut expression,
-you should use [AspectJ](http://eclipse.org/aspectj/) or an equivalent library. The interceptors that are implement
+you should use [AspectJ](http://eclipse.org/aspectj/) or an equivalent library. The interceptors that are implemented
 in MacWire correspond to annotation-based interceptors in Java.
 
 Installation, using with SBT
