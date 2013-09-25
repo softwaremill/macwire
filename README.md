@@ -284,17 +284,16 @@ object MyApplication extends BusinessLogicModule {
     lazy val tm = wire[TransactionManager]
 
     lazy val transactional = ProxyingInterceptor { ctx =>
+        try {
+            tm.begin()
+            val result = ctx.proceed()
+            tm.commit()
 
-    try {
-        tm.begin()
-        val result = ctx.proceed()
-        tm.commit()
-
-        result
-    } catch {
-        case e: Exception => tm.rollback()
+            result
+        } catch {
+            case e: Exception => tm.rollback()
+        }
     }
-   }
 }
 ```
 
@@ -313,9 +312,9 @@ The jars are deployed to [Sonatype's OSS repository](https://oss.sonatype.org/co
 To use MacWire in your project, add a dependency:
 
 ````scala
-libraryDependencies += "com.softwaremill.macwire" %% "core" % "0.4.1"
+libraryDependencies += "com.softwaremill.macwire" %% "core" % "0.5"
 
-libraryDependencies += "com.softwaremill.macwire" %% "scopes" % "0.4.1"
+libraryDependencies += "com.softwaremill.macwire" %% "scopes" % "0.5"
 ````
 
 To use the snapshot version:
@@ -323,9 +322,9 @@ To use the snapshot version:
 ````scala
 resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
-libraryDependencies += "com.softwaremill.macwire" %% "macros" % "0.5-SNAPSHOT"
+libraryDependencies += "com.softwaremill.macwire" %% "macros" % "0.6-SNAPSHOT"
 
-libraryDependencies += "com.softwaremill.macwire" %% "runtime" % "0.5-SNAPSHOT"
+libraryDependencies += "com.softwaremill.macwire" %% "runtime" % "0.6-SNAPSHOT"
 ````
 
 MacWire works with Scala 2.10+.
