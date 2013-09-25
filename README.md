@@ -312,9 +312,9 @@ The jars are deployed to [Sonatype's OSS repository](https://oss.sonatype.org/co
 To use MacWire in your project, add a dependency:
 
 ````scala
-libraryDependencies += "com.softwaremill.macwire" %% "core" % "0.5"
+libraryDependencies += "com.softwaremill.macwire" %% "macros" % "0.5"
 
-libraryDependencies += "com.softwaremill.macwire" %% "scopes" % "0.5"
+libraryDependencies += "com.softwaremill.macwire" %% "runtime" % "0.5"
 ````
 
 To use the snapshot version:
