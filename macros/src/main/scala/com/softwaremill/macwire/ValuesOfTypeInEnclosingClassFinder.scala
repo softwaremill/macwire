@@ -13,14 +13,12 @@ private[macwire] class ValuesOfTypeInEnclosingClassFinder[C <: Context](val c: C
     def doFind(trees: List[Tree], acc: List[Name]): List[Name] = trees match {
       case Nil => acc
       case tree :: tail => tree match {
-        case ValDef(_, name, tpt, rhs) => {
+        case ValDef(_, name, tpt, rhs) =>
           val candidateOk = typeCheckUtil.checkCandidate(t, name, tpt, treeToCheck(tree, rhs), "val")
           doFind(tail, if (candidateOk) name :: acc else acc)
-        }
-        case DefDef(_, name, _, _, tpt, rhs) => {
+        case DefDef(_, name, _, _, tpt, rhs) =>
           val candidateOk = typeCheckUtil.checkCandidate(t, name, tpt, treeToCheck(tree, rhs), "def")
           doFind(tail, if (candidateOk) name :: acc else acc)
-        }
         case _ => doFind(tail, acc)
       }
     }
@@ -34,10 +32,9 @@ private[macwire] class ValuesOfTypeInEnclosingClassFinder[C <: Context](val c: C
     val enclosingClassBody = c.enclosingClass match {
       case ClassDef(_, _, _, Template(_, _, body)) => body
       case ModuleDef(_, _, Template(_, _, body)) => body
-      case e => {
+      case e =>
         c.error(c.enclosingPosition, s"Unknown type of enclosing class: ${e.getClass}")
         Nil
-      }
     }
 
     debug("Looking in the enclosing class/trait")

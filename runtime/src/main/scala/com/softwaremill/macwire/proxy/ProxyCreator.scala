@@ -17,13 +17,10 @@ object ProxyCreator {
     // available and accessible, using this method. Otherwise, we try to invoke the no-arg constructor, and if this is
     // not possible, we invoke any constructor with default values for arguments.
     val instance = UnsafeInstance match {
-      case Some(unsafe) => {
-        unsafe.allocateInstance(proxiedClass)
-      }
-      case None => {
+      case Some(unsafe) => unsafe.allocateInstance(proxiedClass)
+      case None =>
         val constructor = findBestConstructor(proxiedClass)
         constructor.newInstance(constructor.getParameterTypes.map(getDefaultValueForClass): _*)
-      }
     }
 
     instance.asInstanceOf[ProxyObject].setHandler(methodHandler)

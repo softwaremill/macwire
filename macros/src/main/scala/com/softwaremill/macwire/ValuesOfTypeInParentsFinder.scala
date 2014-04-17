@@ -11,12 +11,8 @@ private[macwire] class ValuesOfTypeInParentsFinder[C <: Context](val c: C, debug
   def find(t: Type): List[Name] = {
     def checkCandidate(tpt: Type): Boolean = {
       val typesToCheck = tpt :: (tpt match {
-        case NullaryMethodType(resultType) => {
-          List(resultType)
-        }
-        case MethodType(_, resultType) => {
-          List(resultType)
-        }
+        case NullaryMethodType(resultType) => List(resultType)
+        case MethodType(_, resultType) => List(resultType)
         case _ => Nil
       })
 
@@ -48,7 +44,7 @@ private[macwire] class ValuesOfTypeInParentsFinder[C <: Context](val c: C, debug
           .map(_.name)
           // For (lazy) vals, the names have a space at the end of the name (probably some compiler internals).
           // Hence the trim.
-          .map(name => newTermName(name.decoded.trim()))
+          .map(name => TermName(name.decodedName.toString.trim()))
 
         if (result.size > 0) {
           debug(s"Found ${result.size} matching name(s): [${result.mkString(", ")}]")
@@ -69,10 +65,9 @@ private[macwire] class ValuesOfTypeInParentsFinder[C <: Context](val c: C, debug
     val parents = c.enclosingClass match {
       case ClassDef(_, _, _, Template(pp, _, _)) => pp
       case ModuleDef(_, _, Template(pp, _, _)) => pp
-      case e => {
+      case e =>
         c.error(c.enclosingPosition, s"Unknown type of enclosing class: ${e.getClass}")
         Nil
-      }
     }
 
     debug("Looking in parents")
