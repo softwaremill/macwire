@@ -2,7 +2,7 @@ package com.softwaremill.macwire
 
 import language.experimental.macros
 
-import reflect.macros.Context
+import reflect.macros.blackbox.Context
 
 trait Macwire {
   def wire[T]: T = macro MacwireMacros.wire_impl[T]

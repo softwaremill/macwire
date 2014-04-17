@@ -1,6 +1,6 @@
 package com.softwaremill.macwire
 
-import scala.reflect.macros.Context
+import scala.reflect.macros.blackbox.Context
 
 class TypeCheckUtil[C <: Context](val c: C, debug: Debug) {
   import c.universe._

@@ -4,8 +4,8 @@ import Keys._
 object BuildSettings {
   val buildSettings = Defaults.defaultSettings ++ Seq (
     organization  := "com.softwaremill.macwire",
-    version       := "0.6-SNAPSHOT",
-    scalaVersion  := "2.10.2",
+    version       := "0.6",
+    scalaVersion  := "2.11.0",
     // Sonatype OSS deployment
     publishTo <<= version { (v: String) =>
       val nexus = "https://oss.sonatype.org/"
@@ -18,26 +18,26 @@ object BuildSettings {
     publishMavenStyle := true,
     publishArtifact in Test := false,
     pomIncludeRepository := { _ => false },
-    pomExtra := (
+    pomExtra :=
       <scm>
         <url>git@github.com:adamw/macwire.git</url>
         <connection>scm:git:git@github.com:adamw/macwire.git</connection>
       </scm>
-        <developers>
-          <developer>
-            <id>adamw</id>
-            <name>Adam Warski</name>
-            <url>http://www.warski.org</url>
-          </developer>
-        </developers>),
+      <developers>
+        <developer>
+          <id>adamw</id>
+          <name>Adam Warski</name>
+          <url>http://www.warski.org</url>
+        </developer>
+      </developers>,
     licenses      := ("Apache2", new java.net.URL("http://www.apache.org/licenses/LICENSE-2.0.txt")) :: Nil,
     homepage      := Some(new java.net.URL("http://www.softwaremill.com"))
   )
 }
 
 object Dependencies {
-  val scalatest     = "org.scalatest" %% "scalatest"  % "1.9.1"       % "test"
-  val javassist     = "org.javassist" % "javassist"   % "3.17.1-GA"
+  val scalatest     = "org.scalatest" % "scalatest_2.11.0-RC4"  % "2.1.3"       % "test" // TODO
+  val javassist     = "org.javassist" % "javassist"   % "3.18.1-GA"
 }
 
 object MacwireBuild extends Build {
@@ -48,7 +48,7 @@ object MacwireBuild extends Build {
     "root",
     file("."),
     settings = buildSettings ++ Seq(publishArtifact := false)
-  ) aggregate(macros, runtime, examplesScalatra, tests, tests2)
+  ) aggregate(macros, runtime, tests, tests2) // TODO Until scalatra is available for 2.11: examplesScalatra
 
   lazy val macros: Project = Project(
     "macros",
@@ -73,7 +73,7 @@ object MacwireBuild extends Build {
       libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-compiler" % _ % "test"),
       // Otherwise when running tests in sbt, the macro is not visible
       // (both macro and usages are compiled in the same compiler run)
-      fork in test := true)
+      fork in Test := true)
   ) dependsOn(macros, runtime)
 
   // The tests here are that the tests compile.
@@ -88,8 +88,9 @@ object MacwireBuild extends Build {
       fork in test := true)
   ) dependsOn(macros, runtime)
 
+  /* TODO
   lazy val examplesScalatra: Project = {
-    val ScalatraVersion = "2.2.1"
+    val ScalatraVersion = "2.2.2"
     val scalatraCore = "org.scalatra" %% "scalatra" % ScalatraVersion
     val scalatraScalate = "org.scalatra" %% "scalatra-scalate" % ScalatraVersion
     val logback = "ch.qos.logback" % "logback-classic" % "1.0.6"
@@ -106,6 +107,7 @@ object MacwireBuild extends Build {
       )
     ) dependsOn(macros, runtime)
   }
+  */
 
   // Enabling debug project-wide. Can't find a better way to pass options to scalac.
   System.setProperty("macwire.debug", "")

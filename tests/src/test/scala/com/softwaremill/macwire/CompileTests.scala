@@ -48,7 +48,7 @@ class CompileTests extends FlatSpec with ShouldMatchers {
   addTest("simpleValsOkInTraitExtendingMacwire", Nil, "/* Note no additional import needed */")
 
   def addTest(testName: String, expectedErrors: List[String], imports: String = GlobalImports) {
-    it should s"$testName should ${if (expectedErrors == Nil) "compile & run" else "cause a compile error"}" in {
+    testName should (if (expectedErrors == Nil) "compile & run" else "cause a compile error") in {
       import scala.reflect.runtime._
       val cm = universe.runtimeMirror(getClass.getClassLoader)
 
