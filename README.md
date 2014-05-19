@@ -346,7 +346,3 @@ Future development
 * configuration values - by-name wiring
 * inject a list of dependencies - of a given type
 * qualifiers?
-
-
-[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/adamw/macwire/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
-
