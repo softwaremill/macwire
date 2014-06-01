@@ -65,6 +65,8 @@ For more motivation behind the project see also these blogs:
 * [Dependency Injection in Play! with MacWire](http://www.warski.org/blog/2013/08/dependency-injection-in-play-with-macwire/)
 * [MacWire 0.5: Interceptors](http://www.warski.org/blog/2013/10/macwire-0-5-interceptors/)
 
+You can also try MacWire through [Typesafe Activator](http://typesafe.com/activator/template/macwire-activator).
+
 A similar project for Java is [Dagger](https://github.com/square/dagger).
 
 How wiring works
