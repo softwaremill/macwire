@@ -5,7 +5,7 @@ object BuildSettings {
   val buildSettings = Defaults.defaultSettings ++ Seq (
     organization  := "com.softwaremill.macwire",
     version       := "0.6",
-    scalaVersion  := "2.11.0",
+    scalaVersion  := "2.11.1",
     // Sonatype OSS deployment
     publishTo <<= version { (v: String) =>
       val nexus = "https://oss.sonatype.org/"
@@ -48,7 +48,7 @@ object MacwireBuild extends Build {
     "root",
     file("."),
     settings = buildSettings ++ Seq(publishArtifact := false)
-  ) aggregate(macros, runtime, tests, tests2) // TODO Until scalatra is available for 2.11: examplesScalatra
+  ) aggregate(macros, runtime, tests, tests2, examplesScalatra)
 
   lazy val macros: Project = Project(
     "macros",
@@ -88,13 +88,12 @@ object MacwireBuild extends Build {
       fork in test := true)
   ) dependsOn(macros, runtime)
 
-  /* TODO
   lazy val examplesScalatra: Project = {
-    val ScalatraVersion = "2.2.2"
+    val ScalatraVersion = "2.3.0"
     val scalatraCore = "org.scalatra" %% "scalatra" % ScalatraVersion
     val scalatraScalate = "org.scalatra" %% "scalatra-scalate" % ScalatraVersion
-    val logback = "ch.qos.logback" % "logback-classic" % "1.0.6"
-    val jetty = "org.eclipse.jetty" % "jetty-webapp" % "8.1.7.v20120910" % "compile"
+    val logback = "ch.qos.logback" % "logback-classic" % "1.1.2"
+    val jetty = "org.eclipse.jetty" % "jetty-webapp" % "9.2.0.v20140526" % "compile"
     val servletApi = "org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "compile" artifacts (Artifact("javax.servlet", "jar", "jar"))
 
     Project(
@@ -107,7 +106,6 @@ object MacwireBuild extends Build {
       )
     ) dependsOn(macros, runtime)
   }
-  */
 
   // Enabling debug project-wide. Can't find a better way to pass options to scalac.
   System.setProperty("macwire.debug", "")
