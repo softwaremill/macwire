@@ -348,3 +348,5 @@ Future development
 * configuration values - by-name wiring
 * inject a list of dependencies - of a given type
 * qualifiers?
+
+[![Build Status](https://travis-ci.org/szimano/macwire.svg?branch=master)](https://travis-ci.org/szimano/macwire)
