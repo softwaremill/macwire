@@ -1,6 +1,8 @@
 MacWire
 =======
 
+[![Build Status](https://travis-ci.org/adamw/macwire.svg?branch=master)](https://travis-ci.org/adamw/macwire)
+
 MacWire generates `new` instance creation code of given classes, using values in the enclosing type for constructor
 parameters, with the help of [Scala Macros](http://scalamacros.org/).
 
@@ -348,5 +350,3 @@ Future development
 * configuration values - by-name wiring
 * inject a list of dependencies - of a given type
 * qualifiers?
-
-[![Build Status](https://travis-ci.org/szimano/macwire.svg?branch=master)](https://travis-ci.org/szimano/macwire)
