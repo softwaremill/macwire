@@ -1,9 +1,11 @@
 package com.softwaremill.macwire
 
 import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.ShouldMatchers
 
 class InstanceLookupTest extends FlatSpec with ShouldMatchers {
+  import InstanceLookupTest._
+
   trait A
   trait B
   trait C extends A with B
@@ -16,8 +18,6 @@ class InstanceLookupTest extends FlatSpec with ShouldMatchers {
 
   class N
   class NN extends N
-
-  def createInstanceMap(instances: AnyRef*): Map[Class[_], AnyRef] = Map(instances.map(i => i.getClass -> i): _*)
 
   val instanceMap1 = createInstanceMap(new X, new Y, new Z)
   val instanceMap2 = createInstanceMap(new Z, new M)
@@ -60,4 +60,8 @@ class InstanceLookupTest extends FlatSpec with ShouldMatchers {
     result should have size (expectedCount)
     result.foreach(r => cls.isAssignableFrom(r.getClass) should be (true))
   }
+}
+
+object InstanceLookupTest {
+  def createInstanceMap(instances: AnyRef*): Map[Class[_], AnyRef] = Map(instances.map(i => i.getClass -> i): _*)
 }
