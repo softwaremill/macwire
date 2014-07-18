@@ -3,7 +3,7 @@ package com.softwaremill.macwire
 import org.scalatest.{FlatSpec, ShouldMatchers}
 
 class DynamicInstantiateTest extends FlatSpec with ShouldMatchers {
-  import InstanceLookupTest._
+  import ImplLookupTest._
   import DynamicInstantiateTest._
 
   val x = new X
@@ -11,9 +11,9 @@ class DynamicInstantiateTest extends FlatSpec with ShouldMatchers {
   val z = new Z
   val m = new M
 
-  val instanceLookup = new InstanceLookup(createImplsMap(x, y, z, m))
+  val implLookup = new ImplLookup(createImplsMap(x, y, z, m))
 
-  val dynamicInstantiate = new DynamicInstantiate(instanceLookup)
+  val dynamicInstantiate = new DynamicInstantiate(implLookup)
 
   it should "create an instance of a class with no dependencies" in {
     val result = dynamicInstantiate.instantiate(classOf[NoDeps])
