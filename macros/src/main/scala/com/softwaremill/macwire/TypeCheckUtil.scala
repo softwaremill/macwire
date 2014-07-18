@@ -2,7 +2,7 @@ package com.softwaremill.macwire
 
 import scala.reflect.macros.blackbox.Context
 
-class TypeCheckUtil[C <: Context](val c: C, debug: Debug) {
+private[macwire] class TypeCheckUtil[C <: Context](val c: C, debug: Debug) {
   import c.universe._
 
   def typeCheckExpressionOfType(typeTree: Tree): Type = {
