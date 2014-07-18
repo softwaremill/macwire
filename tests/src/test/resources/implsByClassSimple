@@ -6,10 +6,10 @@ object Test {
     val theS = "ss"
 }
 
-val map = valsByClass(Test)
+val map = implsByClass(Test)
 
 require(map.contains(classOf[A]))
 require(map.contains(classOf[B]))
 require(map.contains(classOf[String]))
 
-require(map(classOf[String]) == "ss")
+require(map(classOf[String])() == "ss")

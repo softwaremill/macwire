@@ -1,10 +1,12 @@
 package com.softwaremill.macwire
 
-class InstanceLookup(instancesByClass: Map[Class[_], AnyRef]) {
+import MacwireMacros.ImplsMap
+
+class InstanceLookup(implsByClass: ImplsMap) {
   private val lookupMap = prepareMap
 
   def lookup[T](cls: Class[T]): List[T] = {
-    lookupMap.getOrElse(cls, Nil).map(_.asInstanceOf[T])
+    lookupMap.getOrElse(cls, Nil).map(_().asInstanceOf[T])
   }
 
   def lookupSingleOrThrow[T](cls: Class[T]) = lookup(cls) match {
@@ -13,8 +15,8 @@ class InstanceLookup(instancesByClass: Map[Class[_], AnyRef]) {
     case l => throw new RuntimeException(s"Found multiple instances of class $cls: $l!")
   }
 
-  private def prepareMap: Map[Class[_], List[AnyRef]] = {
-    instancesByClass
+  private def prepareMap: Map[Class[_], List[() => AnyRef]] = {
+    implsByClass
       .toList
       .flatMap { case (startingCls, inst) =>
       def allSuperClasses(cls: Class[_]): List[Class[_]] = {
@@ -25,7 +27,7 @@ class InstanceLookup(instancesByClass: Map[Class[_], AnyRef]) {
         }
       }
 
-      allSuperClasses(inst.getClass).map(_ -> inst)
+      allSuperClasses(startingCls).map(_ -> inst)
     }.groupBy(_._1)
     .map { case (cls, clsAndInsts) => cls -> clsAndInsts.map(_._2) }
     .toMap
@@ -33,5 +35,5 @@ class InstanceLookup(instancesByClass: Map[Class[_], AnyRef]) {
 }
 
 object InstanceLookup {
-  def apply(instancesByClass: Map[Class[_], AnyRef]) = new InstanceLookup(instancesByClass)
+  def apply(instancesByClass: ImplsMap) = new InstanceLookup(instancesByClass)
 }

@@ -6,10 +6,10 @@ class Test {
     lazy val theS = "ss"
 }
 
-val map = valsByClass(new Test)
+val map = implsByClass(new Test)
 
 require(map.contains(classOf[A]))
 require(map.contains(classOf[B]))
 require(map.contains(classOf[String]))
 
-require(map(classOf[String]) == "ss")
+require(map(classOf[String])() == "ss")

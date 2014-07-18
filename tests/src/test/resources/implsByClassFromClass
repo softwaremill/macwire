@@ -1,0 +1,11 @@
+#include commonSimpleClasses
+
+class Test {
+    val theA = new A
+}
+
+val map = implsByClass(new Test)
+
+require(map.contains(classOf[A]))
+require(map.size == 1)
+require(map(classOf[A])() eq map(classOf[A])())

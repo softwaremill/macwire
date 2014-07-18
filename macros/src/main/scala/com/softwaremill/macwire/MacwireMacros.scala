@@ -6,7 +6,9 @@ import reflect.macros.blackbox.Context
 
 trait Macwire {
   def wire[T]: T = macro MacwireMacros.wire_impl[T]
-  def valsByClass(in: AnyRef): Map[Class[_], AnyRef] = macro MacwireMacros.valsByClass_impl
+
+  type ImplsMap = Map[Class[_], () => AnyRef]
+  def implsByClass(in: AnyRef): ImplsMap = macro MacwireMacros.implsByClass_impl
 }
 
 object MacwireMacros extends Macwire {
@@ -76,7 +78,7 @@ object MacwireMacros extends Macwire {
     createNewTargetWithParams()
   }
 
-  def valsByClass_impl(c: Context)(in: c.Expr[AnyRef]): c.Expr[Map[Class[_], AnyRef]] = {
+  def implsByClass_impl(c: Context)(in: c.Expr[AnyRef]): c.Expr[ImplsMap] = {
     import c.universe._
 
     // Ident(scala.Predef)
@@ -89,11 +91,12 @@ object MacwireMacros extends Macwire {
       }
     }
 
-    def valsByClassInTree(tree: Tree): List[Tree] = {
+    val capturedInName = c.freshName()
+
+    def implsByClassInTree(tree: Tree): List[Tree] = {
       val members = tree.tpe.members
 
       val pairs = members
-        .filter(_.toString.startsWith("value ")) // ugly hack, but how else to find out what is a val/lazy val?
         .filter(_.isMethod)
         .flatMap { m =>
         extractTypeFromNullaryType(m.typeSignature) match {
@@ -104,23 +107,33 @@ object MacwireMacros extends Macwire {
         }
       }.map { case (member, tpe) =>
         val key = Literal(Constant(tpe))
-        val value = Select(in.tree, TermName(member.name.decodedName.toString.trim))
+        val value = Select(Ident(TermName(capturedInName)), TermName(member.name.decodedName.toString.trim))
 
         debug(s"Found a mapping: $key -> $value")
 
+        // Generating: () => value
+        val valueExpr = c.Expr[AnyRef](value)
+        val createValueExpr = reify { () => valueExpr.splice }
+
         // Generating: key -> value
         Apply(Select(Apply(Select(predefIdent, TermName("any2ArrowAssoc")), List(key)),
-          TermName("$minus$greater")), List(value))
+          TermName("$minus$greater")), List(createValueExpr.tree))
       }
 
       pairs.toList
     }
 
-    debug.withBlock(s"Generating vals-by-class map for ${in.tree}") {
-      val pairs = valsByClassInTree(in.tree)
+    debug.withBlock(s"Generating impls-by-class map for ${in.tree}") {
+      val pairs = implsByClassInTree(in.tree)
 
-      val tt: Tree = Apply(Select(Select(predefIdent, TermName("Map")), TermName("apply")), pairs)
-      c.Expr[Map[Class[_], AnyRef]](tt)
+      // Generating:
+      // {
+      //   val inName = in
+      //   Map(...)
+      // }
+      val captureInTree = ValDef(Modifiers(), TermName(capturedInName), TypeTree(), in.tree)
+      val createMapTree: Tree = Apply(Select(Select(predefIdent, TermName("Map")), TermName("apply")), pairs)
+      c.Expr[ImplsMap](Block(captureInTree, createMapTree))
     }
   }
 }

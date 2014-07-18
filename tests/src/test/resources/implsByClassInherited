@@ -1,12 +1,18 @@
 #include commonSimpleClasses
 
-object Test {
+trait Test1 {
     val theA = wire[A]
+}
+
+trait Test2 {
     val theB = wire[B]
+}
+
+trait Test3 extends Test1 with Test2 {
     val theC = wire[C]
 }
 
-val map = valsByClass(Test)
+val map = implsByClass(new Test3 {})
 
 require(map.contains(classOf[A]))
 require(map.contains(classOf[B]))

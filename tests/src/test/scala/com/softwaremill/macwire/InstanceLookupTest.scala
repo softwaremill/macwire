@@ -2,6 +2,7 @@ package com.softwaremill.macwire
 
 import org.scalatest.FlatSpec
 import org.scalatest.ShouldMatchers
+import MacwireMacros.ImplsMap
 
 class InstanceLookupTest extends FlatSpec with ShouldMatchers {
   import InstanceLookupTest._
@@ -19,10 +20,10 @@ class InstanceLookupTest extends FlatSpec with ShouldMatchers {
   class N
   class NN extends N
 
-  val instanceMap1 = createInstanceMap(new X, new Y, new Z)
-  val instanceMap2 = createInstanceMap(new Z, new M)
-  val instanceMap3 = createInstanceMap(new N, new NN)
-  val instanceMap4 = createInstanceMap(new A {}, new B {}, new C {}, new D {})
+  val instanceMap1 = createImplsMap(new X, new Y, new Z)
+  val instanceMap2 = createImplsMap(new Z, new M)
+  val instanceMap3 = createImplsMap(new N, new NN)
+  val instanceMap4 = createImplsMap(new A {}, new B {}, new C {}, new D {})
 
   it should "lookup correctly" in {
     testLookup(instanceMap1, classOf[X], 1)
@@ -55,7 +56,7 @@ class InstanceLookupTest extends FlatSpec with ShouldMatchers {
     testLookup(instanceMap4, classOf[Y], 0)
   }
 
-  def testLookup(map: Map[Class[_], AnyRef], cls: Class[_], expectedCount: Int) {
+  def testLookup(map: ImplsMap, cls: Class[_], expectedCount: Int) {
     val result = InstanceLookup(map).lookup(cls)
     result should have size (expectedCount)
     result.foreach(r => cls.isAssignableFrom(r.getClass) should be (true))
@@ -63,5 +64,5 @@ class InstanceLookupTest extends FlatSpec with ShouldMatchers {
 }
 
 object InstanceLookupTest {
-  def createInstanceMap(instances: AnyRef*): Map[Class[_], AnyRef] = Map(instances.map(i => i.getClass -> i): _*)
+  def createImplsMap(instances: AnyRef*): ImplsMap = Map(instances.map(i => i.getClass -> (() => i)): _*)
 }

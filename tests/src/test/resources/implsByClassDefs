@@ -1,0 +1,20 @@
+#include commonSimpleClasses
+
+class Test {
+    def theA = new A
+    val theB = new B
+    def theC = wire[C]
+
+    def another(param: Int) = param
+}
+
+val map = implsByClass(new Test)
+
+require(map.contains(classOf[A]))
+require(map.contains(classOf[B]))
+require(map.contains(classOf[C]))
+
+require(map.size == 3)
+
+require(!(map(classOf[A])() eq map(classOf[A])()))
+require(map(classOf[B])() eq map(classOf[B])())

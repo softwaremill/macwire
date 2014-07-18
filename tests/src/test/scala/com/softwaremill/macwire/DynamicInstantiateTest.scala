@@ -11,7 +11,7 @@ class DynamicInstantiateTest extends FlatSpec with ShouldMatchers {
   val z = new Z
   val m = new M
 
-  val instanceLookup = new InstanceLookup(createInstanceMap(x, y, z, m))
+  val instanceLookup = new InstanceLookup(createImplsMap(x, y, z, m))
 
   val dynamicInstantiate = new DynamicInstantiate(instanceLookup)
 
