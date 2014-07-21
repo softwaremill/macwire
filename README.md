@@ -66,6 +66,7 @@ For more motivation behind the project see also these blogs:
 * [Implementing factories in Scala & MacWire 0.3](http://www.warski.org/blog/2013/06/implementing-factories-in-scala-macwire-0-3/)
 * [Dependency Injection in Play! with MacWire](http://www.warski.org/blog/2013/08/dependency-injection-in-play-with-macwire/)
 * [MacWire 0.5: Interceptors](http://www.warski.org/blog/2013/10/macwire-0-5-interceptors/)
+* [Using Scala traits as modules, or the "Thin Cake" Pattern](http://www.warski.org/blog/2014/02/using-scala-traits-as-modules-or-the-thin-cake-pattern/)
 
 You can also try MacWire through [Typesafe Activator](http://typesafe.com/activator/template/macwire-activator).
 
@@ -212,31 +213,21 @@ You can run the example with `sbt examples-scalatra/run` and going to [http://lo
 Note that the `runtime` subproject does not depend on MacWire core, and can be used stand-alone with manual wiring or any other
 frameworks.
 
-Instance maps
--------------
+Accessing wired instances dynamically
+-------------------------------------
 
-To integrate with some frameworks, e.g. [Play 2](http://www.playframework.com/), it is necessary to have a map of the
-instances keyed by the instance class (`Map[Class[_], AnyRef]`). MacWire contains a utility macro, `valsByClass`, to
-generate such a map, basing on the `val`s/`lazy val`s of the passed instance. E.g.:
+To integrate with some frameworks (e.g. [Play 2](http://www.playframework.com/)) or to create instances of classes
+which names are only known at run-time (e.g. plugins) it is necessary to access the wired instances dynamically.
+MacWire contains a utility class, `Wired`, to support such functionality.
 
-````scala
-object MyApp {
-    lazy val theDatabaseAccess   = new DatabaseAccess()
-    lazy val theSecurityFilter   = new SecurityFilter()
-}
+An instance of `Wired` can be obtained using the `wiredInModule` macro, given an instance of a module containing the
+wired object graph. Any `vals`, `lazy val`s and parameter-less `def`s (factories) from the module will be available 
+in the `Wired` instance. 
 
-import MacwireMacros._
-val instanceMap = valsByClass(MyApp)
+The object graph in the module can be hand-wired, wired using `wire`, or a result of any computation.
 
-require(instanceMap.size() == 2)
-require(instanceMap(classOf[DatabaseAccess]) == MyApp.theDatabaseAccess)
-````
-
-The macro works with arbitrary objects and arbitrary `val` inside the objects: they can be hand-wired, wired using
-`wired`, or a result of any computation.
-
-To lookup instances by classes, superclasses and traits, you can use `InstanceLookup`. It takes an instance map, and
-computes for which classes/traits what instances correspond (as opposed to the map creation, this is done at run-time).
+`Wired` has two basic functionalities: looking up an instance by its class (or trait it implements), and instantiating
+new objects using the available dependencies. You can also extend `Wired` with new instances/instance factories.
 
 For example:
 
@@ -245,16 +236,26 @@ trait DatabaseConnector
 class MysqlDatabaseConnector extends DatabaseConnector
 
 class MyApp {
+    def securityFilter = new SecurityFilter()
     val databaseConnector = new MysqlDatabaseConnector()
 }
 
 import MacwireMacros._
-val instanceMap = valsByClass(new MyApp)
-val instanceLookup = InstanceLookup(instanceMap)
+val wired = wiredInModule(new MyApp)
+
+wired.lookup(classOf[SecurityFilter])
 
 // Returns the mysql database connector, even though its type is MysqlDatabaseConnector, which is assignable to
 // DatabaseConnector.
-instanceLookup.lookup(classOf[DatabaseConnector])
+wired.lookup(classOf[DatabaseConnector])
+
+{
+    package com.softwaremill
+    class AuthenticationPlugin(databaseConnector: DatabaseConnector)
+}
+
+// Creates a new instance of the given class using the dependencies available in MyApp
+wired.wireClassInstanceByName("com.softwaremill.AuthenticationPlugin")
 ````
 
 Interceptors
@@ -343,10 +344,11 @@ The print debugging information on what MacWire does when looking for values, an
 `macwire.debug` system property. E.g. with SBT, just add a `System.setProperty("macwire.debug", "")` line to your
 build file.
 
-Future development
-------------------
+Future development - vote!
+--------------------------
 
+* [Qualifier support](https://github.com/adamw/macwire/issues/9)
+* [wireSet[] method to get all dependencies of the given type](https://github.com/adamw/macwire/issues/8)
+* [Support parameters in wire[] to override dependencies](https://github.com/adamw/macwire/issues/7)
 * relax type ascription requirements
 * configuration values - by-name wiring
-* inject a list of dependencies - of a given type
-* qualifiers?
