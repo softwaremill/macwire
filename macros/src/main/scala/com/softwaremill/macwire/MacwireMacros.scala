@@ -116,7 +116,7 @@ object MacwireMacros extends Macwire {
         val createValueExpr = reify { () => valueExpr.splice }
 
         // Generating: key -> value
-        Apply(Select(Apply(Select(predefIdent, TermName("any2ArrowAssoc")), List(key)),
+        Apply(Select(Apply(Select(predefIdent, TermName("ArrowAssoc")), List(key)),
           TermName("$minus$greater")), List(createValueExpr.tree))
       }
 
