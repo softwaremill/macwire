@@ -54,7 +54,7 @@ trait UserModuleForTests extends UserModule {
 }
 ````
 
-Instead of importing the wire method in each module you can also extend com.softwaremill.macwire.Macwire trait.
+Instead of importing the wire method in each module you can also extend `com.softwaremill.macwire.Macwire` trait.
 
 The core library has no dependencies.
 
@@ -232,6 +232,7 @@ new objects using the available dependencies. You can also extend `Wired` with n
 For example:
 
 ````scala
+// 1. Defining the object graph and the module
 trait DatabaseConnector
 class MysqlDatabaseConnector extends DatabaseConnector
 
@@ -240,15 +241,18 @@ class MyApp {
     val databaseConnector = new MysqlDatabaseConnector()
 }
 
+// 2. Creating a Wired instance
 import MacwireMacros._
 val wired = wiredInModule(new MyApp)
 
+// 3. Dynamic lookup of instances
 wired.lookup(classOf[SecurityFilter])
 
-// Returns the mysql database connector, even though its type is MysqlDatabaseConnector, which is assignable to
-// DatabaseConnector.
+// Returns the mysql database connector, even though its type is MysqlDatabaseConnector, which is 
+// assignable to DatabaseConnector.
 wired.lookup(classOf[DatabaseConnector])
 
+// 4. Instantiation using the available dependencies
 {
     package com.softwaremill
     class AuthenticationPlugin(databaseConnector: DatabaseConnector)
