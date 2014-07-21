@@ -1,16 +1,17 @@
 package com.softwaremill.macwire
 
-class DynamicInstantiate(implLookup: ImplLookup) {
-  def instantiate(className: String): Any = instantiate(loadClass(className))
+private[macwire] trait DynamicInstantiate {
+  def wireClassInstanceByName(className: String): Any = wireClassInstance(loadClass(className))
 
   private def loadClass(className: String) = {
     Thread.currentThread().getContextClassLoader.loadClass(className)
   }
 
-  def instantiate[T](cls: Class[T]): T = {
+  @throws(classOf[InstantiationException])
+  def wireClassInstance[T](cls: Class[T]): T = {
     val ctor = cls.getConstructors.apply(0)
     val params = ctor.getParameterTypes.map { paramCls =>
-      implLookup.lookup(paramCls) match {
+      lookup(paramCls) match {
         case Nil => throw new InstantiationException(s"Cannot instantiate ${cls.getName}, " +
           s"dependency of type ${paramCls.getName} cannot be found")
         case inst :: Nil => inst.asInstanceOf[AnyRef]
@@ -21,4 +22,6 @@ class DynamicInstantiate(implLookup: ImplLookup) {
 
     ctor.newInstance(params: _*).asInstanceOf[T]
   }
+
+  protected def lookup[T](cls: Class[T]): List[T]
 }

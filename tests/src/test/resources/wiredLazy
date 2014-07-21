@@ -1,0 +1,15 @@
+#include commonSimpleClasses
+
+class Test {
+    lazy val theA = new A
+    lazy val theB = new B
+    lazy val theS = "ss"
+}
+
+val wired = wiredInModule(new Test)
+
+// no exceptions
+wired.lookupSingleOrThrow(classOf[A])
+wired.lookupSingleOrThrow(classOf[B])
+
+require(wired.lookupSingleOrThrow(classOf[String]) == "ss")

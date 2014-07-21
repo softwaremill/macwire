@@ -1,0 +1,14 @@
+#include commonSimpleClasses
+
+object Test {
+    val theA = wire[A]
+    val theB = wire[B]
+    val theC = wire[C]
+}
+
+val wired = wiredInModule(Test)
+
+// no exceptions
+wired.lookupSingleOrThrow(classOf[A])
+wired.lookupSingleOrThrow(classOf[B])
+wired.lookupSingleOrThrow(classOf[C])

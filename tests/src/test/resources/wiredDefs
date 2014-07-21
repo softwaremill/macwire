@@ -1,0 +1,19 @@
+#include commonSimpleClasses
+
+class Test {
+    def theA = new A
+    val theB = new B
+    def theC = wire[C]
+
+    def another(param: Int) = param
+}
+
+val wired = wiredInModule(new Test)
+
+// no exceptions
+wired.lookupSingleOrThrow(classOf[A])
+wired.lookupSingleOrThrow(classOf[B])
+wired.lookupSingleOrThrow(classOf[C])
+
+require(!(wired.lookupSingleOrThrow(classOf[A]) eq wired.lookupSingleOrThrow(classOf[A])))
+require(wired.lookupSingleOrThrow(classOf[B]) eq wired.lookupSingleOrThrow(classOf[B]))

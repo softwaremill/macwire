@@ -6,9 +6,7 @@ import reflect.macros.blackbox.Context
 
 trait Macwire {
   def wire[T]: T = macro MacwireMacros.wire_impl[T]
-
-  type ImplsMap = Map[Class[_], () => AnyRef]
-  def implsByClass(in: AnyRef): ImplsMap = macro MacwireMacros.implsByClass_impl
+  def wiredInModule(in: AnyRef): Wired = macro MacwireMacros.wiredInModule_impl
 }
 
 object MacwireMacros extends Macwire {
@@ -78,11 +76,12 @@ object MacwireMacros extends Macwire {
     createNewTargetWithParams()
   }
 
-  def implsByClass_impl(c: Context)(in: c.Expr[AnyRef]): c.Expr[ImplsMap] = {
+  def wiredInModule_impl(c: Context)(in: c.Expr[AnyRef]): c.Expr[Wired] = {
     import c.universe._
 
     // Ident(scala.Predef)
     val Expr(predefIdent) = reify { Predef }
+    val Expr(wiredIdent) = reify { Wired }
 
     def extractTypeFromNullaryType(tpe: Type) = {
       tpe match {
@@ -92,8 +91,9 @@ object MacwireMacros extends Macwire {
     }
 
     val capturedInName = c.freshName()
+    val instanceFactoryMapName = c.freshName()
 
-    def implsByClassInTree(tree: Tree): List[Tree] = {
+    def instanceFactoriesByClassInTree(tree: Tree): List[Tree] = {
       val members = tree.tpe.members
 
       val pairs = members
@@ -123,17 +123,18 @@ object MacwireMacros extends Macwire {
       pairs.toList
     }
 
-    debug.withBlock(s"Generating impls-by-class map for ${in.tree}") {
-      val pairs = implsByClassInTree(in.tree)
+    debug.withBlock(s"Generating wired-in-module for ${in.tree}") {
+      val pairs = instanceFactoriesByClassInTree(in.tree)
 
       // Generating:
       // {
       //   val inName = in
-      //   Map(...)
+      //   Wired(Map(...))
       // }
       val captureInTree = ValDef(Modifiers(), TermName(capturedInName), TypeTree(), in.tree)
-      val createMapTree: Tree = Apply(Select(Select(predefIdent, TermName("Map")), TermName("apply")), pairs)
-      c.Expr[ImplsMap](Block(captureInTree, createMapTree))
+      val newWiredTree = Apply(Select(wiredIdent, TermName("apply")), List(
+        Apply(Select(Select(predefIdent, TermName("Map")), TermName("apply")), pairs)))
+      c.Expr[Wired](Block(captureInTree, newWiredTree))
     }
   }
 }

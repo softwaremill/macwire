@@ -12,8 +12,9 @@ trait Test3 extends Test1 with Test2 {
     val theC = wire[C]
 }
 
-val map = implsByClass(new Test3 {})
+val wired = wiredInModule(new Test3 {})
 
-require(map.contains(classOf[A]))
-require(map.contains(classOf[B]))
-require(map.contains(classOf[C]))
+// no exceptions
+wired.lookupSingleOrThrow(classOf[A])
+wired.lookupSingleOrThrow(classOf[B])
+wired.lookupSingleOrThrow(classOf[C])

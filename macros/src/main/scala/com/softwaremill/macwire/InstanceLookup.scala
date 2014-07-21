@@ -1,9 +1,7 @@
 package com.softwaremill.macwire
 
-import MacwireMacros.ImplsMap
-
-class ImplLookup(implsByClass: ImplsMap) {
-  private val lookupMap = prepareMap
+private[macwire] trait InstanceLookup {
+  private lazy val lookupMap = prepareLookupMap
 
   def lookup[T](cls: Class[T]): List[T] = {
     lookupMap.getOrElse(cls, Nil).map(_().asInstanceOf[T])
@@ -15,8 +13,8 @@ class ImplLookup(implsByClass: ImplsMap) {
     case l => throw new RuntimeException(s"Found multiple implementations of class $cls: $l!")
   }
 
-  private def prepareMap: Map[Class[_], List[() => AnyRef]] = {
-    implsByClass
+  private def prepareLookupMap: Map[Class[_], List[() => AnyRef]] = {
+    instanceFactoryMap
       .toList
       .flatMap { case (startingCls, impl) =>
       def allSuperClasses(cls: Class[_]): List[Class[_]] = {
@@ -32,8 +30,6 @@ class ImplLookup(implsByClass: ImplsMap) {
     .map { case (cls, clsAndImpls) => cls -> clsAndImpls.map(_._2) }
     .toMap
   }
-}
 
-object ImplLookup {
-  def apply(implsByClass: ImplsMap) = new ImplLookup(implsByClass)
+  protected def instanceFactoryMap: InstanceFactoryMap
 }

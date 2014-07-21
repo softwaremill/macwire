@@ -1,0 +1,11 @@
+#include commonSimpleClasses
+
+class Test {
+    val theA = new A
+}
+
+// no exceptions
+val wired = wiredInModule(new Test)
+
+wired.lookupSingleOrThrow(classOf[A])
+require(wired.lookupSingleOrThrow(classOf[A]) eq wired.lookupSingleOrThrow(classOf[A]))
