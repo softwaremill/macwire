@@ -6,6 +6,8 @@ MacWire
 MacWire generates `new` instance creation code of given classes, using values in the enclosing type for constructor
 parameters, with the help of [Scala Macros](http://scalamacros.org/).
 
+For a general introduction to DI in Scala, take a look at the [Guide to DI in Scala](http://di-in-scala.github.io/), which also features MacWire.
+
 MacWire helps to implement the Dependency Injection (DI) pattern, by removing the need to write the
 class-wiring code by hand. Instead, it is enough to declare which classes should be wired, and how the instances
 should be accessed (see Scopes).
