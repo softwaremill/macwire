@@ -2,7 +2,7 @@ package com.softwaremill.macwire
 
 import language.experimental.macros
 
-import reflect.macros.blackbox.Context
+import reflect.macros.Context
 
 trait Macwire {
   def wire[T]: T = macro MacwireMacros.wire_impl[T]
@@ -47,9 +47,9 @@ object MacwireMacros extends Macwire {
             c.error(c.enclosingPosition, "Cannot find constructor for " + targetType)
             reify { null.asInstanceOf[T] }
           case Some(targetConstructor) =>
-            val targetConstructorParamLists = targetConstructor.asMethod.paramLists
+            val targetConstructorParamLists = targetConstructor.asMethod.paramss
 
-            var newT: Tree = Select(New(Ident(targetType.tpe.typeSymbol)), termNames.CONSTRUCTOR)
+            var newT: Tree = Select(New(Ident(targetType.tpe.typeSymbol)), nme.CONSTRUCTOR)
 
             for {
               targetConstructorParams <- targetConstructorParamLists
@@ -90,8 +90,8 @@ object MacwireMacros extends Macwire {
       }
     }
 
-    val capturedInName = c.freshName()
-    val instanceFactoryMapName = c.freshName()
+    val capturedInName = c.fresh("capturedIn")
+    val capturedInTermName = newTermName(capturedInName)
 
     def instanceFactoriesByClassInTree(tree: Tree): List[Tree] = {
       val members = tree.tpe.members
@@ -107,7 +107,7 @@ object MacwireMacros extends Macwire {
         }
       }.map { case (member, tpe) =>
         val key = Literal(Constant(tpe))
-        val value = Select(Ident(TermName(capturedInName)), TermName(member.name.decodedName.toString.trim))
+        val value = Select(Ident(capturedInTermName), newTermName(member.name.decoded.trim))
 
         debug(s"Found a mapping: $key -> $value")
 
@@ -116,8 +116,8 @@ object MacwireMacros extends Macwire {
         val createValueExpr = reify { () => valueExpr.splice }
 
         // Generating: key -> value
-        Apply(Select(Apply(Select(predefIdent, TermName("ArrowAssoc")), List(key)),
-          TermName("$minus$greater")), List(createValueExpr.tree))
+        Apply(Select(Apply(Select(predefIdent, newTermName("any2ArrowAssoc")), List(key)),
+          newTermName("$minus$greater")), List(createValueExpr.tree))
       }
 
       pairs.toList
@@ -131,10 +131,10 @@ object MacwireMacros extends Macwire {
       //   val inName = in
       //   Wired(Map(...))
       // }
-      val captureInTree = ValDef(Modifiers(), TermName(capturedInName), TypeTree(), in.tree)
-      val newWiredTree = Apply(Select(wiredIdent, TermName("apply")), List(
-        Apply(Select(Select(predefIdent, TermName("Map")), TermName("apply")), pairs)))
-      c.Expr[Wired](Block(captureInTree, newWiredTree))
+      val captureInTree = ValDef(Modifiers(), capturedInTermName, TypeTree(in.actualType), in.tree)
+      val newWiredTree = Apply(Select(wiredIdent, newTermName("apply")), List(
+        Apply(Select(Select(predefIdent, newTermName("Map")), newTermName("apply")), pairs)))
+      c.Expr[Wired](Block(List(captureInTree), newWiredTree))
     }
   }
 }

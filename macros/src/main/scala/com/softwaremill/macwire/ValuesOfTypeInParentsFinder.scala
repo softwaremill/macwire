@@ -1,6 +1,6 @@
 package com.softwaremill.macwire
 
-import reflect.macros.blackbox.Context
+import reflect.macros.Context
 import annotation.tailrec
 
 private[macwire] class ValuesOfTypeInParentsFinder[C <: Context](val c: C, debug: Debug) {
@@ -44,7 +44,7 @@ private[macwire] class ValuesOfTypeInParentsFinder[C <: Context](val c: C, debug
           .map(_.name)
           // For (lazy) vals, the names have a space at the end of the name (probably some compiler internals).
           // Hence the trim.
-          .map(name => TermName(name.decodedName.toString.trim()))
+          .map(name => newTermName(name.decodedName.toString.trim()))
 
         if (result.size > 0) {
           debug(s"Found ${result.size} matching name(s): [${result.mkString(", ")}]")

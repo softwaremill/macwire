@@ -1,6 +1,6 @@
 package com.softwaremill.macwire
 
-import scala.reflect.macros.blackbox.Context
+import scala.reflect.macros.Context
 
 private[macwire] class TypeCheckUtil[C <: Context](val c: C, debug: Debug) {
   import c.universe._
@@ -14,7 +14,7 @@ private[macwire] class TypeCheckUtil[C <: Context](val c: C, debug: Debug) {
     val Expr(Block(stats, Apply(TypeApply(someValueFun, _), someTypeArgs))) = someValueOfTypeString
 
     val someValueOfGivenType = Block(stats, Apply(TypeApply(someValueFun, List(typeTree)), someTypeArgs))
-    val someValueOfGivenTypeChecked = c.typecheck(someValueOfGivenType)
+    val someValueOfGivenTypeChecked = c.typeCheck(someValueOfGivenType)
 
     someValueOfGivenTypeChecked.tpe
   }
@@ -31,7 +31,7 @@ private[macwire] class TypeCheckUtil[C <: Context](val c: C, debug: Debug) {
         // Disabling macros, no to get into an infinite loop.
         // Duplicating the tree, not to modify the original.
         debug(s"The type is not yet available. Trying a type-check ...")
-        val calculatedType = c.typecheck(treeToCheck.duplicate, silent = true, withMacrosDisabled = true).tpe
+        val calculatedType = c.typeCheck(treeToCheck.duplicate, silent = true, withMacrosDisabled = true).tpe
         // In case of abstract definitions, when we check the tree (not the rhs), the result is in tpt.tpe. Otherwise,
         // it's in calculatedType.
         val result = if (tpt.tpe == null) calculatedType else tpt.tpe

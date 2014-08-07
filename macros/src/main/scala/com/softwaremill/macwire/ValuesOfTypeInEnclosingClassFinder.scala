@@ -1,6 +1,6 @@
 package com.softwaremill.macwire
 
-import reflect.macros.blackbox.Context
+import reflect.macros.Context
 import annotation.tailrec
 
 private[macwire] class ValuesOfTypeInEnclosingClassFinder[C <: Context](val c: C, debug: Debug) {

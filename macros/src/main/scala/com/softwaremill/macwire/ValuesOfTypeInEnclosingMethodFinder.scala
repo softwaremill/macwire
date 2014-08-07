@@ -1,6 +1,6 @@
 package com.softwaremill.macwire
 
-import reflect.macros.blackbox.Context
+import reflect.macros.Context
 import annotation.tailrec
 
 private[macwire] class ValuesOfTypeInEnclosingMethodFinder[C <: Context](val c: C, debug: Debug) {
@@ -27,7 +27,7 @@ private[macwire] class ValuesOfTypeInEnclosingMethodFinder[C <: Context](val c: 
     }
 
     val methodParams = c.enclosingMethod match {
-      case EmptyTree => Nil
+      case null => Nil
       case DefDef(_, _, _, vparamss, _, _) => vparamss.flatten
       case e =>
         c.error(c.enclosingPosition, s"Unknown tree for enclosing method: ${e.getClass}")

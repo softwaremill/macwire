@@ -4,8 +4,8 @@ import Keys._
 object BuildSettings {
   val buildSettings = Defaults.defaultSettings ++ Seq (
     organization  := "com.softwaremill.macwire",
-    version       := "0.8-SNAPSHOT",
-    scalaVersion  := "2.11.1",
+    version       := "0.7-SNAPSHOT",
+    scalaVersion  := "2.10.4",
     // Sonatype OSS deployment
     publishTo <<= version { (v: String) =>
       val nexus = "https://oss.sonatype.org/"
@@ -36,7 +36,7 @@ object BuildSettings {
 }
 
 object Dependencies {
-  val scalatest     = "org.scalatest" % "scalatest_2.11.0-RC4"  % "2.1.3"       % "test" // TODO
+  val scalatest     = "org.scalatest" %% "scalatest"  % "2.1.3"       % "test" // TODO
   val javassist     = "org.javassist" % "javassist"   % "3.18.1-GA"
 }
 
