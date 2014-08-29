@@ -348,6 +348,12 @@ The print debugging information on what MacWire does when looking for values, an
 `macwire.debug` system property. E.g. with SBT, just add a `System.setProperty("macwire.debug", "")` line to your
 build file.
 
+Scala.js
+--------
+
+Macwire also works with [Scala.js](http://www.scala-js.org/). For an example, see here: 
+[Macwire+Scala.js example](https://github.com/adamw/macwire/tree/master/examples/scalajs).
+
 Future development - vote!
 --------------------------
 
