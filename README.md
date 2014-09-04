@@ -6,6 +6,8 @@ MacWire
 MacWire generates `new` instance creation code of given classes, using values in the enclosing type for constructor
 parameters, with the help of [Scala Macros](http://scalamacros.org/).
 
+For a general introduction to DI in Scala, take a look at the [Guide to DI in Scala](http://di-in-scala.github.io/), which also features MacWire.
+
 MacWire helps to implement the Dependency Injection (DI) pattern, by removing the need to write the
 class-wiring code by hand. Instead, it is enough to declare which classes should be wired, and how the instances
 should be accessed (see Scopes).
@@ -322,11 +324,9 @@ The jars are deployed to [Sonatype's OSS repository](https://oss.sonatype.org/co
 To use MacWire in your project, add a dependency:
 
 ````scala
-libraryDependencies += "com.softwaremill.macwire" %% "macros" % "0.7" // 2.11, or:
-libraryDependencies += "com.softwaremill.macwire" %% "macros" % "0.5" // 2.10
+libraryDependencies += "com.softwaremill.macwire" %% "macros" % "0.7.1" 
 
-libraryDependencies += "com.softwaremill.macwire" %% "runtime" % "0.7" // 2.11, or:
-libraryDependencies += "com.softwaremill.macwire" %% "runtime" % "0.5" // 2.10
+libraryDependencies += "com.softwaremill.macwire" %% "runtime" % "0.7.1" 
 ````
 
 To use the snapshot version:
@@ -347,6 +347,12 @@ Debugging
 The print debugging information on what MacWire does when looking for values, and what code is generated, set the
 `macwire.debug` system property. E.g. with SBT, just add a `System.setProperty("macwire.debug", "")` line to your
 build file.
+
+Scala.js
+--------
+
+Macwire also works with [Scala.js](http://www.scala-js.org/). For an example, see here: 
+[Macwire+Scala.js example](https://github.com/adamw/macwire/tree/master/examples/scalajs).
 
 Future development - vote!
 --------------------------
