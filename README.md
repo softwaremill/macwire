@@ -1,3 +1,20 @@
+Table of Contents
+=================
+
+* [Introduction](#macwire)
+* [Guide to DI in Scala](http://di-in-scala.github.io/) (external link)
+* [How wiring works](#how-wiring-works)
+* [Factories](#factories)
+* [Limitations](#limitations)
+* [`lazy val` vs. `val`](#lazy-val-vs-val)
+* [Scopes](#scopes)
+* [Accessing wired instances dynamically](#accessing-wired-instances-dynamically)
+* [Interceptors](#interceptors)
+* [Installation, using with SBT](#installation-using-with-sbt)
+* [Debugging](#debugging)
+* [Scala.js](#scalajs)
+* [Future development - vote!](#future-development---vote)
+
 MacWire
 =======
 
