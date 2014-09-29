@@ -48,7 +48,7 @@ object MacwireMacros extends Macwire {
             reify { null.asInstanceOf[T] }
           case Some(targetConstructor) =>
             val targetConstructorParamLists = targetConstructor.asMethod.paramLists
-
+            val TypeRef(_, sym, tpeArgs) = targetType.tpe
             var newT: Tree = Select(New(Ident(targetType.tpe.typeSymbol)), termNames.CONSTRUCTOR)
 
             for {
@@ -58,7 +58,9 @@ object MacwireMacros extends Macwire {
               if !targetConstructorParams.exists(_.isImplicit)
             } {
               val constructorParams = for (param <- targetConstructorParams) yield {
-                val wireToOpt = findValueOfType(param.name, param.typeSignature).map(Ident(_))
+                // Resolve type parmeters
+                val pTpe = param.typeSignature.substituteTypes(sym.asClass.typeParams, tpeArgs)
+                val wireToOpt = findValueOfType(param.name, pTpe).map(Ident(_))
 
                 // If no value is found, an error has been already reported.
                 wireToOpt.getOrElse(reify(null).tree)
