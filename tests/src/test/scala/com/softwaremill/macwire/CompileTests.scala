@@ -41,7 +41,8 @@ class CompileTests extends FlatSpec with ShouldMatchers {
     ("wiredWithWire", Nil),
     ("wiredInherited", Nil),
     ("wiredDefs", Nil),
-    ("wiredFromClass", Nil)
+    ("wiredFromClass", Nil),
+    ("wiredClassWithTypeParameters", Nil)
   )
 
   for ((testName, expectedErrors) <- tests)
