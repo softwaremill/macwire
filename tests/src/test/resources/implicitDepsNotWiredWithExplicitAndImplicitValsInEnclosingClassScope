@@ -1,0 +1,10 @@
+#include commonClassesWithImplicitDependencies
+
+implicit val implicitDependency = new Dependency()
+
+object Test {
+  val regularDependency = new Dependency()
+  val service = wire[Service]
+}
+
+require(false) // oops! macro didn't fail as expected..

@@ -1,0 +1,9 @@
+#include commonSimpleClasses
+
+object ModuleScope {
+  implicit val a = new A()
+  implicit val b = new B()
+  val c = wire[C]
+}
+require(ModuleScope.c.a eq ModuleScope.a)
+require(ModuleScope.c.b eq ModuleScope.b)

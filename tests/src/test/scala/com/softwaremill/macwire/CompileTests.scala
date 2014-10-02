@@ -42,7 +42,26 @@ class CompileTests extends FlatSpec with ShouldMatchers {
     ("wiredInherited", Nil),
     ("wiredDefs", Nil),
     ("wiredFromClass", Nil),
-    ("wiredClassWithTypeParameters", Nil)
+    ("wiredClassWithTypeParameters", Nil),
+    // explicit param should not be resolved with implicit value when dependency cannot be found during plain, old regular lookup
+    ("explicitDepsNotWiredWithImplicitVals", List("Cannot find a value of type", "A")),
+    // non-implicit params should be resolved with implicit values if are in scope
+    ("explicitDepsWiredWithImplicitValsFromMethodScope", Nil),
+    ("explicitDepsWiredWithImplicitValsFromEnclosingModuleScope", Nil),
+    ("explicitDepsWiredWithImplicitValsFromParentsScope", Nil),
+    // implicit params should be resolved with implicit values
+    ("implicitDepsWiredWithImplicitVals", Nil),
+    ("implicitDepsWiredWithImplicitValsFromMethodScope", Nil),
+    ("implicitDepsWiredWithImplicitValsFromEnclosingModuleScope", Nil),
+    ("implicitDepsWiredWithImplicitValsFromParentsScope", Nil),
+    // implicit params should be resolved with regular values
+    ("implicitDepsWiredWithExplicitVals", Nil),
+    ("implicitDepsWiredWithExplicitValsFromEnclosingModuleScope", Nil),
+    ("implicitDepsWiredWithExplicitValsFromParentsScope", Nil),
+    // dependency resolution should abort compilation when there are ambiguous dependencies in scope
+    ("implicitDepsNotWiredWithExplicitAndImplicitValsInEnclosingClassScope", List("Found multiple values of type [Dependency]", "regularDependency", "implicitDependency")),
+    ("implicitDepsNotWiredWithExplicitAndImplicitValsInParentsScope", List("Found multiple values of type [Dependency]", "regularDependency", "implicitDependency")),
+    ("implicitDepsNotWiredWithoutAnyValsInScope", List("Cannot find a value of type", "Dependency"))
   )
 
   for ((testName, expectedErrors) <- tests)

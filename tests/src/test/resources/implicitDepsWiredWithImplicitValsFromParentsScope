@@ -1,0 +1,11 @@
+#include commonClassesWithImplicitDependencies
+
+trait DependencyProvider {
+  implicit val implicitDependency = new Dependency
+}
+
+object ParentsScope extends DependencyProvider {
+  val service = wire[Service]
+}
+
+require(ParentsScope.service.dependency eq ParentsScope.implicitDependency)

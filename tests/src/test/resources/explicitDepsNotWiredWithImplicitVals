@@ -1,0 +1,10 @@
+#include commonSimpleClasses
+
+implicit val a = new A()
+implicit val b = new B()
+
+object Test  {
+  val c = wire[C]
+}
+
+require(false) // oops! macro didn't fail as expected..

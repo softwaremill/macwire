@@ -1,8 +1,9 @@
 package com.softwaremill.macwire
 
-import language.experimental.macros
+import com.softwaremill.macwire.dependencyLookup._
 
-import reflect.macros.blackbox.Context
+import scala.language.experimental.macros
+import scala.reflect.macros.blackbox.Context
 
 trait Macwire {
   def wire[T]: T = macro MacwireMacros.wire_impl[T]
@@ -11,32 +12,11 @@ trait Macwire {
 
 object MacwireMacros extends Macwire {
   private val debug = new Debug()
-  import Util._
 
   def wire_impl[T: c.WeakTypeTag](c: Context): c.Expr[T] = {
     import c.universe._
 
-    def findValueOfType(n: Name, t: Type): Option[Name] = {
-      debug.withBlock(s"Trying to find value [$n] of type: [$t]") {
-        val namesOpt = firstNotEmpty[Name](
-          () => new ValuesOfTypeInEnclosingMethodFinder[c.type](c, debug).find(n, t),
-          () => new ValuesOfTypeInEnclosingClassFinder[c.type](c, debug).find(t),
-          () => new ValuesOfTypeInParentsFinder[c.type](c, debug).find(t)
-        )
-
-        namesOpt match {
-          case None =>
-            c.error(c.enclosingPosition, s"Cannot find a value of type: [$t]")
-            None
-          case Some(List(name)) =>
-            debug(s"Found single value: [$name] of type [$t]")
-            Some(name)
-          case Some(names) =>
-            c.error(c.enclosingPosition, s"Found multiple values of type [$t]: [$names]")
-            None
-        }
-      }
-    }
+    lazy val dependencyResolver = new DependencyResolver[c.type](c, debug)
 
     def createNewTargetWithParams(): Expr[T] = {
       val targetType = implicitly[c.WeakTypeTag[T]]
@@ -53,14 +33,11 @@ object MacwireMacros extends Macwire {
 
             for {
               targetConstructorParams <- targetConstructorParamLists
-              // If the parameter list is implicit, then the symbols will be implicit as well. Not attempting to
-              // generate code for implicit parameter lists.
-              if !targetConstructorParams.exists(_.isImplicit)
             } {
-              val constructorParams = for (param <- targetConstructorParams) yield {
-                // Resolve type parmeters
+              val constructorParams: List[c.Tree] = for (param <- targetConstructorParams) yield {
+                // Resolve type parameters
                 val pTpe = param.typeSignature.substituteTypes(sym.asClass.typeParams, tpeArgs)
-                val wireToOpt = findValueOfType(param.name, pTpe).map(Ident(_))
+                val wireToOpt = dependencyResolver.resolve(param, pTpe)
 
                 // If no value is found, an error has been already reported.
                 wireToOpt.getOrElse(reify(null).tree)
@@ -93,7 +70,6 @@ object MacwireMacros extends Macwire {
     }
 
     val capturedInName = c.freshName()
-    val instanceFactoryMapName = c.freshName()
 
     def instanceFactoriesByClassInTree(tree: Tree): List[Tree] = {
       val members = tree.tpe.members
