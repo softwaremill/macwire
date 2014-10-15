@@ -100,12 +100,14 @@ type in the enclosing method and trait/class/object:
 * first it tries to find a value declared in the enclosing method; if multiple values are found, a by name-match is attempted
 * then it tries to find a unique value declared in the enclosing type
 * then it tries to find a unique value in parent types (traits/classes)
+* then, if the parameter is marked as an implicit, it returns value inferred from an implicit scope
 
 Here value means either a `val` or a no-parameter `def`, as long as the return type matches.
 
 A compile-time error occurs if:
 
 * there are multiple values of a given type declared in the enclosing type, or in parent types
+* parameter is marked as implicit and there are at least one matching value declared in both enclosure/parents and implicit scopes.
 * there is no value of a given type
 
 The generated code is then once again type-checked by the Scala compiler.

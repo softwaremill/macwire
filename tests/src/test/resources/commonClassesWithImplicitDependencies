@@ -1,0 +1,2 @@
+case class Dependency()
+case class Service(implicit val dependency: Dependency)

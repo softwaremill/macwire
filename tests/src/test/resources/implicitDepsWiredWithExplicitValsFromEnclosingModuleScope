@@ -1,0 +1,7 @@
+#include commonClassesWithImplicitDependencies
+
+object ModuleScope {
+  val moduleExplicitDependency = new Dependency()
+  val service = wire[Service]
+}
+require(ModuleScope.service.dependency eq ModuleScope.moduleExplicitDependency)

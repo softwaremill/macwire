@@ -1,0 +1,12 @@
+#include commonClassesWithImplicitDependencies
+
+object MethodScope {
+  def someMethod(dependency: Dependency)(implicit implicitDependency: Dependency) {
+    val service = wire[Service]
+    require(service.dependency eq dependency)
+  }
+}
+
+implicit val someImplicit = new Dependency
+
+MethodScope.someMethod(new Dependency)

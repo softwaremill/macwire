@@ -1,0 +1,13 @@
+#include commonClassesWithImplicitDependencies
+
+implicit val implicitDependency = new Dependency()
+
+trait DependencyProvider {
+  lazy val regularDependency: Dependency = new Dependency()
+}
+
+object Test extends DependencyProvider {
+  val service = wire[Service]
+}
+
+require(false) // oops! macro didn't fail as expected..

@@ -1,14 +1,16 @@
-package com.softwaremill.macwire
+package com.softwaremill.macwire.dependencyLookup
 
-import reflect.macros.blackbox.Context
-import annotation.tailrec
+import com.softwaremill.macwire.{Debug, TypeCheckUtil}
 
-private[macwire] class ValuesOfTypeInEnclosingMethodFinder[C <: Context](val c: C, debug: Debug) {
+import scala.annotation.tailrec
+import scala.reflect.macros.blackbox.Context
+
+private[dependencyLookup] class ValuesOfTypeInEnclosingMethodFinder[C <: Context](val c: C, debug: Debug) {
   import c.universe._
 
   private val typeCheckUtil = new TypeCheckUtil[c.type](c, debug)
 
-  def find(n: Name, t: Type): List[Name] = {
+  def find(param: Symbol, t: Type): List[Tree] = {
     @tailrec
     def doFind(params: List[ValDef], acc: List[Name]): List[Name] = params match {
       case Nil => acc
@@ -19,7 +21,7 @@ private[macwire] class ValuesOfTypeInEnclosingMethodFinder[C <: Context](val c: 
 
     def ifNotUniqueTryByName(names: List[Name]): List[Name] = {
       if (names.size > 1) {
-        names.find(_ == n) match {
+        names.find(_ == param.name) match {
           case Some(nn) => List(nn)
           case None => names
         }
@@ -36,6 +38,6 @@ private[macwire] class ValuesOfTypeInEnclosingMethodFinder[C <: Context](val c: 
 
     debug("Looking in the enclosing method")
     val candidateNames = doFind(methodParams, Nil)
-    ifNotUniqueTryByName(candidateNames)
+    ifNotUniqueTryByName(candidateNames).map(Ident(_))
   }
 }
