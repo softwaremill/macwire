@@ -2,7 +2,7 @@ package com.softwaremill.macwire.dependencyLookup
 
 import com.softwaremill.macwire.Debug
 
-import scala.reflect.macros.blackbox.Context
+import scala.reflect.macros.Context
 
 private[dependencyLookup] class ImplicitValueOfTypeFinder[C <: Context](val c: C, debug: Debug) {
   import c.universe._
