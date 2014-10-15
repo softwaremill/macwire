@@ -1,0 +1,14 @@
+#include commonSimpleClasses
+
+object MethodScope {
+  def someMethod(dependency: A)(implicit a: A, b: B) {
+    val c = wire[C]
+    require(c.a eq a)
+    require(c.b eq b)
+  }
+}
+
+implicit val implicitA = new A()
+implicit val implicitB = new B()
+
+MethodScope.someMethod(new A())

@@ -1,0 +1,23 @@
+case class Foo[T](x: Option[T])
+
+case class Bar[T](val x: List[Option[T]])
+
+case class Baz[T, U](x: Option[T], y: List[U])
+
+object Test {
+  val x = Option("Foo")
+  val y = List(Some(1), Some(2), None)
+  val z1 = Some(3)
+  val z2 = List("abc", "def")
+
+  val foo = wire[Foo[String]]
+  val bar = wire[Bar[Int]]
+  val baz = wire[Baz[Int, String]]
+}
+
+val wired = wiredInModule(Test)
+
+// no exceptions
+wired.lookupSingleOrThrow(classOf[Foo[String]])
+wired.lookupSingleOrThrow(classOf[Bar[Int]])
+wired.lookupSingleOrThrow(classOf[Baz[Int, String]])

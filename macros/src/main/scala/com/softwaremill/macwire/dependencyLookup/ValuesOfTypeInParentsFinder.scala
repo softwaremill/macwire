@@ -1,14 +1,16 @@
-package com.softwaremill.macwire
+package com.softwaremill.macwire.dependencyLookup
 
 import reflect.macros.Context
-import annotation.tailrec
+import com.softwaremill.macwire.{Debug, TypeCheckUtil}
 
-private[macwire] class ValuesOfTypeInParentsFinder[C <: Context](val c: C, debug: Debug) {
+import scala.annotation.tailrec
+
+private[dependencyLookup] class ValuesOfTypeInParentsFinder[C <: Context](val c: C, debug: Debug) {
   import c.universe._
 
   private val typeCheckUtil = new TypeCheckUtil[c.type](c, debug)
 
-  def find(t: Type): List[Name] = {
+  def find(t: Type, implicitValue: Option[Tree]): List[Tree] = {
     def checkCandidate(tpt: Type): Boolean = {
       val typesToCheck = tpt :: (tpt match {
         case NullaryMethodType(resultType) => List(resultType)
@@ -19,7 +21,7 @@ private[macwire] class ValuesOfTypeInParentsFinder[C <: Context](val c: C, debug
       typesToCheck.exists(ty => ty <:< t && typeCheckUtil.candidateTypeOk(ty))
     }
 
-    def findInParent(parent: Tree): Set[Name] = {
+    def findInParent(parent: Tree): List[Tree] = {
       debug.withBlock(s"Checking parent: [${parent.tpe}]") {
         val parentType = if (parent.tpe == null) {
           debug("Parent type is null. Creating an expression of parent's type and type-checking that expression ...")
@@ -38,24 +40,24 @@ private[macwire] class ValuesOfTypeInParentsFinder[C <: Context](val c: C, debug
         } else {
           parent.tpe
         }
-
-        val result = parentType.members
-          .filter(symbol => checkCandidate(symbol.typeSignature))
-          .map(_.name)
-          // For (lazy) vals, the names have a space at the end of the name (probably some compiler internals).
-          // Hence the trim.
-          .map(name => newTermName(name.decodedName.toString.trim()))
-
-        if (result.size > 0) {
-          debug(s"Found ${result.size} matching name(s): [${result.mkString(", ")}]")
+        val names: Set[String] = parentType.members.filter { symbol =>
+            // filter out values already found by implicitValuesFinder
+            implicitValue.map(_.symbol.pos != symbol.pos).getOrElse(true) &&
+              checkCandidate(symbol.typeSignature)
+          }.map { symbol =>
+            // For (lazy) vals, the names have a space at the end of the name (probably some compiler internals).
+            // Hence the trim.
+            symbol.name.decodedName.toString.trim()
+          }(collection.breakOut)
+        if (names.size > 0) {
+          debug(s"Found ${names.size} matching name(s): [${names.mkString(", ")}]")
         }
-
-        result.toSet
+        names.map(Ident(_))(collection.breakOut)
       }
     }
 
     @tailrec
-    def findInParents(parents: List[Tree], acc: Set[Name]): Set[Name] = {
+    def findInParents(parents: List[Tree], acc: List[Tree]): List[Tree] = {
       parents match {
         case Nil => acc
         case parent :: tail => findInParents(tail, findInParent(parent) ++ acc)
@@ -69,8 +71,6 @@ private[macwire] class ValuesOfTypeInParentsFinder[C <: Context](val c: C, debug
         c.error(c.enclosingPosition, s"Unknown type of enclosing class: ${e.getClass}")
         Nil
     }
-
-    debug("Looking in parents")
-    findInParents(parents, Set()).toList
+    findInParents(parents, List())
   }
 }

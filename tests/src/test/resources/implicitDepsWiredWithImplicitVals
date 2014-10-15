@@ -1,0 +1,9 @@
+#include commonClassesWithImplicitDependencies
+
+implicit val dependency = new Dependency
+
+object Test  {
+  val service = wire[Service]
+}
+
+require(Test.service.dependency eq dependency)

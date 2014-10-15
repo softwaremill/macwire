@@ -1,0 +1,13 @@
+#include commonSimpleClasses
+
+trait DependencyProvider {
+  implicit val a = new A()
+  implicit val b = new B()
+}
+
+object ParentsScope extends DependencyProvider {
+  val c = wire[C]
+}
+
+require(ParentsScope.c.a eq ParentsScope.a)
+require(ParentsScope.c.b eq ParentsScope.b)

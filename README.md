@@ -1,3 +1,20 @@
+Table of Contents
+=================
+
+* [Introduction](#macwire)
+* [Guide to DI in Scala](http://di-in-scala.github.io/) (external link)
+* [How wiring works](#how-wiring-works)
+* [Factories](#factories)
+* [Limitations](#limitations)
+* [`lazy val` vs. `val`](#lazy-val-vs-val)
+* [Scopes](#scopes)
+* [Accessing wired instances dynamically](#accessing-wired-instances-dynamically)
+* [Interceptors](#interceptors)
+* [Installation, using with SBT](#installation-using-with-sbt)
+* [Debugging](#debugging)
+* [Scala.js](#scalajs)
+* [Future development - vote!](#future-development---vote)
+
 MacWire
 =======
 
@@ -83,12 +100,14 @@ type in the enclosing method and trait/class/object:
 * first it tries to find a value declared in the enclosing method; if multiple values are found, a by name-match is attempted
 * then it tries to find a unique value declared in the enclosing type
 * then it tries to find a unique value in parent types (traits/classes)
+* if the parameter is marked as implicit, additionally the usual implicit lookup mechanism is used
 
 Here value means either a `val` or a no-parameter `def`, as long as the return type matches.
 
 A compile-time error occurs if:
 
 * there are multiple values of a given type declared in the enclosing type, or in parent types
+* parameter is marked as implicit and both implicit lookup and searching in enclosing/parent types find a value
 * there is no value of a given type
 
 The generated code is then once again type-checked by the Scala compiler.
@@ -324,9 +343,9 @@ The jars are deployed to [Sonatype's OSS repository](https://oss.sonatype.org/co
 To use MacWire in your project, add a dependency:
 
 ````scala
-libraryDependencies += "com.softwaremill.macwire" %% "macros" % "0.7.1" 
+libraryDependencies += "com.softwaremill.macwire" %% "macros" % "0.7.2" 
 
-libraryDependencies += "com.softwaremill.macwire" %% "runtime" % "0.7.1" 
+libraryDependencies += "com.softwaremill.macwire" %% "runtime" % "0.7.2" 
 ````
 
 To use the snapshot version:
