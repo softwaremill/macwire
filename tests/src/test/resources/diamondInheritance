@@ -1,0 +1,19 @@
+class Dependency
+class Service(val dependency: Dependency)
+class AnotherService(val dependency: Dependency)
+
+trait A {
+  val dependency = wire[Dependency]
+}
+
+trait B extends A {
+  val service = wire[Service]
+}
+
+object C extends A with B {
+  val anotherService = wire[AnotherService]
+}
+
+require(C.dependency != null)
+require(C.service.dependency eq C.dependency)
+require(C.anotherService.dependency eq C.dependency)
