@@ -52,7 +52,7 @@ private[dependencyLookup] class ValuesOfTypeInParentsFinder[C <: Context](val c:
         if (names.size > 0) {
           debug(s"Found ${names.size} matching name(s): [${names.mkString(", ")}]")
         }
-        names.map(TermName(_))
+        names.map(newTermName(_))
       }
     }
 
