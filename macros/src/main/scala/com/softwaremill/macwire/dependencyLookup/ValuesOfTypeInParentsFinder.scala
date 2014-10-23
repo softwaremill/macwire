@@ -21,7 +21,7 @@ private[dependencyLookup] class ValuesOfTypeInParentsFinder[C <: Context](val c:
       typesToCheck.exists(ty => ty <:< t && typeCheckUtil.candidateTypeOk(ty))
     }
 
-    def findInParent(parent: Tree): List[Tree] = {
+    def findInParent(parent: Tree): Set[Name] = {
       debug.withBlock(s"Checking parent: [${parent.tpe}]") {
         val parentType = if (parent.tpe == null) {
           debug("Parent type is null. Creating an expression of parent's type and type-checking that expression ...")
@@ -52,12 +52,12 @@ private[dependencyLookup] class ValuesOfTypeInParentsFinder[C <: Context](val c:
         if (names.size > 0) {
           debug(s"Found ${names.size} matching name(s): [${names.mkString(", ")}]")
         }
-        names.map(Ident(_))(collection.breakOut)
+        names.map(TermName(_))
       }
     }
 
     @tailrec
-    def findInParents(parents: List[Tree], acc: List[Tree]): List[Tree] = {
+    def findInParents(parents: List[Tree], acc: Set[Name]): Set[Name] = {
       parents match {
         case Nil => acc
         case parent :: tail => findInParents(tail, findInParent(parent) ++ acc)
@@ -71,6 +71,6 @@ private[dependencyLookup] class ValuesOfTypeInParentsFinder[C <: Context](val c:
         c.error(c.enclosingPosition, s"Unknown type of enclosing class: ${e.getClass}")
         Nil
     }
-    findInParents(parents, List())
+    findInParents(parents, Set()).map(Ident(_))(collection.breakOut)
   }
 }
