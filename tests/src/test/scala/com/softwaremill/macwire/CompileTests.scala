@@ -61,7 +61,8 @@ class CompileTests extends FlatSpec with ShouldMatchers {
     // dependency resolution should abort compilation when there are ambiguous dependencies in scope
     ("implicitDepsNotWiredWithExplicitAndImplicitValsInEnclosingClassScope", List("Found multiple values of type [Dependency]", "regularDependency", "implicitDependency")),
     ("implicitDepsNotWiredWithExplicitAndImplicitValsInParentsScope", List("Found multiple values of type [Dependency]", "regularDependency", "implicitDependency")),
-    ("implicitDepsNotWiredWithoutAnyValsInScope", List("Cannot find a value of type", "Dependency"))
+    ("implicitDepsNotWiredWithoutAnyValsInScope", List("Cannot find a value of type", "Dependency")),
+    ("diamondInheritance", Nil)
   )
 
   for ((testName, expectedErrors) <- tests)
