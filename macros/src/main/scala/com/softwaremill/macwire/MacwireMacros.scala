@@ -24,8 +24,7 @@ object MacwireMacros extends Macwire {
         val targetConstructorOpt = targetType.tpe.members.find(m => m.isMethod && m.asMethod.isPrimaryConstructor)
         targetConstructorOpt match {
           case None =>
-            c.error(c.enclosingPosition, "Cannot find constructor for " + targetType)
-            reify { null.asInstanceOf[T] }
+            c.abort(c.enclosingPosition, "Cannot find constructor for " + targetType)
           case Some(targetConstructor) =>
             val targetConstructorParamLists = targetConstructor.asMethod.paramLists
             val TypeRef(_, sym, tpeArgs) = targetType.tpe
