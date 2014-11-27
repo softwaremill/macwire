@@ -21,7 +21,7 @@ object MacwireMacros extends Macwire {
     def createNewTargetWithParams(): Expr[T] = {
       val targetType = implicitly[c.WeakTypeTag[T]]
       debug.withBlock(s"Trying to find parameters to create new instance of: [${targetType.tpe}]") {
-        val targetConstructorOpt = targetType.tpe.members.find(_.name.decodedName.toString == "<init>")
+        val targetConstructorOpt = targetType.tpe.members.find(m => m.isMethod && m.asMethod.isPrimaryConstructor)
         targetConstructorOpt match {
           case None =>
             c.error(c.enclosingPosition, "Cannot find constructor for " + targetType)
