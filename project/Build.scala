@@ -88,6 +88,15 @@ object MacwireBuild extends Build {
       fork in test := true)
   ) dependsOn(macros, runtime)
 
+  lazy val test3: Project = Project(
+    "tests3",
+    file("tests3"),
+    settings = buildSettings ++ Seq(
+      publishArtifact := false,
+      libraryDependencies ++= Seq(scalatest),
+      fork in test := true)
+  ) dependsOn(macros, runtime)
+
   lazy val examplesScalatra: Project = {
     val ScalatraVersion = "2.3.0"
     val scalatraCore = "org.scalatra" %% "scalatra" % ScalatraVersion
