@@ -54,8 +54,16 @@ private[macwire] class DependencyResolver[C <: blackbox.Context](val c: C, debug
           debug(s"Found single value: [$value] of type [$t]")
           Some(value)
         case values =>
-          c.error(c.enclosingPosition, s"Found multiple values of type [$t]: [$values]")
-          None
+          val matching = values.filter {
+            case Ident(sym) => sym == param.name
+          }
+
+          if(matching.size == 1)
+            matching.headOption
+          else {
+            c.error(c.enclosingPosition, s"Found multiple values of type [$t]: [$values]")
+            None
+          }
       }
     }
   }
