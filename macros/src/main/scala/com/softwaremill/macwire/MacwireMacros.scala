@@ -36,7 +36,14 @@ object MacwireMacros extends Macwire {
               val constructorParams: List[c.Tree] = for (param <- targetConstructorParams) yield {
                 // Resolve type parameters
                 val pTpe = param.typeSignature.substituteTypes(sym.asClass.typeParams, tpeArgs)
-                val wireToOpt = dependencyResolver.resolve(param, pTpe)
+
+                val pEffectiveTpe = if (param.asTerm.isByNameParam) {
+                  pTpe.typeArgs.head
+                } else {
+                  pTpe
+                }
+
+                val wireToOpt = dependencyResolver.resolve(param, pEffectiveTpe)
 
                 // If no value is found, an error has been already reported.
                 wireToOpt.getOrElse(reify(null).tree)
