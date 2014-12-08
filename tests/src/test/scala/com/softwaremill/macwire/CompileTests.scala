@@ -62,7 +62,8 @@ class CompileTests extends FlatSpec with ShouldMatchers {
     ("implicitDepsNotWiredWithExplicitAndImplicitValsInEnclosingClassScope", List("Found multiple values of type [Dependency]", "regularDependency", "implicitDependency")),
     ("implicitDepsNotWiredWithExplicitAndImplicitValsInParentsScope", List("Found multiple values of type [Dependency]", "regularDependency", "implicitDependency")),
     ("implicitDepsNotWiredWithoutAnyValsInScope", List("Cannot find a value of type", "Dependency")),
-    ("diamondInheritance", Nil)
+    ("diamondInheritance", Nil),
+    ("callByNameConstructorParameter", Nil)
   )
 
   for ((testName, expectedErrors) <- tests)

@@ -1,0 +1,22 @@
+class A()
+
+class B(aProvider: => A) {
+  def a = aProvider
+}
+
+class C[T]()
+
+class D(cProvider: => C[String]) {
+  def c = cProvider
+}
+
+object Test {
+  val a = new A()
+  val b = wire[B]
+  val cString = new C[String]()
+  val cInt = new C[Int]()
+  val d = wire[D]
+}
+
+require(Test.b.a eq Test.a)
+require(Test.d.c eq Test.cString)
