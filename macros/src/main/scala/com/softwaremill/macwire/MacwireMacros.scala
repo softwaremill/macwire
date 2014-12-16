@@ -30,7 +30,12 @@ object MacwireMacros extends Macwire {
             // We need to get the "real" type in case the type parameter is a type alias - then it cannot
             // be directly instatiated
             val targetTpe = targetType.tpe.dealias
-            val TypeRef(_, sym, tpeArgs) = targetTpe
+
+            val (sym, tpeArgs) = targetTpe match {
+              case TypeRef(_, sym, tpeArgs) => (sym, tpeArgs)
+              case t => c.abort(c.enclosingPosition, s"Target type not supported for wiring: $t. Please file a bug report with your use-case.")
+            }
+
             var newT: Tree = Select(New(Ident(targetTpe.typeSymbol)), termNames.CONSTRUCTOR)
 
             for {
