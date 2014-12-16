@@ -2,10 +2,10 @@ import sbt._
 import Keys._
 
 object BuildSettings {
-  val buildSettings = Defaults.defaultSettings ++ Seq (
+  val buildSettings = Defaults.coreDefaultSettings ++ Seq (
     organization  := "com.softwaremill.macwire",
     version       := "0.8.0-SNAPSHOT",
-    scalaVersion  := "2.11.2",
+    scalaVersion  := "2.11.4",
     // Sonatype OSS deployment
     publishTo <<= version { (v: String) =>
       val nexus = "https://oss.sonatype.org/"
@@ -36,8 +36,8 @@ object BuildSettings {
 }
 
 object Dependencies {
-  val scalatest     = "org.scalatest" % "scalatest_2.11.0-RC4"  % "2.1.3"       % "test" // TODO
-  val javassist     = "org.javassist" % "javassist"   % "3.18.1-GA"
+  val scalatest     = "org.scalatest" %% "scalatest"  % "2.2.1"       % "test"
+  val javassist     = "org.javassist"  % "javassist"  % "3.18.2-GA"
 }
 
 object MacwireBuild extends Build {
