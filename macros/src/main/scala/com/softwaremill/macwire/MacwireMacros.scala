@@ -27,8 +27,11 @@ object MacwireMacros extends Macwire {
             c.abort(c.enclosingPosition, "Cannot find constructor for " + targetType)
           case Some(targetConstructor) =>
             val targetConstructorParamLists = targetConstructor.asMethod.paramLists
-            val TypeRef(_, sym, tpeArgs) = targetType.tpe
-            var newT: Tree = Select(New(Ident(targetType.tpe.typeSymbol)), termNames.CONSTRUCTOR)
+            // We need to get the "real" type in case the type parameter is a type alias - then it cannot
+            // be directly instatiated
+            val targetTpe = targetType.tpe.dealias
+            val TypeRef(_, sym, tpeArgs) = targetTpe
+            var newT: Tree = Select(New(Ident(targetTpe.typeSymbol)), termNames.CONSTRUCTOR)
 
             for {
               targetConstructorParams <- targetConstructorParamLists

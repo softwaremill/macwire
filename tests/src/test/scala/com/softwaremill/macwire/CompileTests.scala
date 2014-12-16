@@ -24,6 +24,7 @@ class CompileTests extends FlatSpec with ShouldMatchers {
     ("simpleLazyValsNotInOrderOk", Nil),
     ("simpleValsMultipleParameterLists", Nil),
     ("simpleValsImplicitParameterLists", Nil),
+    ("simpleValsTypeAlias", Nil),
     ("classesWithTraitsLazyValsOkInTrait", Nil),
     ("inheritanceSimpleLazyValsOkInTraits", Nil),
     ("inheritanceSimpleDefsOkInTraits", Nil),

@@ -1,0 +1,24 @@
+#include commonSimpleClasses
+
+object Aliases {
+    type AA = A
+    type BB = B
+    type CC = C
+}
+
+case class DD(c: Aliases.CC)
+
+trait Test {
+    import Aliases._
+
+    val theA = wire[AA]
+    val theB = wire[BB]
+    val theC = wire[CC]
+    val theD = wire[DD]
+}
+
+#include commonSimpleNotNullCheck
+
+require(t.theD.c != null)
+
+require(t.theD.c eq t.theC)
