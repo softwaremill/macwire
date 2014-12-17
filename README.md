@@ -10,7 +10,7 @@ Table of Contents
 * [Scopes](#scopes)
 * [Accessing wired instances dynamically](#accessing-wired-instances-dynamically)
 * [Interceptors](#interceptors)
-* [Wiring with implicit values](#wireimplicit)
+* [Wiring with implicit values](#wiring-with-implicit-values)
 * [Installation, using with SBT](#installation-using-with-sbt)
 * [Debugging](#debugging)
 * [Scala.js](#scalajs)
