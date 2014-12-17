@@ -66,7 +66,10 @@ class CompileTests extends FlatSpec with ShouldMatchers {
     ("diamondInheritance", Nil),
     ("callByNameConstructorParameter", Nil),
     ("simpleWireWithImplicits", Nil),
-    ("simpleWireWithImplicitsErrorDuplicateValue", List("Found multiple values of type [B]", "B.defaultB", "b"))
+    ("simpleWireWithImplicitsErrorDuplicateValue", List("Found multiple values of type [B]", "B.defaultB", "b")),
+    ("taggedOk", Nil),
+    ("taggedPrimitiveOk", Nil),
+    ("taggedErrorNoValueWithTag", List("Cannot find a value of type", "com.softwaremill.macwire.Tagging.@@[Berry,Blue]"))
   )
 
   for ((testName, expectedErrors) <- tests)

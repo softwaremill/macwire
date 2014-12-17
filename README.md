@@ -11,6 +11,7 @@ Table of Contents
 * [Accessing wired instances dynamically](#accessing-wired-instances-dynamically)
 * [Interceptors](#interceptors)
 * [Wiring with implicit values](#wiring-with-implicit-values)
+* [Qualifiers](#qualifiers]
 * [Installation, using with SBT](#installation-using-with-sbt)
 * [Debugging](#debugging)
 * [Scala.js](#scalajs)
@@ -376,6 +377,44 @@ trait UserModule {
 Note that the signature of `UserFinder` is unaffected by the way the wiring is done, that is its parameter list
 doesn't have to be marked as `implicit`.
 
+Qualifiers
+----------
+
+Sometimes you have multiple objects of the same type that you want to use during wiring. Macwire needs to have some
+way of telling the instances apart. As with other things, the answer is: types! Even when not using `wire`, it may
+be useful to give the instances distinct types, to get compile-time checking.
+
+For that purpose Macwire includes support for tagging, which lets you attach tags to instances to qualify them. This
+is a compile-time only operation, and doesn't affect the runtime. The tags are derived from
+[Miles Sabin's gist](via https://gist.github.com/milessabin/89c9b47a91017973a35f).
+
+To bring the tagging into scope, import `com.softwaremill.macwire._`, or the more specific
+`com.softwaremill.macwire.Tagging._`.
+
+Using tagging has two sides. In the constructor, when declaring a dependency, you need to declare what tag it needs
+to have. You can do this with the `_ @@ _` type constructor, or if you prefer another syntax `Tagged[_, _]`. The first
+type parameter is the type of the dependency, the second is a tag.
+
+The tag can be any type, but usually it is just an empty marker trait.
+
+When defining the available instances, you need to specify which instance has which tag. This can be done with the
+`taggedWith[_]` method, which returns a tagged instance (`A.taggedWith[T]: A @@ T`). Tagged instances can be used
+as regular ones, without any constraints.
+
+The `wire` macro does not contain any special support for tagging, everything is handled by subtyping. For example:
+
+````scala
+class Berry()
+trait Black
+trait Blue
+
+case class Basket(blueberry: Berry @@ Blue, blackberry: Berry @@ Black)
+
+lazy val blueberry = wire[Berry].taggedWith[Blue]
+lazy val blackberry = wire[Berry].taggedWith[Black]
+lazy val basket = wire[Basket]
+````
+
 Installation, using with SBT
 ----------------------------
 
@@ -416,8 +455,5 @@ Macwire also works with [Scala.js](http://www.scala-js.org/). For an example, se
 Future development - vote!
 --------------------------
 
-* [Qualifier support](https://github.com/adamw/macwire/issues/9)
-* [wireSet[] method to get all dependencies of the given type](https://github.com/adamw/macwire/issues/8)
-* [Support parameters in wire[] to override dependencies](https://github.com/adamw/macwire/issues/7)
-* relax type ascription requirements
-* configuration values - by-name wiring
+Take a look at the [available issues](https://github.com/adamw/macwire/issues). If you'd like to see one developed
+please vote on it. Or maybe you'll attempt to create a pull request?

@@ -1,0 +1,12 @@
+import com.softwaremill.macwire.Tagging._
+
+class Berry()
+trait Black
+trait Blue
+
+class Basket(blueberry: Berry @@ Blue)
+
+trait Test {
+  lazy val blackberry = wire[Berry].taggedWith[Black]
+  lazy val basket = wire[Basket]
+}
