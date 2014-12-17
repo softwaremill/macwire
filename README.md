@@ -11,7 +11,7 @@ Table of Contents
 * [Accessing wired instances dynamically](#accessing-wired-instances-dynamically)
 * [Interceptors](#interceptors)
 * [Wiring with implicit values](#wiring-with-implicit-values)
-* [Qualifiers](#qualifiers]
+* [Qualifiers](#qualifiers)
 * [Installation, using with SBT](#installation-using-with-sbt)
 * [Debugging](#debugging)
 * [Scala.js](#scalajs)
