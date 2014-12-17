@@ -342,7 +342,7 @@ Wiring with implicit values
 ---------------------------
 
 It is also possible to wire an object taking into account implicit values and values in scope using `wireImplicit`.
-This makes it possible to wire with objects that are defined inside a method body, as anonymous method parameters,
+This makes it possible to wire with objects that are defined inside a method body, as default implicit values
 and others which aren't part of the usual scope where MacWire looks.
 
 `wireImplicit` for each constructor parameter does an implicit lookup and looks in the current scope. If multiple
