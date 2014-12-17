@@ -374,7 +374,7 @@ trait UserModule {
 ````
 
 Note that the signature of `UserFinder` is unaffected by the way the wiring is done, that is its parameter list
-doesn't have to be marked as `implicit.
+doesn't have to be marked as `implicit`.
 
 Installation, using with SBT
 ----------------------------
