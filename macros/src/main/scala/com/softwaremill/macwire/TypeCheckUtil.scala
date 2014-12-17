@@ -1,22 +1,17 @@
 package com.softwaremill.macwire
 
-import scala.reflect.macros.blackbox.Context
+import scala.reflect.macros.blackbox
 
-private[macwire] class TypeCheckUtil[C <: Context](val c: C, debug: Debug) {
+private[macwire] class TypeCheckUtil[C <: blackbox.Context](val c: C, debug: Debug) {
   import c.universe._
 
   def typeCheckExpressionOfType(typeTree: Tree): Type = {
-    val someValueOfTypeString = reify {
-      def x[T](): T = throw new Exception
-      x[String]()
-    }
+    // identity[T](???) has type T
+    val treeOfGivenType = Apply(
+      TypeApply(Ident(TermName("identity")), List(typeTree)),
+      List(Ident(TermName("$qmark$qmark$qmark"))))
 
-    val Expr(Block(stats, Apply(TypeApply(someValueFun, _), someTypeArgs))) = someValueOfTypeString
-
-    val someValueOfGivenType = Block(stats, Apply(TypeApply(someValueFun, List(typeTree)), someTypeArgs))
-    val someValueOfGivenTypeChecked = c.typecheck(someValueOfGivenType)
-
-    someValueOfGivenTypeChecked.tpe
+    c.typecheck(treeOfGivenType).tpe
   }
 
   def candidateTypeOk(tpe: Type) = {

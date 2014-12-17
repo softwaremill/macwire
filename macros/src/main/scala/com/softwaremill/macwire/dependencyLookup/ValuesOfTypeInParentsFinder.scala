@@ -22,7 +22,7 @@ private[dependencyLookup] class ValuesOfTypeInParentsFinder[C <: Context](val c:
     }
 
     def findInParent(parent: Tree): Set[Name] = {
-      debug.withBlock(s"Checking parent: [${parent.tpe}]") {
+      debug.withBlock(s"Checking parent: [$parent]") {
         val parentType = if (parent.tpe == null) {
           debug("Parent type is null. Creating an expression of parent's type and type-checking that expression ...")
 

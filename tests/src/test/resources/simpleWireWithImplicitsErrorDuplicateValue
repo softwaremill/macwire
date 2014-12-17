@@ -1,0 +1,12 @@
+#include commonSimpleClasses
+
+implicit val a = new A()
+
+object B {
+  implicit def defaultB = new B()
+}
+
+object Test  {
+  val b = new B()
+  val c = wireImplicit[C]
+}

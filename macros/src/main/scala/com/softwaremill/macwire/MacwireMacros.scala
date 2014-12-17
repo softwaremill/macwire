@@ -3,20 +3,25 @@ package com.softwaremill.macwire
 import com.softwaremill.macwire.dependencyLookup._
 
 import scala.language.experimental.macros
-import scala.reflect.macros.blackbox.Context
+import scala.reflect.macros.blackbox
 
 trait Macwire {
   def wire[T]: T = macro MacwireMacros.wire_impl[T]
+  def wireImplicit[T]: T = macro MacwireMacros.wireImplicit_impl[T]
   def wiredInModule(in: AnyRef): Wired = macro MacwireMacros.wiredInModule_impl
 }
 
 object MacwireMacros extends Macwire {
   private val debug = new Debug()
 
-  def wire_impl[T: c.WeakTypeTag](c: Context): c.Expr[T] = {
+  def wire_impl[T: c.WeakTypeTag](c: blackbox.Context): c.Expr[T] = doWire(c, wireWithImplicits = false)
+
+  def wireImplicit_impl[T: c.WeakTypeTag](c: blackbox.Context): c.Expr[T] = doWire(c, wireWithImplicits = true)
+
+  private def doWire[T: c.WeakTypeTag](c: blackbox.Context, wireWithImplicits: Boolean): c.Expr[T] = {
     import c.universe._
 
-    lazy val dependencyResolver = new DependencyResolver[c.type](c, debug)
+    lazy val dependencyResolver = new DependencyResolver[c.type](c, debug, wireWithImplicits)
 
     def createNewTargetWithParams(): Expr[T] = {
       val targetType = implicitly[c.WeakTypeTag[T]]
@@ -69,7 +74,7 @@ object MacwireMacros extends Macwire {
     createNewTargetWithParams()
   }
 
-  def wiredInModule_impl(c: Context)(in: c.Expr[AnyRef]): c.Expr[Wired] = {
+  def wiredInModule_impl(c: blackbox.Context)(in: c.Expr[AnyRef]): c.Expr[Wired] = {
     import c.universe._
 
     // Ident(scala.Predef)

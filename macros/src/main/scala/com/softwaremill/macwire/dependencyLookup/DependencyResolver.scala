@@ -5,16 +5,16 @@ import com.softwaremill.macwire.Util._
 
 import scala.reflect.macros.blackbox
 
-private[macwire] class DependencyResolver[C <: blackbox.Context](val c: C, debug: Debug) {
+private[macwire] class DependencyResolver[C <: blackbox.Context](
+  val c: C,
+  debug: Debug,
+  wireWithImplicits: Boolean) {
 
   import c.universe._
 
   private lazy val implicitValuesFinder = new ImplicitValueOfTypeFinder[c.type](c, debug)
-
   private lazy val enclosingMethodParamsFinder = new ValuesOfTypeInEnclosingMethodFinder[c.type](c, debug);
-
   private lazy val enclosingClassFinder = new ValuesOfTypeInEnclosingClassFinder[c.type](c, debug)
-
   private lazy val parentsMembersFinder = new ValuesOfTypeInParentsFinder[c.type](c, debug)
 
   def resolve(param: Symbol, t: Type): Option[c.Tree] = {
@@ -24,7 +24,7 @@ private[macwire] class DependencyResolver[C <: blackbox.Context](val c: C, debug
       val results: List[Tree] = enclosingMethodParamsFinder.find(param, t) match {
         case Nil =>
           val implicitInferenceResults =
-            if (param.isImplicit) implicitValuesFinder.find(t)
+            if (wireWithImplicits || param.isImplicit) implicitValuesFinder.find(t)
             else None
 
           /* First, we perform plain, old, regular value lookup that will exclude found

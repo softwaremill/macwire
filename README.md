@@ -10,6 +10,7 @@ Table of Contents
 * [Scopes](#scopes)
 * [Accessing wired instances dynamically](#accessing-wired-instances-dynamically)
 * [Interceptors](#interceptors)
+* [Wiring with implicit values](#wireimplicit)
 * [Installation, using with SBT](#installation-using-with-sbt)
 * [Debugging](#debugging)
 * [Scala.js](#scalajs)
@@ -23,7 +24,8 @@ MacWire
 MacWire generates `new` instance creation code of given classes, using values in the enclosing type for constructor
 parameters, with the help of [Scala Macros](http://scalamacros.org/).
 
-For a general introduction to DI in Scala, take a look at the [Guide to DI in Scala](http://di-in-scala.github.io/), which also features MacWire.
+For a general introduction to DI in Scala, take a look at the [Guide to DI in Scala](http://di-in-scala.github.io/),
+which also features MacWire.
 
 MacWire helps to implement the Dependency Injection (DI) pattern, by removing the need to write the
 class-wiring code by hand. Instead, it is enough to declare which classes should be wired, and how the instances
@@ -175,7 +177,7 @@ lazy val theA: A = wire[A]
 lazy val theB = new B(theA)
 ````
 
-This is a major inconvenience, but hopefully will get resolved once post-typer macros are introduced to the language.
+This is an inconvenience, but hopefully will get resolved once post-typer macros are introduced to the language.
 
 Also, wiring will probably not work properly for traits and classes defined inside the containing trait/class, or in
 super traits/classes.
@@ -335,6 +337,44 @@ parameters.
 For more general AOP, e.g. if you want to apply an interceptor to all methods matching a given pointcut expression,
 you should use [AspectJ](http://eclipse.org/aspectj/) or an equivalent library. The interceptors that are implemented
 in MacWire correspond to annotation-based interceptors in Java.
+
+Wiring with implicit values
+---------------------------
+
+It is also possible to wire an object taking into account implicit values and values in scope using `wireImplicit`.
+This makes it possible to wire with objects that are defined inside a method body, as anonymous method parameters,
+and others which aren't part of the usual scope where MacWire looks.
+
+`wireImplicit` for each constructor parameter does an implicit lookup and looks in the current scope. If multiple
+values are found, an error is reported.
+
+For example:
+
+````scala
+class DatabaseAccess()
+class SecurityFilter()
+class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
+
+object SecurityFilter {
+    implicit val default = wire[SecurityFilter]
+}
+
+object Implicits {
+    implicit lazy val theDatabaseAccess = wire[DatabaseAccess]
+}
+
+trait UserModule {
+    def run() {
+        import com.softwaremill.macwire.MacwireMacros._
+        import Implicits._
+
+        lazy val theUserFinder = wireImplicit[UserFinder]
+    }
+}
+````
+
+Note that the signature of `UserFinder` is unaffected by the way the wiring is done, that is its parameter list
+doesn't have to be marked as `implicit.
 
 Installation, using with SBT
 ----------------------------
