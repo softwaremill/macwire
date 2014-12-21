@@ -100,7 +100,10 @@ How wiring works
 For each constructor parameter of the given class, MacWire tries to find a value which is a subtype of the parameter's
 type in the enclosing method and trait/class/object:
 
-* first it tries to find a value declared in the enclosing method; if multiple values are found, a by name-match is attempted
+* first it tries to find a value declared as the argument of enclosing methods and anonymous functions.
+If multiple values are found, then ~~by name-match is attempted~~ compilation is aborted (since v0.8).
+MacWire traverses AST from enclosing class definition to currently expanding wire[T] macro call, once collecting
+candidates for constructor parameter injection.
 * then it tries to find a unique value declared in the enclosing type
 * then it tries to find a unique value in parent types (traits/classes)
 * if the parameter is marked as implicit, additionally the usual implicit lookup mechanism is used
@@ -109,7 +112,7 @@ Here value means either a `val` or a no-parameter `def`, as long as the return t
 
 A compile-time error occurs if:
 
-* there are multiple values of a given type declared in the enclosing type, or in parent types
+* there are multiple values of a given type declared in the enclosing method/function's arguments list, enclosing type or its parents.
 * parameter is marked as implicit and both implicit lookup and searching in enclosing/parent types find a value
 * there is no value of a given type
 

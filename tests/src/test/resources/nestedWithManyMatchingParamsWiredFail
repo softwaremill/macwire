@@ -1,0 +1,17 @@
+#include commonSimpleClasses
+
+object Module {
+  // anonymous function's parameter 'a' will shadow val 'a'.
+  val a = (a1: A) =>
+    (b: B) =>
+      (a2: A) =>
+        (a3: A) => wire[C]
+}
+
+val a1Dep = new A()
+val a2Dep = new A()
+val a3Dep = new A()
+val bDep = new B()
+
+// we're expecting compilation abort due to ambiguous dependencies' resolution.
+val c = Module.a(a1Dep)(bDep)(a2Dep)(a3Dep)

@@ -1,0 +1,14 @@
+#include commonSimpleClasses
+
+object Module {
+  // anonymous function's parameter 'a' will shadow val 'a'.
+  val a = (a: A) =>
+    (b: B) => wire[C]
+}
+
+val aDep = new A()
+val bDep = new B()
+val c = Module.a(aDep)(bDep)
+
+require(c.a eq aDep)
+require(c.b eq bDep)
