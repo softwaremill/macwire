@@ -423,9 +423,9 @@ The jars are deployed to [Sonatype's OSS repository](https://oss.sonatype.org/co
 To use MacWire in your project, add a dependency:
 
 ````scala
-libraryDependencies += "com.softwaremill.macwire" %% "macros" % "0.7.3" 
+libraryDependencies += "com.softwaremill.macwire" %% "macros" % "0.8.0"
 
-libraryDependencies += "com.softwaremill.macwire" %% "runtime" % "0.7.3" 
+libraryDependencies += "com.softwaremill.macwire" %% "runtime" % "0.8.0"
 ````
 
 To use the snapshot version:
@@ -438,7 +438,7 @@ libraryDependencies += "com.softwaremill.macwire" %% "macros" % "0.8-SNAPSHOT"
 libraryDependencies += "com.softwaremill.macwire" %% "runtime" % "0.8-SNAPSHOT"
 ````
 
-MacWire works with Scala 2.10+.
+MacWire works with Scala 2.11. The last release for Scala 2.10 is 0.7.3.
 
 Debugging
 ---------
