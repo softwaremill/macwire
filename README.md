@@ -100,10 +100,7 @@ How wiring works
 For each constructor parameter of the given class, MacWire tries to find a value which is a subtype of the parameter's
 type in the enclosing method and trait/class/object:
 
-* first it tries to find a value declared as the argument of enclosing methods and anonymous functions.
-If multiple values are found, then ~~by name-match is attempted~~ compilation is aborted (since v0.8).
-MacWire traverses AST from enclosing class definition to currently expanding wire[T] macro call, once collecting
-candidates for constructor parameter injection.
+* first it tries to find a unique value declared as the argument of enclosing methods and anonymous functions.
 * then it tries to find a unique value declared in the enclosing type
 * then it tries to find a unique value in parent types (traits/classes)
 * if the parameter is marked as implicit, additionally the usual implicit lookup mechanism is used
@@ -140,6 +137,7 @@ trait TaxModule {
     lazy val theDatabaseAccess      = wire[DatabaseAccess]
     lazy val theTaxDeductionLibrary = wire[TaxDeductionLibrary]
     def taxCalculator(taxBase: Double, taxFreeAmount: Double) = wire[TaxCalculator]
+    // or: lazy val taxCalculator = (taxBase: Double, taxFreeAmount: Double) => wire[TaxCalculator]
 }
 ````
 
