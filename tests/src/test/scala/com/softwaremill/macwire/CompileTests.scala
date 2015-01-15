@@ -11,65 +11,84 @@ class CompileTests extends FlatSpec with ShouldMatchers {
   val DirectiveRegexp = "#include ([a-zA-Z]+)".r
   val EmptyResult = "\n\n()"
 
+  def ambiguousResMsg(depClassName: String): String = s"Found multiple values of type [$depClassName]"
+
+  def valueNotFound(depClassName: String): String = s"Cannot find a value of type: [$depClassName]"
+  
+  type CompilationResult = List[String]
+  
+  val success: CompilationResult = Nil
+  
+  def compileErr(messageParts: String*): CompilationResult = List.apply(messageParts: _*)
+
   val tests = List(
-    ("simpleValsOkInTrait", Nil),
-    ("simpleValsOkInObject", Nil),
-    ("simpleValsOkInClass", Nil),
-    ("simpleValsErrorMissingValue", List("Cannot find a value of type: [B]")),
-    ("simpleValsErrorDuplicateValue", List("Found multiple values of type [B]", "theB1", "theB2")),
-    ("simpleDefsOkInTrait", Nil),
-    ("simpleLazyValsOkInTrait", Nil),
-    ("simpleWithAbstractOk", Nil),
-    ("simpleValsReferenceWithAscriptionOk", Nil),
-    ("simpleLazyValsNotInOrderOk", Nil),
-    ("simpleValsMultipleParameterLists", Nil),
-    ("simpleValsImplicitParameterLists", Nil),
-    ("simpleValsTypeAlias", Nil),
-    ("classesWithTraitsLazyValsOkInTrait", Nil),
-    ("inheritanceSimpleLazyValsOkInTraits", Nil),
-    ("inheritanceSimpleDefsOkInTraits", Nil),
-    ("inheritanceTwoLevelSimpleLazyValsOkInTraits", Nil),
-    ("inheritanceDoubleSimpleLazyValsOkInTraits", Nil),
-    ("inheritanceClassesWithTraitsLazyValsOkInTraits", Nil),
-    ("simpleWithAbstractScopeOk", Nil),
-    ("methodSingleParamOk", Nil),
-    ("methodParamsOk", Nil),
-    ("methodMixedOk", Nil),
-    ("methodByNameIfMultipleOk", Nil),
-    ("methodByNamePrimitiveIfMultipleOk", Nil),
-    ("wiredSimple", Nil),
-    ("wiredLazy", Nil),
-    ("wiredWithWire", Nil),
-    ("wiredInherited", Nil),
-    ("wiredDefs", Nil),
-    ("wiredFromClass", Nil),
-    ("wiredClassWithTypeParameters", Nil),
+    ("simpleValsOkInTrait", success),
+    ("simpleValsOkInObject", success),
+    ("simpleValsOkInClass", success),
+    ("simpleValsErrorMissingValue", compileErr(valueNotFound("B"))),
+    ("simpleValsErrorDuplicateValue", compileErr(ambiguousResMsg("B"), "theB1", "theB2")),
+    ("simpleDefsOkInTrait", success),
+    ("simpleLazyValsOkInTrait", success),
+    ("simpleWithAbstractOk", success),
+    ("simpleValsReferenceWithAscriptionOk", success),
+    ("simpleLazyValsNotInOrderOk", success),
+    ("simpleValsMultipleParameterLists", success),
+    ("simpleValsImplicitParameterLists", success),
+    ("classesWithTraitsLazyValsOkInTrait", success),
+    ("inheritanceSimpleLazyValsOkInTraits", success),
+    ("inheritanceSimpleDefsOkInTraits", success),
+    ("inheritanceTwoLevelSimpleLazyValsOkInTraits", success),
+    ("inheritanceDoubleSimpleLazyValsOkInTraits", success),
+    ("inheritanceClassesWithTraitsLazyValsOkInTraits", success),
+    ("simpleWithAbstractScopeOk", success),
+    ("methodSingleParamOk", success),
+    ("methodParamsOk", success),
+    ("methodMixedOk", success),
+    ("wiredSimple", success),
+    ("wiredLazy", success),
+    ("wiredWithWire", success),
+    ("wiredInherited", success),
+    ("wiredDefs", success),
+    ("wiredFromClass", success),
+    ("wiredClassWithTypeParameters", success),
     // explicit param should not be resolved with implicit value when dependency cannot be found during plain, old regular lookup
-    ("explicitDepsNotWiredWithImplicitVals", List("Cannot find a value of type", "A")),
+    ("explicitDepsNotWiredWithImplicitVals", compileErr(valueNotFound("A"))),
     // non-implicit params should be resolved with implicit values if are in scope
-    ("explicitDepsWiredWithImplicitValsFromMethodScope", Nil),
-    ("explicitDepsWiredWithImplicitValsFromEnclosingModuleScope", Nil),
-    ("explicitDepsWiredWithImplicitValsFromParentsScope", Nil),
+    ("explicitDepsWiredWithImplicitValsFromMethodScope", compileErr(ambiguousResMsg("A"), "dependency", "implicitDependencyA")),
+    ("explicitDepsWiredWithImplicitValsFromEnclosingModuleScope", success),
+    ("explicitDepsWiredWithImplicitValsFromParentsScope", success),
     // implicit params should be resolved with implicit values
-    ("implicitDepsWiredWithImplicitVals", Nil),
-    ("implicitDepsWiredWithImplicitValsFromMethodScope", Nil),
-    ("implicitDepsWiredWithImplicitValsFromEnclosingModuleScope", Nil),
-    ("implicitDepsWiredWithImplicitValsFromParentsScope", Nil),
+    ("implicitDepsWiredWithImplicitVals", success),
+    ("implicitDepsWiredWithImplicitValsFromMethodScope", compileErr(ambiguousResMsg("Dependency"), "dependency", "implicitDependency")),
+    ("implicitDepsWiredWithImplicitValsFromEnclosingModuleScope", success),
+    ("implicitDepsWiredWithImplicitValsFromParentsScope", success),
     // implicit params should be resolved with regular values
-    ("implicitDepsWiredWithExplicitVals", Nil),
-    ("implicitDepsWiredWithExplicitValsFromEnclosingModuleScope", Nil),
-    ("implicitDepsWiredWithExplicitValsFromParentsScope", Nil),
+    ("implicitDepsWiredWithExplicitVals", success),
+    ("implicitDepsWiredWithExplicitValsFromEnclosingModuleScope", success),
+    ("implicitDepsWiredWithExplicitValsFromParentsScope", success),
     // dependency resolution should abort compilation when there are ambiguous dependencies in scope
-    ("implicitDepsNotWiredWithExplicitAndImplicitValsInEnclosingClassScope", List("Found multiple values of type [Dependency]", "regularDependency", "implicitDependency")),
-    ("implicitDepsNotWiredWithExplicitAndImplicitValsInParentsScope", List("Found multiple values of type [Dependency]", "regularDependency", "implicitDependency")),
-    ("implicitDepsNotWiredWithoutAnyValsInScope", List("Cannot find a value of type", "Dependency")),
-    ("diamondInheritance", Nil),
-    ("callByNameConstructorParameter", Nil),
-    ("simpleWireWithImplicits", Nil),
-    ("simpleWireWithImplicitsErrorDuplicateValue", List("Found multiple values of type [B]", "B.defaultB", "b")),
-    ("taggedOk", Nil),
-    ("taggedPrimitiveOk", Nil),
-    ("taggedErrorNoValueWithTag", List("Cannot find a value of type", "com.softwaremill.macwire.Tagging.@@[Berry,Blue]"))
+    ("implicitDepsNotWiredWithExplicitAndImplicitValsInEnclosingClassScope", compileErr(ambiguousResMsg("Dependency"), "regularDependency", "implicitDependency")),
+    ("implicitDepsNotWiredWithExplicitAndImplicitValsInParentsScope", compileErr(ambiguousResMsg("Dependency"), "regularDependency", "implicitDependency")),
+    ("implicitDepsNotWiredWithoutAnyValsInScope", compileErr(valueNotFound("Dependency"))),
+    ("diamondInheritance", success),
+    ("simpleWireWithImplicits", success),
+    ("simpleWireWithImplicitsErrorDuplicateValue", compileErr(ambiguousResMsg("B"), "B.defaultB", "bDep")),
+    ("taggedOk", success),
+    ("taggedPrimitiveOk", success),
+    ("taggedErrorNoValueWithTag", compileErr(valueNotFound("com.softwaremill.macwire.Tagging.@@[Berry,Blue]"))),
+    ("multipleMethodParametersFail", compileErr(ambiguousResMsg("A"), "a1", "a2")),
+    ("anonFuncArgsWiredOk", success),
+    ("anonFuncAndMethodsArgsWiredOk", success),
+    ("nestedAnonFuncsWiredOk", success),
+    ("nestedMethodsWiredOk", success),
+    ("nestedMethodsWiredFail", compileErr(ambiguousResMsg("A"), "outerA", "innerA")),
+    ("nestedWithManyMatchingParamsWiredFail", compileErr(ambiguousResMsg("A"), "a1", "a2", "a3")),
+    ("methodWithWiredWithinIfThenElseOk", success),
+    ("methodWithWiredWithinPatternMatchOk", success),
+    ("methodWithSingleImplicitParamOk", success),
+    ("methodWithTaggedParamsOk", success),
+    ("methodWithTaggedParamsNotFoundFail", compileErr(valueNotFound("com.softwaremill.macwire.Tagging.@@[Berry,Blue]"))),
+    ("methodWithTaggedParamsAmbiguousFail", compileErr(ambiguousResMsg("com.softwaremill.macwire.Tagging.@@[Berry,Blue]"), "blueberryArg1", "blueberryArg2"))
   )
 
   for ((testName, expectedErrors) <- tests)
@@ -77,8 +96,8 @@ class CompileTests extends FlatSpec with ShouldMatchers {
 
   addTest("simpleValsOkInTraitExtendingMacwire", Nil, "/* Note no additional import needed */")
 
-  def addTest(testName: String, expectedErrors: List[String], imports: String = GlobalImports) {
-    testName should (if (expectedErrors == Nil) "compile & run" else "cause a compile error") in {
+  def addTest(testName: String, expectedResult: CompilationResult, imports: String = GlobalImports) {
+    testName should (if (expectedResult == success) "compile & run" else "cause a compile error") in {
       import scala.reflect.runtime._
       val cm = universe.runtimeMirror(getClass.getClassLoader)
 
@@ -89,15 +108,15 @@ class CompileTests extends FlatSpec with ShouldMatchers {
 
       try {
         tb.eval(tb.parse(source))
-        if (expectedErrors != Nil) {
-          fail(s"Expected the following compile errors: $expectedErrors")
+        if (expectedResult != success) {
+          fail(s"Expected the following compile errors: $expectedResult")
         }
       } catch {
         case e: ToolBoxError => {
-          if (expectedErrors == Nil) {
+          if (expectedResult == success) {
             fail(s"Expected compilation & evaluation to be successful, but got an error: ${e.message}", e)
           } else {
-            expectedErrors.foreach(expectedError => e.message should include (expectedError))
+            expectedResult.foreach(expectedError => e.message should include (expectedError))
           }
         }
       }

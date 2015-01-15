@@ -1,0 +1,8 @@
+import com.softwaremill.macwire.Tagging._
+
+class Berry()
+trait Black
+trait Blue
+trait Red
+
+case class BlueberryBasket(blueberry: Berry @@ Blue)

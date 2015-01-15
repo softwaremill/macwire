@@ -8,12 +8,5 @@ class Test {
 val t = new Test
 val a1 = new A()
 val a2 = new A()
-val b = t.theB(a2, a1)
 
-require(b != null)
-require(b.a1 != null)
-require(b.a2 != null)
-
-require(b.a1 eq a1)
-require(b.a2 eq a2)
-
+t.theB(a2, a1)

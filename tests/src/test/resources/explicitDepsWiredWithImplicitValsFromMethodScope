@@ -1,7 +1,7 @@
 #include commonSimpleClasses
 
 object MethodScope {
-  def someMethod(dependency: A)(implicit a: A, b: B) {
+  def someMethod(dependency: A)(implicit implicitDependencyA: A, implicitDependencyB: B) {
     val c = wire[C]
     require(c.a eq a)
     require(c.b eq b)

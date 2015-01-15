@@ -1,0 +1,15 @@
+#include commonSimpleClasses
+
+object Module {
+
+  val b = new B()
+
+  // method's parameter 'a' will shadow def 'a'.
+  def a(outerA: A) = {
+    def innerA(innerA: A): C = wire[C]
+    b _
+  }
+}
+
+val aDep = new A()
+Module.a(aDep)(aDep)

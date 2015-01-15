@@ -13,15 +13,16 @@ private[macwire] class DependencyResolver[C <: blackbox.Context](
   import c.universe._
 
   private lazy val implicitValuesFinder = new ImplicitValueOfTypeFinder[c.type](c, debug)
-  private lazy val enclosingMethodParamsFinder = new ValuesOfTypeInEnclosingMethodFinder[c.type](c, debug);
   private lazy val enclosingClassFinder = new ValuesOfTypeInEnclosingClassFinder[c.type](c, debug)
   private lazy val parentsMembersFinder = new ValuesOfTypeInParentsFinder[c.type](c, debug)
+
+  private lazy val enclosingMethodsAndFuncsFinder = new ValuesOfTypeInEnclosingMethodsAndFunctionsFinder[c.type](c, debug)
 
   def resolve(param: Symbol, t: Type): Option[c.Tree] = {
 
     debug.withBlock(s"Trying to find value [${param.name}] of type: [$t]") {
 
-      val results: List[Tree] = enclosingMethodParamsFinder.find(param, t) match {
+      val results: List[Tree] = enclosingMethodsAndFuncsFinder.find(t, param) match {
         case Nil =>
           val implicitInferenceResults =
             if (wireWithImplicits || param.isImplicit) implicitValuesFinder.find(t)
