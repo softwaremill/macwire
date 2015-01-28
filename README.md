@@ -443,7 +443,7 @@ MacWire works with Scala 2.11. The last release for Scala 2.10 is 0.7.3.
 Debugging
 ---------
 
-The print debugging information on what MacWire does when looking for values, and what code is generated, set the
+To print debugging information on what MacWire does when looking for values, and what code is generated, set the
 `macwire.debug` system property. E.g. with SBT, just add a `System.setProperty("macwire.debug", "")` line to your
 build file.
 
