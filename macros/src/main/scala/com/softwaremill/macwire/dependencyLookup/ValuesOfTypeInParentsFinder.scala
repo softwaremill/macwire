@@ -18,7 +18,7 @@ private[dependencyLookup] class ValuesOfTypeInParentsFinder[C <: Context](val c:
         case _ => Nil
       })
 
-      typesToCheck.exists(ty => ty <:< t && typeCheckUtil.candidateTypeOk(ty))
+      typesToCheck.exists(ty => ty <:< t && typeCheckUtil.isNotNullOrNothing(ty))
     }
 
     def findInParent(parent: Tree): Set[Name] = {

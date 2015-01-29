@@ -6,15 +6,10 @@ private[macwire] class TypeCheckUtil[C <: blackbox.Context](val c: C, debug: Deb
   import c.universe._
 
   def typeCheckExpressionOfType(typeTree: Tree): Type = {
-    // identity[T](???) has type T
-    val treeOfGivenType = Apply(
-      TypeApply(Ident(TermName("identity")), List(typeTree)),
-      List(Ident(TermName("$qmark$qmark$qmark"))))
-
-    c.typecheck(treeOfGivenType).tpe
+    c.typecheck(q"identity[$typeTree](???)").tpe
   }
 
-  def candidateTypeOk(tpe: Type) = {
+  def isNotNullOrNothing(tpe: Type): Boolean = {
     !(tpe =:= typeOf[Nothing]) && !(tpe =:= typeOf[Null])
   }
 
@@ -44,7 +39,7 @@ private[macwire] class TypeCheckUtil[C <: blackbox.Context](val c: C, debug: Deb
         }
       }
 
-      val candidateOk = rhsTpe <:< target && candidateTypeOk(rhsTpe)
+      val candidateOk = rhsTpe <:< target && isNotNullOrNothing(rhsTpe)
       if (candidateOk) debug("Found a match!")
       candidateOk
     }
