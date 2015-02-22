@@ -1,6 +1,8 @@
 Table of Contents
 =================
 
+[![Join the chat at https://gitter.im/adamw/macwire](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/adamw/macwire?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 * [Introduction](#macwire)
 * [Guide to DI in Scala](http://di-in-scala.github.io/) (external link)
 * [How wiring works](#how-wiring-works)
