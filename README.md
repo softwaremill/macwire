@@ -1,7 +1,7 @@
 Table of Contents
 =================
 
-[![Join the chat at https://gitter.im/adamw/macwire](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/adamw/macwire?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 
 * [Introduction](#macwire)
 * [Guide to DI in Scala](http://di-in-scala.github.io/) (external link)
@@ -23,6 +23,8 @@ MacWire
 =======
 
 [![Build Status](https://travis-ci.org/adamw/macwire.svg?branch=master)](https://travis-ci.org/adamw/macwire)
+[![Join the chat at https://gitter.im/adamw/macwire](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/adamw/macwire?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.softwaremill.macwire/macros_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.softwaremill.macwire/macros_2.11)
 
 MacWire generates `new` instance creation code of given classes, using values in the enclosing type for constructor
 parameters, with the help of [Scala Macros](http://scalamacros.org/).
