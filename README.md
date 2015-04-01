@@ -420,6 +420,14 @@ lazy val blackberry = wire[Berry].taggedWith[Black]
 lazy val basket = wire[Basket]
 ````
 
+Multiple tags can be combined using the `andTaggedWith` method. E.g. if we had a berry that is both blue and black:
+
+````scala
+lazy val blackblueberry = wire[Berry].taggedWith[Black].andTaggedWith[Blue]
+````
+
+The resulting value has type `Berry @ (Black with Blue)` and can be used both as a blackberry and as a blueberry.
+
 Installation, using with SBT
 ----------------------------
 
