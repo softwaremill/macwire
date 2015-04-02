@@ -49,7 +49,7 @@ class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
 class UserStatusReader(userFinder: UserFinder)
 
 trait UserModule {
-    import com.softwaremill.macwire.MacwireMacros._
+    import com.softwaremill.macwire._
 
     lazy val theDatabaseAccess   = wire[DatabaseAccess]
     lazy val theSecurityFilter   = wire[SecurityFilter]
@@ -134,7 +134,7 @@ class TaxDeductionLibrary(databaseAccess: DatabaseAccess)
 class TaxCalculator(taxBase: Double, taxFreeAmount: Double, taxDeductionLibrary: TaxDeductionLibrary)
 
 trait TaxModule {
-    import com.softwaremill.macwire.MacwireMacros._
+    import com.softwaremill.macwire._
 
     lazy val theDatabaseAccess      = wire[DatabaseAccess]
     lazy val theTaxDeductionLibrary = wire[TaxDeductionLibrary]
@@ -269,7 +269,7 @@ class MyApp {
 }
 
 // 2. Creating a Wired instance
-import MacwireMacros._
+import com.softwaremill.macwire._
 val wired = wiredInModule(new MyApp)
 
 // 3. Dynamic lookup of instances
@@ -369,7 +369,7 @@ object Implicits {
 
 trait UserModule {
     def run() {
-        import com.softwaremill.macwire.MacwireMacros._
+        import com.softwaremill.macwire._
         import Implicits._
 
         lazy val theUserFinder = wireImplicit[UserFinder]
