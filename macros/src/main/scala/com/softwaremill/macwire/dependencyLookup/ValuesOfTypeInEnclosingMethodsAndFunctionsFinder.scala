@@ -22,7 +22,10 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingMethodsAndFunctionsFinder
         case If(cond, then, otherwise) => List(then, otherwise).exists(containsCurrentlyExpandedWireCall)
         case Match(_, cases) => cases.exists(containsCurrentlyExpandedWireCall)
         case CaseDef(_, _, body) => containsCurrentlyExpandedWireCall(body)
-        case oth => false
+        case Apply(fun, args) => (fun :: args).exists(containsCurrentlyExpandedWireCall)
+        case oth =>
+          debug(s"Unsupported tree type in contains check: ${showRaw(oth)}")
+          false
       }
 
     @tailrec
@@ -30,10 +33,14 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingMethodsAndFunctionsFinder
       case Nil => acc
       case tree :: tail => tree match {
         case Block(statements, expr) => doFind(expr :: statements, acc)
-        case ValDef(_, _, _, rhs) if containsCurrentlyExpandedWireCall(rhs) => doFind(List(rhs), acc)
+        case ValDef(_, name, _, rhs) if containsCurrentlyExpandedWireCall(rhs) =>
+          debug(s"Looking in val $name")
+          doFind(List(rhs), acc)
         case DefDef(_, name, _, curriedParams, tpt, rhs) if containsCurrentlyExpandedWireCall(rhs) =>
+          debug(s"Looking in def $name")
           doFind(List(rhs), extractMatchingParams(curriedParams.flatten) :: acc)
         case Function(params, body) if containsCurrentlyExpandedWireCall(body) =>
+          debug(s"Looking in anonymous function")
           doFind(List(body), extractMatchingParams(params) :: acc)
         case ifBlock @ If(cond, then, otherwise) if containsCurrentlyExpandedWireCall(ifBlock) =>
           doFind(List(then, otherwise), acc)
@@ -41,7 +48,8 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingMethodsAndFunctionsFinder
           doFind(cases, acc)
         case CaseDef(_, _, body) if containsCurrentlyExpandedWireCall(body) =>
           doFind(List(body), acc)
-        case oth => doFind(tail, acc)
+        case oth =>
+          doFind(tail, acc)
       }
     }
 
@@ -58,8 +66,9 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingMethodsAndFunctionsFinder
         Nil
     }
 
-    debug(s"Looking in the enclosing methods/functions (${showRaw(c.enclosingClass)})")
-    doFind(enclosingClassBody, Nil).flatten.map(Ident(_))
+    debug.withBlock(s"Looking in the enclosing methods/functions") {
+      doFind(enclosingClassBody, Nil).flatten.map(Ident(_))
+    }
   }
 
 

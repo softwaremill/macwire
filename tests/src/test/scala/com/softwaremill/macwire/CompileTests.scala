@@ -43,6 +43,7 @@ class CompileTests extends FlatSpec with ShouldMatchers {
     ("simpleWithAbstractScopeOk", success),
     ("methodSingleParamOk", success),
     ("methodParamsOk", success),
+    ("methodParamsInApplyOk", success),
     ("methodMixedOk", success),
     ("wiredSimple", success),
     ("wiredLazy", success),
