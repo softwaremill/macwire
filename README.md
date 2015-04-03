@@ -16,6 +16,7 @@ Table of Contents
 * [Debugging](#debugging)
 * [Scala.js](#scalajs)
 * [Future development - vote!](#future-development---vote)
+* [Activators](#activators)
 
 MacWire
 =======
@@ -468,3 +469,11 @@ Future development - vote!
 
 Take a look at the [available issues](https://github.com/adamw/macwire/issues). If you'd like to see one developed
 please vote on it. Or maybe you'll attempt to create a pull request?
+
+Activators
+----------
+
+There are two Typesafe Activators which can help you to get started with Scala, Dependency Injection and Macwire:
+
+* [No-framework Dependency Injection with MacWire and Akka Activator](https://typesafe.com/activator/template/macwire-akka-activator)
+* [No-framework Dependency Injection with MacWire and Play Activator](https://typesafe.com/activator/template/macwire-activator)
