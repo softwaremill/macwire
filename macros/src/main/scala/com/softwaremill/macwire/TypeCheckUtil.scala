@@ -6,7 +6,7 @@ private[macwire] class TypeCheckUtil[C <: blackbox.Context](val c: C, debug: Deb
   import c.universe._
 
   def typeCheckExpressionOfType(typeTree: Tree): Type = {
-    c.typecheck(q"identity[$typeTree](???)").tpe
+    c.typecheck(q"$typeTree", c.TYPEmode).tpe
   }
 
   def isNotNullOrNothing(tpe: Type): Boolean = {

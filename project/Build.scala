@@ -4,7 +4,7 @@ import Keys._
 object BuildSettings {
   val buildSettings = Defaults.coreDefaultSettings ++ Seq (
     organization  := "com.softwaremill.macwire",
-    version       := "1.0.2-SNAPSHOT",
+    version       := "1.0.2",
     scalaVersion  := "2.11.6",
     // Sonatype OSS deployment
     publishTo <<= version { (v: String) =>
@@ -36,8 +36,8 @@ object BuildSettings {
 }
 
 object Dependencies {
-  val scalatest     = "org.scalatest" %% "scalatest"  % "2.2.1"       % "test"
-  val javassist     = "org.javassist"  % "javassist"  % "3.18.2-GA"
+  val scalatest     = "org.scalatest" %% "scalatest"  % "2.2.5"       % "test"
+  val javassist     = "org.javassist"  % "javassist"  % "3.19.0-GA"
 }
 
 object MacwireBuild extends Build {
@@ -71,6 +71,7 @@ object MacwireBuild extends Build {
       publishArtifact := false,
       libraryDependencies ++= Seq(scalatest),
       libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-compiler" % _ % "test"),
+      scalacOptions ++= Seq("-Ywarn-dead-code"),
       // Otherwise when running tests in sbt, the macro is not visible
       // (both macro and usages are compiled in the same compiler run)
       fork in Test := true)
@@ -89,10 +90,10 @@ object MacwireBuild extends Build {
   ) dependsOn(macros, runtime)
 
   lazy val examplesScalatra: Project = {
-    val ScalatraVersion = "2.3.0"
+    val ScalatraVersion = "2.3.1"
     val scalatraCore = "org.scalatra" %% "scalatra" % ScalatraVersion
     val scalatraScalate = "org.scalatra" %% "scalatra-scalate" % ScalatraVersion
-    val logback = "ch.qos.logback" % "logback-classic" % "1.1.2"
+    val logback = "ch.qos.logback" % "logback-classic" % "1.1.3"
     val jetty = "org.eclipse.jetty" % "jetty-webapp" % "9.2.0.v20140526" % "compile"
     val servletApi = "org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "compile" artifacts (Artifact("javax.servlet", "jar", "jar"))
 
