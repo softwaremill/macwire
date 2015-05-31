@@ -17,6 +17,7 @@ Table of Contents
 * [Scala.js](#scalajs)
 * [Future development - vote!](#future-development---vote)
 * [Activators](#activators)
+* [Play 2.4.x](#play24x)
 
 MacWire
 =======
@@ -477,3 +478,43 @@ There are two Typesafe Activators which can help you to get started with Scala, 
 
 * [No-framework Dependency Injection with MacWire and Akka Activator](https://typesafe.com/activator/template/macwire-akka-activator)
 * [No-framework Dependency Injection with MacWire and Play Activator](https://typesafe.com/activator/template/macwire-activator)
+
+Play 2.4.x <a id="play24x"></a>
+--------
+
+In Play 2.4.x, you can no longer use getControllerInstance in Global for injection. Play has a new pattern for injecting controllers. You must extend ApplicationLoader, from there you can mix in your modules. 
+
+````scala
+import controllers.{ApplicationController, Assets}
+import play.api.ApplicationLoader.Context
+import play.api._
+import play.api.routing.Router
+import router.Routes
+import com.softwaremill.macwire._
+
+class AppApplicationLoader extends ApplicationLoader {
+  def load(context: Context) = {
+    (new BuiltInComponentsFromContext(context) with AppComponents).application
+  }
+}
+
+trait AppComponents extends BuiltInComponents with AppModule {
+  lazy val assets: Assets = wire[Assets]
+  lazy val router: Router = wire[Routes] withPrefix "/"
+}
+
+trait AppModule {
+  // Define your dependencies and controllers
+  lazy val applicationController = wire[ApplicationController]
+}
+````
+
+In application.conf, add the reference to the ApplicationLoader.
+
+````
+play.application.loader = "AppApplicationLoader"
+````
+
+Reference Play docs for more information:
+
+* [ScalaCompileTimeDependencyInjection](https://www.playframework.com/documentation/2.4.x/ScalaCompileTimeDependencyInjection)
