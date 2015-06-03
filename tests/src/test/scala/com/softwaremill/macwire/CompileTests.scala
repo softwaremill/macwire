@@ -58,7 +58,9 @@ class CompileTests extends FlatSpec with ShouldMatchers {
     ("explicitDepsWiredWithImplicitValsFromMethodScope", compileErr(ambiguousResMsg("A"), "dependency", "implicitDependencyA")),
     ("explicitDepsWiredWithImplicitValsFromEnclosingModuleScope", success),
     ("explicitDepsWiredWithImplicitValsFromParentsScope", success),
-    // implicit params should be resolved with implicit values
+    // implicit params should be resolved with implicit values or defs
+    ("implicitDepsWiredWithImplementedImplicitVals", success),
+    ("implicitDepsWiredWithImplicitDefs", success),
     ("implicitDepsWiredWithImplicitVals", success),
     ("implicitDepsWiredWithImplicitValsFromMethodScope", compileErr(ambiguousResMsg("Dependency"), "dependency", "implicitDependency")),
     ("implicitDepsWiredWithImplicitValsFromEnclosingModuleScope", success),

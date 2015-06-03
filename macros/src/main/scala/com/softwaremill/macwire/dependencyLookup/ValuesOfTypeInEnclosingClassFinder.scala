@@ -10,21 +10,40 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingClassFinder[C <: Context]
 
   private val typeCheckUtil = new TypeCheckUtil[c.type](c, debug)
 
+  object ValDefOrDefDef {
+    def unapply(t: Tree): Option[(Name, Tree, Tree, Symbol)] = t match {
+      case ValDef(_, name, tpt, rhs) => Some((name, tpt, rhs, t.symbol))
+      case DefDef(_, name, _, _, tpt, rhs) => Some((name, tpt, rhs, t.symbol))
+      case _ => None
+    }
+  }
+
+  /**
+   * @param implicitValue If a matching value will be found that has the same position as a matching implicit
+   *                      value, the implicit value's tree will be used instead of a plain `Ident`, so that
+   *                      it can be filter out later. (We still need to include it in the results, so that
+   *                      we know that the search *did* find something and doesn't proceed to parents.)
+   */
   def find(t: Type, implicitValue: Option[Tree]): List[Tree] = {
 
     @tailrec
-    def doFind(trees: List[Tree], acc: List[Name]): List[Name] = trees match {
-      case Nil => acc
-      case tree :: tail => tree match {
-        case v @ ValDef(mods, name, tpt, rhs) =>
-          // filter out _vals_ already found by implicitValuesFinder
-          val candidateOk = implicitValue.map(_.symbol.pos != v.symbol.pos).getOrElse(true) &&
-            typeCheckUtil.checkCandidate(t, name, tpt, treeToCheck(tree, rhs), "val")
-          doFind(tail, if (candidateOk) name :: acc else acc)
-        case DefDef(_, name, _, _, tpt, rhs) =>
-          val candidateOk = typeCheckUtil.checkCandidate(t, name, tpt, treeToCheck(tree, rhs), "def")
-          doFind(tail, if (candidateOk) name :: acc else acc)
-        case _ => doFind(tail, acc)
+    def doFind(trees: List[Tree], acc: List[Tree]): List[Tree] = {
+      trees match {
+        case Nil => acc
+        case tree :: tail => tree match {
+          case ValDefOrDefDef(name, tpt, rhs, symbol) =>
+            val candidateOk = typeCheckUtil.checkCandidate(t, name, tpt, treeToCheck(tree, rhs), "val")
+
+            if (candidateOk) {
+              val treeToAdd = implicitValue match {
+                case Some(i) if samePosition(i.symbol.pos, symbol.pos) => i
+                case _ => Ident(name)
+              }
+
+              doFind(tail, treeToAdd :: acc)
+            } else doFind(tail, acc)
+          case _ => doFind(tail, acc)
+        }
       }
     }
 
@@ -32,6 +51,14 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingClassFinder[C <: Context]
       // If possible, we check the definition (rhs). We can't always check the tree, as it would cause recursive
       // type ascription needed errors from the compiler.
       if (rhs.isEmpty) tree else rhs
+    }
+
+    def samePosition(pos1: Position, pos2: Position): Boolean = {
+      // sometimes same positions are represented as different case classes (e.g. offset-position and range-position)
+      // some positions don't implement .point
+      pos1 == pos2 || (try {
+        pos1.point == pos2.point && pos1.source == pos2.source
+      } catch { case _: Exception => false })
     }
 
     val enclosingClassBody = c.enclosingClass match {
@@ -43,6 +70,6 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingClassFinder[C <: Context]
     }
 
     debug("Looking in the enclosing class/trait")
-    doFind(enclosingClassBody, Nil).map(Ident(_))
+    doFind(enclosingClassBody, Nil)
   }
 }
