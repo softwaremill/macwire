@@ -1,0 +1,12 @@
+#include commonClassesWithImplicitDependencies
+
+trait Abstract {
+  implicit val dependency: Dependency
+}
+
+object Test extends Abstract {
+  override implicit val dependency = new Dependency
+  val service = wire[Service]
+}
+
+require(Test.service.dependency eq Test.dependency)

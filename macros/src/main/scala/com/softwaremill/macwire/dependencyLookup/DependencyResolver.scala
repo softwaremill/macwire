@@ -42,8 +42,11 @@ private[macwire] class DependencyResolver[C <: blackbox.Context](
            * 2) there is no matching value in appropriate scope, but
            * 3) implicit value is present in some outer scope (parent, package/companion object,
            * explicit imports and so on).
+           *
+           * The implicit value tree may have been included if it was found as a regular value as well, hence
+           * it has to be filtered out.
            */
-          implicitInferenceResults.map(_ :: regularLookupValues).getOrElse(regularLookupValues)
+          implicitInferenceResults.map(i => i :: regularLookupValues.filter(_ != i)).getOrElse(regularLookupValues)
         case values => values
       }
 
