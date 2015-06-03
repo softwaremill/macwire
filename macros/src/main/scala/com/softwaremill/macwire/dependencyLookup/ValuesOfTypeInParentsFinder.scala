@@ -1,6 +1,6 @@
 package com.softwaremill.macwire.dependencyLookup
 
-import com.softwaremill.macwire.{Debug, TypeCheckUtil}
+import com.softwaremill.macwire.{PositionUtil, Debug, TypeCheckUtil}
 
 import scala.annotation.tailrec
 import scala.reflect.macros.blackbox.Context
@@ -9,6 +9,7 @@ private[dependencyLookup] class ValuesOfTypeInParentsFinder[C <: Context](val c:
   import c.universe._
 
   private val typeCheckUtil = new TypeCheckUtil[c.type](c, debug)
+  private val positionUtil = new PositionUtil[c.type](c)
 
   def find(t: Type, implicitValue: Option[Tree]): List[Tree] = {
     def checkCandidate(tpt: Type): Boolean = {
@@ -42,7 +43,7 @@ private[dependencyLookup] class ValuesOfTypeInParentsFinder[C <: Context](val c:
         }
         val names: Set[String] = parentType.members.filter { symbol =>
             // filter out values already found by implicitValuesFinder
-            implicitValue.map(_.symbol.pos != symbol.pos).getOrElse(true) &&
+            implicitValue.map(iv => !positionUtil.samePosition(iv.symbol.pos, symbol.pos)).getOrElse(true) &&
               checkCandidate(symbol.typeSignature)
           }.map { symbol =>
             // For (lazy) vals, the names have a space at the end of the name (probably some compiler internals).

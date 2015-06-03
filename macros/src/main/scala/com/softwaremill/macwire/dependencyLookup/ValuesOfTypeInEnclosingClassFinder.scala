@@ -1,6 +1,6 @@
 package com.softwaremill.macwire.dependencyLookup
 
-import com.softwaremill.macwire.{Debug, TypeCheckUtil}
+import com.softwaremill.macwire.{PositionUtil, Debug, TypeCheckUtil}
 
 import scala.annotation.tailrec
 import scala.reflect.macros.blackbox.Context
@@ -9,6 +9,7 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingClassFinder[C <: Context]
   import c.universe._
 
   private val typeCheckUtil = new TypeCheckUtil[c.type](c, debug)
+  private val positionUtil = new PositionUtil[c.type](c)
 
   object ValDefOrDefDef {
     def unapply(t: Tree): Option[(Name, Tree, Tree, Symbol)] = t match {
@@ -36,7 +37,7 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingClassFinder[C <: Context]
 
             if (candidateOk) {
               val treeToAdd = implicitValue match {
-                case Some(i) if samePosition(i.symbol.pos, symbol.pos) => i
+                case Some(i) if positionUtil.samePosition(i.symbol.pos, symbol.pos) => i
                 case _ => Ident(name)
               }
 
@@ -51,14 +52,6 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingClassFinder[C <: Context]
       // If possible, we check the definition (rhs). We can't always check the tree, as it would cause recursive
       // type ascription needed errors from the compiler.
       if (rhs.isEmpty) tree else rhs
-    }
-
-    def samePosition(pos1: Position, pos2: Position): Boolean = {
-      // sometimes same positions are represented as different case classes (e.g. offset-position and range-position)
-      // some positions don't implement .point
-      pos1 == pos2 || (try {
-        pos1.point == pos2.point && pos1.source == pos2.source
-      } catch { case _: Exception => false })
     }
 
     val enclosingClassBody = c.enclosingClass match {
