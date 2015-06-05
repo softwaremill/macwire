@@ -250,8 +250,8 @@ which names are only known at run-time (e.g. plugins) it is necessary to access 
 MacWire contains a utility class, `Wired`, to support such functionality.
 
 An instance of `Wired` can be obtained using the `wiredInModule` macro, given an instance of a module containing the
-wired object graph. Any `vals`, `lazy val`s and parameter-less `def`s (factories) from the module will be available 
-in the `Wired` instance. 
+wired object graph. Any `vals`, `lazy val`s and parameter-less `def`s (factories) from the module which are references
+will be available in the `Wired` instance. 
 
 The object graph in the module can be hand-wired, wired using `wire`, or a result of any computation.
 

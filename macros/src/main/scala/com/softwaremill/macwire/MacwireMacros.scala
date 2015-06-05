@@ -102,7 +102,9 @@ object MacwireMacros extends Macwire {
             debug(s"Cannot extract type from ${m.typeSignature} for member $m!")
             None
         }
-      }.map { case (member, tpe) =>
+      }
+        .filter { case (_, tpe) => tpe <:< typeOf[AnyRef] }
+        .map { case (member, tpe) =>
         val key = Literal(Constant(tpe))
         val value = Select(Ident(TermName(capturedInName)), TermName(member.name.decodedName.toString.trim))
 
