@@ -13,7 +13,7 @@ private[macwire] class TypeCheckUtil[C <: blackbox.Context](val c: C, debug: Deb
     !(tpe =:= typeOf[Nothing]) && !(tpe =:= typeOf[Null])
   }
 
-  def checkCandidate(target: Type, name: Name, tpt: Tree, treeToCheck: Tree, candidateDebugName: String): Boolean = {
+  def checkCandidate(target: Type, name: TermName, tpt: Tree, treeToCheck: Tree, candidateDebugName: String): Boolean = {
     debug.withBlock(s"Checking $candidateDebugName: [$name]") {
       val rhsTpe = if (tpt.tpe != null) {
         tpt.tpe

@@ -12,7 +12,7 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingClassFinder[C <: Context]
   private val positionUtil = new PositionUtil[c.type](c)
 
   object ValDefOrDefDef {
-    def unapply(t: Tree): Option[(Name, Tree, Tree, Symbol)] = t match {
+    def unapply(t: Tree): Option[(TermName, Tree, Tree, Symbol)] = t match {
       case ValDef(_, name, tpt, rhs) => Some((name, tpt, rhs, t.symbol))
       case DefDef(_, name, _, _, tpt, rhs) => Some((name, tpt, rhs, t.symbol))
       case _ => None
