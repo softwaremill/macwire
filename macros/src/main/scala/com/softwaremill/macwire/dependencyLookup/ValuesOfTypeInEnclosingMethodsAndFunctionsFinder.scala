@@ -13,20 +13,7 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingMethodsAndFunctionsFinder
 
   def find(t: Type, param: Symbol): List[Tree] = {
 
-    def containsCurrentlyExpandedWireCall(t: Tree): Boolean =
-      t match {
-        case a@q"wire[$tpe]" if a.pos == c.enclosingPosition => true
-        case v: ValOrDefDef => containsCurrentlyExpandedWireCall(v.rhs)
-        case Function(_, body) => containsCurrentlyExpandedWireCall(body)
-        case Block(statements, expr) => (expr :: statements).exists(containsCurrentlyExpandedWireCall)
-        case If(cond, then, otherwise) => List(then, otherwise).exists(containsCurrentlyExpandedWireCall)
-        case Match(_, cases) => cases.exists(containsCurrentlyExpandedWireCall)
-        case CaseDef(_, _, body) => containsCurrentlyExpandedWireCall(body)
-        case Apply(fun, args) => (fun :: args).exists(containsCurrentlyExpandedWireCall)
-        case oth =>
-          debug(s"Unsupported tree type in contains check: ${showRaw(oth)}")
-          false
-      }
+    def containsCurrentlyExpandedWireCall(t: Tree): Boolean = t.exists(_.pos == c.enclosingPosition)
 
     @tailrec
     def doFind(trees: List[Tree], acc: List[List[Name]]): List[List[Name]] = trees match {
