@@ -33,7 +33,8 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingClassFinder[C <: Context]
         case Nil => acc
         case tree :: tail => tree match {
           case ValDefOrDefDef(name, tpt, rhs, symbol) =>
-            val candidateOk = typeCheckUtil.checkCandidate(t, name, tpt, treeToCheck(tree, rhs), "val")
+            val candidateOk = typeCheckUtil.checkCandidate(t, name, tpt, treeToCheck(tree, rhs),
+              if (symbol.isMethod) "def" else "val")
 
             if (candidateOk) {
               val treeToAdd = implicitValue match {
