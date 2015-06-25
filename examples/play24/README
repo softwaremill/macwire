@@ -1,0 +1,11 @@
+Play 2.4 with MacWire
+=====================
+
+This is an example project of Play 2.4 with Macwire and Slick integration. It is based off of the slick introduction guide: http://slick.typesafe.com/doc/3.0.0/gettingstarted.html#quick-introduction
+
+To run the project, just type 'activator run'
+
+There are three sample endpoints:
+/supplier/all
+/coffee/all 
+/coffee/priced/9
