@@ -482,10 +482,10 @@ There are two Typesafe Activators which can help you to get started with Scala, 
 Play 2.4.x <a id="play24x"></a>
 --------
 
-In Play 2.4.x, you can no longer use getControllerInstance in Global for injection. Play has a new pattern for injecting controllers. You must extend ApplicationLoader, from there you can mix in your modules. 
+In Play 2.4.x, you can no longer use getControllerInstance in GlobalSettings for injection. Play has a new pattern for injecting controllers. You must extend ApplicationLoader, from there you can mix in your modules. 
 
 ````scala
-import controllers.{ApplicationController, Assets}
+import controllers.{Application, Assets}
 import play.api.ApplicationLoader.Context
 import play.api._
 import play.api.routing.Router
@@ -505,7 +505,7 @@ trait AppComponents extends BuiltInComponents with AppModule {
 
 trait AppModule {
   // Define your dependencies and controllers
-  lazy val applicationController = wire[ApplicationController]
+  lazy val applicationController = wire[Application]
 }
 ````
 
@@ -514,6 +514,8 @@ In application.conf, add the reference to the ApplicationLoader.
 ````
 play.application.loader = "AppApplicationLoader"
 ````
+
+For more information and to see the sample project, go to [examples/play24](https://github.com/adamw/macwire/tree/master/examples/play24)
 
 Reference Play docs for more information:
 
