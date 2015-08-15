@@ -94,7 +94,7 @@ object MacwireMacros extends Macwire {
       val members = tree.tpe.members
 
       val pairs = members
-        .filter(_.isMethod)
+        .filter(s => s.isMethod && s.isPublic)
         .flatMap { m =>
           extractTypeFromNullaryType(m.typeSignature) match {
             case Some(tpe) => Some((m, tpe))

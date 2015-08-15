@@ -1,0 +1,16 @@
+#include commonSimpleClasses
+
+object Test {
+    val theA = new A
+    private val theB = new B
+    protected val theC = wire[C]
+}
+
+val wired = wiredInModule(Test)
+
+// visible
+wired.lookupSingleOrThrow(classOf[A])
+
+// not visible
+require(wired.lookup(classOf[B]) == Nil)
+require(wired.lookup(classOf[C]) == Nil)
