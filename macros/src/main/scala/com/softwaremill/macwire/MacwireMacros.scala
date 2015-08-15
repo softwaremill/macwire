@@ -96,28 +96,28 @@ object MacwireMacros extends Macwire {
       val pairs = members
         .filter(_.isMethod)
         .flatMap { m =>
-        extractTypeFromNullaryType(m.typeSignature) match {
-          case Some(tpe) => Some((m, tpe))
-          case None =>
-            debug(s"Cannot extract type from ${m.typeSignature} for member $m!")
-            None
+          extractTypeFromNullaryType(m.typeSignature) match {
+            case Some(tpe) => Some((m, tpe))
+            case None =>
+              debug(s"Cannot extract type from ${m.typeSignature} for member $m!")
+              None
+          }
         }
-      }
         .filter { case (_, tpe) => tpe <:< typeOf[AnyRef] }
         .map { case (member, tpe) =>
-        val key = Literal(Constant(tpe))
-        val value = Select(Ident(TermName(capturedInName)), TermName(member.name.decodedName.toString.trim))
+          val key = Literal(Constant(tpe))
+          val value = Select(Ident(TermName(capturedInName)), TermName(member.name.decodedName.toString.trim))
 
-        debug(s"Found a mapping: $key -> $value")
+          debug(s"Found a mapping: $key -> $value")
 
-        // Generating: () => value
-        val valueExpr = c.Expr[AnyRef](value)
-        val createValueExpr = reify { () => valueExpr.splice }
+          // Generating: () => value
+          val valueExpr = c.Expr[AnyRef](value)
+          val createValueExpr = reify { () => valueExpr.splice }
 
-        // Generating: key -> value
-        Apply(Select(Apply(Select(predefIdent, TermName("ArrowAssoc")), List(key)),
-          TermName("$minus$greater")), List(createValueExpr.tree))
-      }
+          // Generating: key -> value
+          Apply(Select(Apply(Select(predefIdent, TermName("ArrowAssoc")), List(key)),
+            TermName("$minus$greater")), List(createValueExpr.tree))
+        }
 
       pairs.toList
     }
