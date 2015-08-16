@@ -52,6 +52,7 @@ class CompileTests extends FlatSpec with ShouldMatchers {
     ("wiredInherited", success),
     ("wiredDefs", success),
     ("wiredFromClass", success),
+    ("wiredVisibility", success),
     ("wiredClassWithTypeParameters", success),
     // explicit param should not be resolved with implicit value when dependency cannot be found during plain, old regular lookup
     ("explicitDepsNotWiredWithImplicitVals", compileErr(valueNotFound("A"))),
