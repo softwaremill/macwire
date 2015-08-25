@@ -37,6 +37,7 @@ class CompileTests extends FlatSpec with ShouldMatchers {
     ("classesWithTraitsLazyValsOkInTrait", success),
     ("inheritanceSimpleLazyValsOkInTraits", success),
     ("inheritanceSimpleDefsOkInTraits", success),
+    ("inheritanceParametrized", success),
     ("inheritanceTwoLevelSimpleLazyValsOkInTraits", success),
     ("inheritanceDoubleSimpleLazyValsOkInTraits", success),
     ("inheritanceClassesWithTraitsLazyValsOkInTraits", success),
