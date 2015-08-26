@@ -105,7 +105,7 @@ For each constructor parameter of the given class, MacWire tries to find a value
 type in the enclosing method and trait/class/object:
 
 * first it tries to find a unique value declared as the argument of enclosing methods and anonymous functions.
-* then it tries to find a unique value declared in the enclosing type
+* then it tries to find a unique value declared or imported in the enclosing type
 * then it tries to find a unique value in parent types (traits/classes)
 * if the parameter is marked as implicit, additionally the usual implicit lookup mechanism is used
 

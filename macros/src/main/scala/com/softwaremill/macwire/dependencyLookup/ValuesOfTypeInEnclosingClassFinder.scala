@@ -44,9 +44,42 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingClassFinder[C <: Context]
 
               doFind(tail, treeToAdd :: acc)
             } else doFind(tail, acc)
+
+          case Import(expr, selectors) =>
+            val matches = debug.withBlock(s"Looking up imports in [$tree]") {
+
+              val importCandidates =
+                if (selectors.exists { selector => selector.name.toString == "_" }) {
+                  // wildcard import on `expr`
+                  typeCheckUtil.typeCheckIfNeeded(expr).members.filter { _.isPublic }.toList
+                } else {
+                  val selectorNames = selectors.map(_.name).toSet
+                  typeCheckUtil.typeCheckIfNeeded(expr).members.filter { m => selectorNames.contains(m.name) }.toList
+                }
+
+              filterImportMembers(importCandidates)
+            }
+            doFind(tail, matches ::: acc)
+
           case _ => doFind(tail, acc)
         }
       }
+    }
+
+    def filterImportMembers(members: List[Symbol]) : List[Tree] = {
+      members.filter { m =>
+        debug.withBlock(s"Checking [$m]") {
+          if( m.isImplicit ) {
+            // ignore implicits as they will be picked by `ImplicitValueOfTypeFinder`
+            debug("Ignoring implicit (will be picked later on)")
+            false
+          } else {
+            val ok = typeCheckUtil.checkCandidate(target = t, tpt = m.typeSignature)
+            if (ok) debug("Found a match!")
+            ok
+          }
+        }
+      }.map { m => Ident(m.name) }
     }
 
     def treeToCheck(tree: Tree, rhs: Tree) = {
