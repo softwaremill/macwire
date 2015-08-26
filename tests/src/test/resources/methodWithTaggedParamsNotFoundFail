@@ -1,0 +1,12 @@
+#include commonTaggedClasses
+
+object Module {
+  def create(blackberryArg: Berry @@ Black) = {
+    def inner(raspberryArg: Berry @@ Red): BlueberryBasket = wire[BlueberryBasket]
+    inner _
+  }
+}
+
+val blackberry = wire[Berry].taggedWith[Black]
+val raspberry = wire[Berry].taggedWith[Red]
+Module.create(blackberry)(raspberry)

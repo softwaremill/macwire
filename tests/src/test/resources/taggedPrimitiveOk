@@ -1,0 +1,20 @@
+import com.softwaremill.macwire.Tagging._
+
+trait Usd
+trait Pln
+
+case class Money(usd: Int @@ Usd, pln: Int @@ Pln) {
+  def consume(a : Int) {}
+  consume(usd)
+  consume(pln)
+}
+
+trait Test {
+  lazy val usd = 10.taggedWith[Usd]
+  lazy val pln = 11.taggedWith[Pln]
+  lazy val money = wire[Money]
+}
+
+val t = new Test {}
+require(t.money.usd == 10)
+require(t.money.pln == 11)

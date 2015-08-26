@@ -1,0 +1,21 @@
+#include commonSimpleClasses
+
+class Test {
+    object Props {
+        def apply[T](creator: => T): T = creator
+    }
+
+    def theC(a: A, b: B) = Props(wire[C])
+}
+
+val t = new Test
+val a = new A
+val b = new B
+val c = t.theC(a, b)
+
+require(c != null)
+require(c.a != null)
+require(c.b != null)
+
+require(c.a eq a)
+require(c.b eq b)

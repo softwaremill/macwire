@@ -5,26 +5,27 @@ import com.softwaremill.macwire.Util._
 
 import scala.reflect.macros.Context
 
-private[macwire] class DependencyResolver[C <: Context](val c: C, debug: Debug) {
+private[macwire] class DependencyResolver[C <: Context](
+  val c: C,
+  debug: Debug,
+  wireWithImplicits: Boolean) {
 
   import c.universe._
 
   private lazy val implicitValuesFinder = new ImplicitValueOfTypeFinder[c.type](c, debug)
-
-  private lazy val enclosingMethodParamsFinder = new ValuesOfTypeInEnclosingMethodFinder[c.type](c, debug);
-
   private lazy val enclosingClassFinder = new ValuesOfTypeInEnclosingClassFinder[c.type](c, debug)
-
   private lazy val parentsMembersFinder = new ValuesOfTypeInParentsFinder[c.type](c, debug)
+
+  private lazy val enclosingMethodsAndFuncsFinder = new ValuesOfTypeInEnclosingMethodsAndFunctionsFinder[c.type](c, debug)
 
   def resolve(param: Symbol, t: Type): Option[c.Tree] = {
 
     debug.withBlock(s"Trying to find value [${param.name}] of type: [$t]") {
 
-      val results: List[Tree] = enclosingMethodParamsFinder.find(param, t) match {
+      val results: List[Tree] = enclosingMethodsAndFuncsFinder.find(t, param) match {
         case Nil =>
           val implicitInferenceResults =
-            if (param.isImplicit) implicitValuesFinder.find(t)
+            if (wireWithImplicits || param.isImplicit) implicitValuesFinder.find(t)
             else None
 
           /* First, we perform plain, old, regular value lookup that will exclude found
@@ -41,8 +42,11 @@ private[macwire] class DependencyResolver[C <: Context](val c: C, debug: Debug) 
            * 2) there is no matching value in appropriate scope, but
            * 3) implicit value is present in some outer scope (parent, package/companion object,
            * explicit imports and so on).
+           *
+           * The implicit value tree may have been included if it was found as a regular value as well, hence
+           * it has to be filtered out.
            */
-          implicitInferenceResults.map(_ :: regularLookupValues).getOrElse(regularLookupValues)
+          implicitInferenceResults.map(i => i :: regularLookupValues.filter(_ != i)).getOrElse(regularLookupValues)
         case values => values
       }
 

@@ -1,0 +1,24 @@
+import com.softwaremill.macwire.Tagging._
+
+class Berry()
+trait Black
+trait Blue
+
+case class Basket(blueberry: Berry @@ Blue, blackberry: Berry @@ Black) {
+  def consume(b: Berry) {}
+  consume(blueberry) // can be used as "just" berry
+  consume(blackberry)
+}
+
+trait Test {
+  lazy val blueblackberry = wire[Berry].taggedWith[Blue].andTaggedWith[Black]
+  lazy val basket = wire[Basket]
+}
+
+val t = new Test {}
+
+require(t.basket.blueberry != null)
+require(t.basket.blackberry != null)
+
+require(t.basket.blueberry eq t.blueblackberry)
+require(t.basket.blackberry eq t.blueblackberry)

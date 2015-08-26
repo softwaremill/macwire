@@ -1,0 +1,13 @@
+#include commonSimpleClasses
+
+class Base(name: String) {
+    lazy val theA = wire[A]
+    lazy val theB = wire[B]
+}
+
+object t extends Base("toto") {
+    lazy val theC = wire[C]
+}
+
+require(t.theC.a eq t.theA)
+require(t.theC.b eq t.theB)

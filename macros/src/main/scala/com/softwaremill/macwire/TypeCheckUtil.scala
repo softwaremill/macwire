@@ -19,11 +19,11 @@ private[macwire] class TypeCheckUtil[C <: Context](val c: C, debug: Debug) {
     someValueOfGivenTypeChecked.tpe
   }
 
-  def candidateTypeOk(tpe: Type) = {
+  def isNotNullOrNothing(tpe: Type): Boolean = {
     !(tpe =:= typeOf[Nothing]) && !(tpe =:= typeOf[Null])
   }
 
-  def checkCandidate(target: Type, name: Name, tpt: Tree, treeToCheck: Tree, candidateDebugName: String): Boolean = {
+  def checkCandidate(target: Type, name: TermName, tpt: Tree, treeToCheck: Tree, candidateDebugName: String): Boolean = {
     debug.withBlock(s"Checking $candidateDebugName: [$name]") {
       val rhsTpe = if (tpt.tpe != null) {
         tpt.tpe
@@ -49,7 +49,7 @@ private[macwire] class TypeCheckUtil[C <: Context](val c: C, debug: Debug) {
         }
       }
 
-      val candidateOk = rhsTpe <:< target && candidateTypeOk(rhsTpe)
+      val candidateOk = rhsTpe <:< target && isNotNullOrNothing(rhsTpe)
       if (candidateOk) debug("Found a match!")
       candidateOk
     }

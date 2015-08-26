@@ -1,0 +1,25 @@
+#include commonSimpleClasses
+
+object Module {
+  val a = new A()
+  val c1 = (b: B) => wire[C]
+  val c2 = (b: B) => {
+    val c: C = {
+        3 + 3
+        wire[C]
+    }
+    // do sthg
+    2+2
+    c
+  }
+}
+
+val b = new B()
+val c1 = Module.c1(b)
+val c2 = Module.c2(b)
+
+require(c1.a eq Module.a)
+require(c1.b eq b)
+
+require(c2.a eq Module.a)
+require(c2.b eq b)

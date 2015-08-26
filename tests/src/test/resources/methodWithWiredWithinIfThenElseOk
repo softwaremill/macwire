@@ -1,0 +1,19 @@
+#include commonSimpleClasses
+
+object Module {
+  // method's parameter 'a' will shadow def 'a'.
+  def a(a: A) = {
+    def b(b: B)(useWire: Boolean): C = {
+      if (useWire) wire[C]
+      else new C(new A, new B)
+    }
+    b _
+  }
+}
+
+val aDep = new A()
+val bDep = new B()
+val c = Module.a(aDep)(bDep)(true)
+
+require(c.a eq aDep)
+require(c.b eq bDep)

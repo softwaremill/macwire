@@ -7,29 +7,46 @@ import scala.language.experimental.macros
 
 trait Macwire {
   def wire[T]: T = macro MacwireMacros.wire_impl[T]
+  def wireImplicit[T]: T = macro MacwireMacros.wireImplicit_impl[T]
   def wiredInModule(in: AnyRef): Wired = macro MacwireMacros.wiredInModule_impl
 }
 
 object MacwireMacros extends Macwire {
   private val debug = new Debug()
 
-  def wire_impl[T: c.WeakTypeTag](c: Context): c.Expr[T] = {
+  def wire_impl[T: c.WeakTypeTag](c: Context): c.Expr[T] = doWire(c, wireWithImplicits = false)
+
+  def wireImplicit_impl[T: c.WeakTypeTag](c: Context): c.Expr[T] = doWire(c, wireWithImplicits = true)
+
+  private def doWire[T: c.WeakTypeTag](c: Context, wireWithImplicits: Boolean): c.Expr[T] = {
     import c.universe._
 
-    lazy val dependencyResolver = new DependencyResolver[c.type](c, debug)
+    lazy val dependencyResolver = new DependencyResolver[c.type](c, debug, wireWithImplicits)
 
     def createNewTargetWithParams(): Expr[T] = {
       val targetType = implicitly[c.WeakTypeTag[T]]
       debug.withBlock(s"Trying to find parameters to create new instance of: [${targetType.tpe}]") {
-        val targetConstructorOpt = targetType.tpe.members.find(_.name.decodedName.toString == "<init>")
+        val targetConstructorOpt = targetType.tpe.members.find(m => m.isMethod && m.asMethod.isPrimaryConstructor)
         targetConstructorOpt match {
           case None =>
-            c.error(c.enclosingPosition, "Cannot find constructor for " + targetType)
-            reify { null.asInstanceOf[T] }
+            c.abort(c.enclosingPosition, "Cannot find constructor for " + targetType)
           case Some(targetConstructor) =>
+/*
             val targetConstructorParamLists = targetConstructor.asMethod.paramss
             val TypeRef(_, sym, tpeArgs) = targetType.tpe
             var newT: Tree = Select(New(Ident(targetType.tpe.typeSymbol)), nme.CONSTRUCTOR)
+*/
+            val targetConstructorParamLists = targetConstructor.asMethod.paramss
+            // We need to get the "real" type in case the type parameter is a type alias - then it cannot
+            // be directly instatiated
+            val targetTpe = targetType.tpe // TODO dealias
+
+            val (sym, tpeArgs) = targetTpe match {
+              case TypeRef(_, sym, tpeArgs) => (sym, tpeArgs)
+              case t => c.abort(c.enclosingPosition, s"Target type not supported for wiring: $t. Please file a bug report with your use-case.")
+            }
+
+            var newT: Tree = Select(New(Ident(targetTpe.typeSymbol)), nme.CONSTRUCTOR)
 
             for {
               targetConstructorParams <- targetConstructorParamLists
@@ -37,7 +54,14 @@ object MacwireMacros extends Macwire {
               val constructorParams: List[c.Tree] = for (param <- targetConstructorParams) yield {
                 // Resolve type parameters
                 val pTpe = param.typeSignature.substituteTypes(sym.asClass.typeParams, tpeArgs)
-                val wireToOpt = dependencyResolver.resolve(param, pTpe)
+
+                val pEffectiveTpe = if (param.asTerm.isByNameParam) {
+                  pTpe // TODO.typeArgs.head
+                } else {
+                  pTpe
+                }
+
+                val wireToOpt = dependencyResolver.resolve(param, pEffectiveTpe)
 
                 // If no value is found, an error has been already reported.
                 wireToOpt.getOrElse(reify(null).tree)
@@ -76,23 +100,25 @@ object MacwireMacros extends Macwire {
       val members = tree.tpe.members
 
       val pairs = members
-        .filter(_.isMethod)
+        .filter(s => s.isMethod && s.isPublic)
         .flatMap { m =>
-        extractTypeFromNullaryType(m.typeSignature) match {
-          case Some(tpe) => Some((m, tpe))
-          case None =>
-            debug(s"Cannot extract type from ${m.typeSignature} for member $m!")
-            None
+          extractTypeFromNullaryType(m.typeSignature) match {
+            case Some(tpe) => Some((m, tpe))
+            case None =>
+              debug(s"Cannot extract type from ${m.typeSignature} for member $m!")
+              None
+          }
         }
-      }.map { case (member, tpe) =>
-        val key = Literal(Constant(tpe))
-        val value = Select(Ident(capturedInTermName), newTermName(member.name.decoded.trim))
+        .filter { case (_, tpe) => tpe <:< typeOf[AnyRef] }
+        .map { case (member, tpe) =>
+          val key = Literal(Constant(tpe))
+          val value = Select(Ident(newTermName(capturedInName)), newTermName(member.name.decoded.trim))
 
-        debug(s"Found a mapping: $key -> $value")
+          debug(s"Found a mapping: $key -> $value")
 
-        // Generating: () => value
-        val valueExpr = c.Expr[AnyRef](value)
-        val createValueExpr = reify { () => valueExpr.splice }
+          // Generating: () => value
+          val valueExpr = c.Expr[AnyRef](value)
+          val createValueExpr = reify { () => valueExpr.splice }
 
         // Generating: key -> value
         Apply(Select(Apply(Select(predefIdent, newTermName("any2ArrowAssoc")), List(key)),

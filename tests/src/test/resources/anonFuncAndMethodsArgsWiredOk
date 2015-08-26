@@ -1,0 +1,17 @@
+#include commonSimpleClasses
+
+object Module {
+  val a = (a: A) => {
+    def b(b: B) = {
+        wire[C]
+    }
+    b _
+  }
+}
+
+val aDep = new A()
+val bDep = new B()
+val c = Module.a(aDep)(bDep)
+
+require(c.a eq aDep)
+require(c.b eq bDep)

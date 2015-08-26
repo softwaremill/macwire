@@ -10,20 +10,27 @@ Table of Contents
 * [Scopes](#scopes)
 * [Accessing wired instances dynamically](#accessing-wired-instances-dynamically)
 * [Interceptors](#interceptors)
+* [Wiring with implicit values](#wiring-with-implicit-values)
+* [Qualifiers](#qualifiers)
 * [Installation, using with SBT](#installation-using-with-sbt)
 * [Debugging](#debugging)
 * [Scala.js](#scalajs)
 * [Future development - vote!](#future-development---vote)
+* [Activators](#activators)
+* [Play 2.4.x](#play24x)
 
 MacWire
 =======
 
 [![Build Status](https://travis-ci.org/adamw/macwire.svg?branch=master)](https://travis-ci.org/adamw/macwire)
+[![Join the chat at https://gitter.im/adamw/macwire](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/adamw/macwire?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.softwaremill.macwire/macros_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.softwaremill.macwire/macros_2.11)
 
 MacWire generates `new` instance creation code of given classes, using values in the enclosing type for constructor
 parameters, with the help of [Scala Macros](http://scalamacros.org/).
 
-For a general introduction to DI in Scala, take a look at the [Guide to DI in Scala](http://di-in-scala.github.io/), which also features MacWire.
+For a general introduction to DI in Scala, take a look at the [Guide to DI in Scala](http://di-in-scala.github.io/),
+which also features MacWire.
 
 MacWire helps to implement the Dependency Injection (DI) pattern, by removing the need to write the
 class-wiring code by hand. Instead, it is enough to declare which classes should be wired, and how the instances
@@ -44,7 +51,7 @@ class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
 class UserStatusReader(userFinder: UserFinder)
 
 trait UserModule {
-    import com.softwaremill.macwire.MacwireMacros._
+    import com.softwaremill.macwire._
 
     lazy val theDatabaseAccess   = wire[DatabaseAccess]
     lazy val theSecurityFilter   = wire[SecurityFilter]
@@ -97,7 +104,7 @@ How wiring works
 For each constructor parameter of the given class, MacWire tries to find a value which is a subtype of the parameter's
 type in the enclosing method and trait/class/object:
 
-* first it tries to find a value declared in the enclosing method; if multiple values are found, a by name-match is attempted
+* first it tries to find a unique value declared as the argument of enclosing methods and anonymous functions.
 * then it tries to find a unique value declared in the enclosing type
 * then it tries to find a unique value in parent types (traits/classes)
 * if the parameter is marked as implicit, additionally the usual implicit lookup mechanism is used
@@ -106,7 +113,7 @@ Here value means either a `val` or a no-parameter `def`, as long as the return t
 
 A compile-time error occurs if:
 
-* there are multiple values of a given type declared in the enclosing type, or in parent types
+* there are multiple values of a given type declared in the enclosing method/function's arguments list, enclosing type or its parents.
 * parameter is marked as implicit and both implicit lookup and searching in enclosing/parent types find a value
 * there is no value of a given type
 
@@ -129,11 +136,12 @@ class TaxDeductionLibrary(databaseAccess: DatabaseAccess)
 class TaxCalculator(taxBase: Double, taxFreeAmount: Double, taxDeductionLibrary: TaxDeductionLibrary)
 
 trait TaxModule {
-    import com.softwaremill.macwire.MacwireMacros._
+    import com.softwaremill.macwire._
 
     lazy val theDatabaseAccess      = wire[DatabaseAccess]
     lazy val theTaxDeductionLibrary = wire[TaxDeductionLibrary]
     def taxCalculator(taxBase: Double, taxFreeAmount: Double) = wire[TaxCalculator]
+    // or: lazy val taxCalculator = (taxBase: Double, taxFreeAmount: Double) => wire[TaxCalculator]
 }
 ````
 
@@ -175,7 +183,7 @@ lazy val theA: A = wire[A]
 lazy val theB = new B(theA)
 ````
 
-This is a major inconvenience, but hopefully will get resolved once post-typer macros are introduced to the language.
+This is an inconvenience, but hopefully will get resolved once post-typer macros are introduced to the language.
 
 Also, wiring will probably not work properly for traits and classes defined inside the containing trait/class, or in
 super traits/classes.
@@ -242,8 +250,8 @@ which names are only known at run-time (e.g. plugins) it is necessary to access 
 MacWire contains a utility class, `Wired`, to support such functionality.
 
 An instance of `Wired` can be obtained using the `wiredInModule` macro, given an instance of a module containing the
-wired object graph. Any `vals`, `lazy val`s and parameter-less `def`s (factories) from the module will be available 
-in the `Wired` instance. 
+wired object graph. Any `vals`, `lazy val`s and parameter-less `def`s (factories) from the module which are references
+will be available in the `Wired` instance. 
 
 The object graph in the module can be hand-wired, wired using `wire`, or a result of any computation.
 
@@ -263,7 +271,7 @@ class MyApp {
 }
 
 // 2. Creating a Wired instance
-import MacwireMacros._
+import com.softwaremill.macwire._
 val wired = wiredInModule(new MyApp)
 
 // 3. Dynamic lookup of instances
@@ -336,6 +344,90 @@ For more general AOP, e.g. if you want to apply an interceptor to all methods ma
 you should use [AspectJ](http://eclipse.org/aspectj/) or an equivalent library. The interceptors that are implemented
 in MacWire correspond to annotation-based interceptors in Java.
 
+Wiring with implicit values
+---------------------------
+
+It is also possible to wire an object taking into account implicit values and values in scope using `wireImplicit`.
+This makes it possible to wire with objects that are defined inside a method body, as default implicit values
+and others which aren't part of the usual scope where MacWire looks.
+
+`wireImplicit` for each constructor parameter does an implicit lookup and looks in the current scope. If multiple
+values are found, an error is reported.
+
+For example:
+
+````scala
+class DatabaseAccess()
+class SecurityFilter()
+class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
+
+object SecurityFilter {
+    implicit val default = wire[SecurityFilter]
+}
+
+object Implicits {
+    implicit lazy val theDatabaseAccess = wire[DatabaseAccess]
+}
+
+trait UserModule {
+    def run() {
+        import com.softwaremill.macwire._
+        import Implicits._
+
+        lazy val theUserFinder = wireImplicit[UserFinder]
+    }
+}
+````
+
+Note that the signature of `UserFinder` is unaffected by the way the wiring is done, that is its parameter list
+doesn't have to be marked as `implicit`.
+
+Qualifiers
+----------
+
+Sometimes you have multiple objects of the same type that you want to use during wiring. Macwire needs to have some
+way of telling the instances apart. As with other things, the answer is: types! Even when not using `wire`, it may
+be useful to give the instances distinct types, to get compile-time checking.
+
+For that purpose Macwire includes support for tagging, which lets you attach tags to instances to qualify them. This
+is a compile-time only operation, and doesn't affect the runtime. The tags are derived from
+[Miles Sabin's gist](via https://gist.github.com/milessabin/89c9b47a91017973a35f).
+
+To bring the tagging into scope, import `com.softwaremill.macwire._`, or the more specific
+`com.softwaremill.macwire.Tagging._`.
+
+Using tagging has two sides. In the constructor, when declaring a dependency, you need to declare what tag it needs
+to have. You can do this with the `_ @@ _` type constructor, or if you prefer another syntax `Tagged[_, _]`. The first
+type parameter is the type of the dependency, the second is a tag.
+
+The tag can be any type, but usually it is just an empty marker trait.
+
+When defining the available instances, you need to specify which instance has which tag. This can be done with the
+`taggedWith[_]` method, which returns a tagged instance (`A.taggedWith[T]: A @@ T`). Tagged instances can be used
+as regular ones, without any constraints.
+
+The `wire` macro does not contain any special support for tagging, everything is handled by subtyping. For example:
+
+````scala
+class Berry()
+trait Black
+trait Blue
+
+case class Basket(blueberry: Berry @@ Blue, blackberry: Berry @@ Black)
+
+lazy val blueberry = wire[Berry].taggedWith[Blue]
+lazy val blackberry = wire[Berry].taggedWith[Black]
+lazy val basket = wire[Basket]
+````
+
+Multiple tags can be combined using the `andTaggedWith` method. E.g. if we had a berry that is both blue and black:
+
+````scala
+lazy val blackblueberry = wire[Berry].taggedWith[Black].andTaggedWith[Blue]
+````
+
+The resulting value has type `Berry @ (Black with Blue)` and can be used both as a blackberry and as a blueberry.
+
 Installation, using with SBT
 ----------------------------
 
@@ -343,9 +435,9 @@ The jars are deployed to [Sonatype's OSS repository](https://oss.sonatype.org/co
 To use MacWire in your project, add a dependency:
 
 ````scala
-libraryDependencies += "com.softwaremill.macwire" %% "macros" % "0.7.3" 
+libraryDependencies += "com.softwaremill.macwire" %% "macros" % "1.0.7"
 
-libraryDependencies += "com.softwaremill.macwire" %% "runtime" % "0.7.3" 
+libraryDependencies += "com.softwaremill.macwire" %% "runtime" % "1.0.7"
 ````
 
 To use the snapshot version:
@@ -353,17 +445,17 @@ To use the snapshot version:
 ````scala
 resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
-libraryDependencies += "com.softwaremill.macwire" %% "macros" % "0.8-SNAPSHOT"
+libraryDependencies += "com.softwaremill.macwire" %% "macros" % "1.0.8-SNAPSHOT"
 
-libraryDependencies += "com.softwaremill.macwire" %% "runtime" % "0.8-SNAPSHOT"
+libraryDependencies += "com.softwaremill.macwire" %% "runtime" % "1.0.8-SNAPSHOT"
 ````
 
-MacWire works with Scala 2.10+.
+MacWire works with Scala 2.11. The last release for Scala 2.10 is 0.7.3.
 
 Debugging
 ---------
 
-The print debugging information on what MacWire does when looking for values, and what code is generated, set the
+To print debugging information on what MacWire does when looking for values, and what code is generated, set the
 `macwire.debug` system property. E.g. with SBT, just add a `System.setProperty("macwire.debug", "")` line to your
 build file.
 
@@ -376,8 +468,55 @@ Macwire also works with [Scala.js](http://www.scala-js.org/). For an example, se
 Future development - vote!
 --------------------------
 
-* [Qualifier support](https://github.com/adamw/macwire/issues/9)
-* [wireSet[] method to get all dependencies of the given type](https://github.com/adamw/macwire/issues/8)
-* [Support parameters in wire[] to override dependencies](https://github.com/adamw/macwire/issues/7)
-* relax type ascription requirements
-* configuration values - by-name wiring
+Take a look at the [available issues](https://github.com/adamw/macwire/issues). If you'd like to see one developed
+please vote on it. Or maybe you'll attempt to create a pull request?
+
+Activators
+----------
+
+There are two Typesafe Activators which can help you to get started with Scala, Dependency Injection and Macwire:
+
+* [No-framework Dependency Injection with MacWire and Akka Activator](https://typesafe.com/activator/template/macwire-akka-activator)
+* [No-framework Dependency Injection with MacWire and Play Activator](https://typesafe.com/activator/template/macwire-activator)
+
+Play 2.4.x <a id="play24x"></a>
+--------
+
+In Play 2.4.x, you can no longer use getControllerInstance in GlobalSettings for injection. Play has a new pattern for injecting controllers. You must extend ApplicationLoader, from there you can mix in your modules. 
+
+````scala
+import controllers.{Application, Assets}
+import play.api.ApplicationLoader.Context
+import play.api._
+import play.api.routing.Router
+import router.Routes
+import com.softwaremill.macwire._
+
+class AppApplicationLoader extends ApplicationLoader {
+  def load(context: Context) = {
+    (new BuiltInComponentsFromContext(context) with AppComponents).application
+  }
+}
+
+trait AppComponents extends BuiltInComponents with AppModule {
+  lazy val assets: Assets = wire[Assets]
+  lazy val router: Router = wire[Routes] withPrefix "/"
+}
+
+trait AppModule {
+  // Define your dependencies and controllers
+  lazy val applicationController = wire[Application]
+}
+````
+
+In application.conf, add the reference to the ApplicationLoader.
+
+````
+play.application.loader = "AppApplicationLoader"
+````
+
+For more information and to see the sample project, go to [examples/play24](https://github.com/adamw/macwire/tree/master/examples/play24)
+
+Reference Play docs for more information:
+
+* [ScalaCompileTimeDependencyInjection](https://www.playframework.com/documentation/2.4.x/ScalaCompileTimeDependencyInjection)
