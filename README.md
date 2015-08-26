@@ -450,7 +450,7 @@ libraryDependencies += "com.softwaremill.macwire" %% "macros" % "1.0.8-SNAPSHOT"
 libraryDependencies += "com.softwaremill.macwire" %% "runtime" % "1.0.8-SNAPSHOT"
 ````
 
-MacWire works with Scala 2.11. The last release for Scala 2.10 is 0.7.3.
+MacWire works with Scala 2.10 and 2.11.
 
 Debugging
 ---------
