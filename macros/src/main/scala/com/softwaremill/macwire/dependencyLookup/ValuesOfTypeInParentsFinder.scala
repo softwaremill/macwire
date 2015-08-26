@@ -27,6 +27,11 @@ private[dependencyLookup] class ValuesOfTypeInParentsFinder[C <: Context](val c:
         val parentType = if (parent.tpe == null) {
           debug("Parent type is null. Creating an expression of parent's type and type-checking that expression ...")
 
+          val tpe = parent match {
+            case q"$tpe(..$params)" => tpe
+            case q"$tpe" =>  tpe
+          }
+
           /*
           It sometimes happens that the parent type is not yet calculated; this seems to be the case if for example
           the parent is in the same compilation unit, but different package.
@@ -37,7 +42,7 @@ private[dependencyLookup] class ValuesOfTypeInParentsFinder[C <: Context](val c:
           In order to construct the tree, we borrow some elements from a reified expression for String. To get the
           desired expression we need to swap the String part with parent.
            */
-          typeCheckUtil.typeCheckExpressionOfType(parent)
+          typeCheckUtil.typeCheckExpressionOfType(tpe)
         } else {
           parent.tpe
         }
