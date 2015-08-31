@@ -1,0 +1,21 @@
+#include commonSimpleClasses
+
+class Base {
+    private lazy val theA = wire[A]
+    lazy val theB = wire[B]
+}
+
+class Main(val base: Base) {
+    import base._
+
+    lazy val myA = wire[A]
+
+    // if visibility isn't taken into account we'll end up with an ambiguous error:
+    // macwire we'll find both `base.theA` and `this.myA` to be eligible
+    lazy val theC = wire[C]
+}
+
+val main = new Main(new Base)
+
+require(main.theC.a eq main.myA)
+require(main.theC.b eq main.base.theB)

@@ -12,15 +12,6 @@ private[dependencyLookup] class ValuesOfTypeInParentsFinder[C <: Context](val c:
   private val positionUtil = new PositionUtil[c.type](c)
 
   def find(t: Type, implicitValue: Option[Tree]): List[Tree] = {
-    def checkCandidate(tpt: Type): Boolean = {
-      val typesToCheck = tpt :: (tpt match {
-        case NullaryMethodType(resultType) => List(resultType)
-        case MethodType(_, resultType) => List(resultType)
-        case _ => Nil
-      })
-
-      typesToCheck.exists(ty => ty <:< t && typeCheckUtil.isNotNullOrNothing(ty))
-    }
 
     def findInParent(parent: Tree): Set[Name] = {
       debug.withBlock(s"Checking parent: [$parent]") {
@@ -49,7 +40,7 @@ private[dependencyLookup] class ValuesOfTypeInParentsFinder[C <: Context](val c:
         val names: Set[String] = parentType.members.filter { symbol =>
             // filter out values already found by implicitValuesFinder
             implicitValue.map(iv => !positionUtil.samePosition(iv.symbol.pos, symbol.pos)).getOrElse(true) &&
-              checkCandidate(symbol.typeSignature)
+              typeCheckUtil.checkCandidate(target = t, tpt = symbol.typeSignature)
           }.map { symbol =>
             // For (lazy) vals, the names have a space at the end of the name (probably some compiler internals).
             // Hence the trim.
