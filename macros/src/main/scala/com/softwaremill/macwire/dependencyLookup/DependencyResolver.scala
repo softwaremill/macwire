@@ -72,15 +72,9 @@ private[macwire] class DependencyResolver[C <: blackbox.Context](
     */
   def resolveAll(t: Type): List[c.Tree] = {
     debug.withBlock(s"Trying to find instances of type: [$t]") {
-      enclosingMethodsAndFuncsFinder.find(t) match {
-        case Nil =>
-          firstNotEmpty[Tree](
-            () => enclosingClassFinder.find(t),
-            () => parentsMembersFinder.find(t)
-          ).getOrElse(Nil)
-
-        case values => values
-      }
+      enclosingMethodsAndFuncsFinder.find(t) ++
+        enclosingClassFinder.find(t) ++
+          parentsMembersFinder.find(t)
     }
   }
 }
