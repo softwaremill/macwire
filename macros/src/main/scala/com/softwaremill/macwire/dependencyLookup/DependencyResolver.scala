@@ -18,11 +18,15 @@ private[macwire] class DependencyResolver[C <: blackbox.Context](
 
   private lazy val enclosingMethodsAndFuncsFinder = new ValuesOfTypeInEnclosingMethodsAndFunctionsFinder[c.type](c, debug)
 
+  /** Look for a single instance of type `t`.
+    * If either no instance or multiple instances are found,
+    * a compilation error is reported and `None` is returned.
+    */
   def resolve(param: Symbol, t: Type): Option[c.Tree] = {
 
     debug.withBlock(s"Trying to find value [${param.name}] of type: [$t]") {
 
-      val results: List[Tree] = enclosingMethodsAndFuncsFinder.find(t, param) match {
+      val results: List[Tree] = enclosingMethodsAndFuncsFinder.find(t) match {
         case Nil =>
           val implicitInferenceResults =
             if (wireWithImplicits || param.isImplicit) implicitValuesFinder.find(t)
@@ -60,6 +64,22 @@ private[macwire] class DependencyResolver[C <: blackbox.Context](
         case values =>
           c.error(c.enclosingPosition, s"Found multiple values of type [$t]: [$values]")
           None
+      }
+    }
+  }
+
+  /** @return all the instances of type `t` that are accessible.
+    */
+  def resolveAll(t: Type): List[c.Tree] = {
+    debug.withBlock(s"Trying to find instances of type: [$t]") {
+      enclosingMethodsAndFuncsFinder.find(t) match {
+        case Nil =>
+          firstNotEmpty[Tree](
+            () => enclosingClassFinder.find(t),
+            () => parentsMembersFinder.find(t)
+          ).getOrElse(Nil)
+
+        case values => values
       }
     }
   }

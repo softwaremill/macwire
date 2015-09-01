@@ -1,0 +1,35 @@
+trait A
+class A1 extends A
+class A2 extends A
+class A3 extends A
+
+case class Group(as: Set[A])
+
+class Plugin1 {
+    lazy val a1 : A = wire[A1]
+}
+
+class Plugin2 {
+    lazy val a2 : A = wire[A2]
+}
+
+class App(plugin1: Plugin1, plugin2: Plugin2) {
+    import plugin1._
+    import plugin2._
+
+    lazy val a3 : A = wire[A3]
+
+    // wireSet look at the usual places:
+    // - enclosing members
+    // - enclosing imports
+    lazy val as : Set[A] = wireSet[A]
+
+    // inject that Set of A into Group
+    lazy val group: Group = wire[Group]
+}
+
+val plugin1 = new Plugin1
+val plugin2 = new Plugin2
+val app = new App(plugin1, plugin2)
+
+require(app.group.as == Set(plugin1.a1, plugin2.a2, app.a3))

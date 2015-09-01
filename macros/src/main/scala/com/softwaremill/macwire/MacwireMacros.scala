@@ -7,6 +7,7 @@ import scala.reflect.macros.blackbox
 
 trait Macwire {
   def wire[T]: T = macro MacwireMacros.wire_impl[T]
+  def wireSet[T]: Set[T] = macro MacwireMacros.wireSet_impl[T]
   def wireImplicit[T]: T = macro MacwireMacros.wireImplicit_impl[T]
   def wiredInModule(in: AnyRef): Wired = macro MacwireMacros.wiredInModule_impl
 }
@@ -72,6 +73,17 @@ object MacwireMacros extends Macwire {
     }
 
     createNewTargetWithParams()
+  }
+
+  def wireSet_impl[T: c.WeakTypeTag](c: blackbox.Context): c.Tree = {
+    import c.universe._
+    val targetType = implicitly[c.WeakTypeTag[T]]
+
+    val dependencyResolver = new DependencyResolver[c.type](c, debug, false)
+
+    val instances = dependencyResolver.resolveAll(targetType.tpe)
+
+    q"Set(..$instances)"
   }
 
   def wiredInModule_impl(c: blackbox.Context)(in: c.Expr[AnyRef]): c.Expr[Wired] = {

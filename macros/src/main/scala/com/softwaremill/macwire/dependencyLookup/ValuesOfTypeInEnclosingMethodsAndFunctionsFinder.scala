@@ -11,7 +11,7 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingMethodsAndFunctionsFinder
 
   private val typeCheckUtil = new TypeCheckUtil[c.type](c, debug)
 
-  def find(t: Type, param: Symbol): List[Tree] = {
+  def find(t: Type): List[Tree] = {
 
     def containsCurrentlyExpandedWireCall(t: Tree): Boolean = t.exists(_.pos == c.enclosingPosition)
 

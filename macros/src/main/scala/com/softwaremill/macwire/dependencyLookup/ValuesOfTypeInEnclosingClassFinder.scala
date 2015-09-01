@@ -25,7 +25,7 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingClassFinder[C <: Context]
    *                      it can be filter out later. (We still need to include it in the results, so that
    *                      we know that the search *did* find something and doesn't proceed to parents.)
    */
-  def find(t: Type, implicitValue: Option[Tree]): List[Tree] = {
+  def find(t: Type, implicitValue: Option[Tree] = None): List[Tree] = {
 
     @tailrec
     def doFind(trees: List[Tree], acc: List[Tree]): List[Tree] = {
