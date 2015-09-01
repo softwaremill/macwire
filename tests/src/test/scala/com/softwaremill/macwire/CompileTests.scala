@@ -99,7 +99,8 @@ class CompileTests extends FlatSpec with ShouldMatchers {
     ("methodWithTaggedParamsOk", success),
     ("methodWithTaggedParamsNotFoundFail", compileErr(valueNotFound("com.softwaremill.macwire.Tagging.@@[Berry,Blue]"))),
     ("methodWithTaggedParamsAmbiguousFail", compileErr(ambiguousResMsg("com.softwaremill.macwire.Tagging.@@[Berry,Blue]"), "blueberryArg1", "blueberryArg2")),
-    ("wireSet", success)
+    ("wireSet", success),
+    ("moduleWiring", success)
   )
 
   for ((testName, expectedErrors) <- tests)

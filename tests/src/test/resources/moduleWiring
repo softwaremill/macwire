@@ -1,0 +1,51 @@
+
+class CoreService
+
+class CoreModule {
+    lazy val coreService: CoreService = wire[CoreService]
+}
+
+trait Service
+
+trait PluginModule {
+    def service: Service
+}
+
+// plugin 1
+// ------------------------------------------------------------
+class Plugin1Service(coreService: CoreService) extends Service
+
+class Plugin1Module(core: CoreModule) extends PluginModule {
+    import core._
+
+    lazy val service: Plugin1Service = wire[Plugin1Service]
+}
+
+// plugin 2
+// ------------------------------------------------------------
+class Plugin2Service(coreService: CoreService) extends Service
+
+class Plugin2Module(core: CoreModule) extends PluginModule {
+    import core._
+
+    lazy val service: Plugin2Service = wire[Plugin2Service]
+}
+
+// App
+// ------------------------------------------------------------
+case class App(services: Set[Service])
+
+class AppModule(plugins: Set[PluginModule]) {
+    lazy val services: Set[Service] = plugins.map(_.service)
+    lazy val app: App = wire[App]
+}
+
+object Test {
+    lazy val core: CoreModule = wire[CoreModule]
+    lazy val plugin1: Plugin1Module = wire[Plugin1Module]
+    lazy val plugin2: Plugin2Module = wire[Plugin2Module]
+    lazy val plugins: Set[PluginModule] = wireSet[PluginModule]
+    lazy val app: AppModule = wire[AppModule]
+}
+
+require(Test.app.app.services == Set(Test.plugin1.service, Test.plugin2.service))
