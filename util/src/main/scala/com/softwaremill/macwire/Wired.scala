@@ -1,5 +1,7 @@
 package com.softwaremill.macwire
 
+import com.softwaremill.macwire.Wired.InstanceFactoryMap
+
 import scala.reflect.ClassTag
 
 /**
@@ -16,5 +18,6 @@ class Wired(protected val instanceFactoryMap: InstanceFactoryMap) extends Instan
 }
 
 object Wired {
+  private[macwire] type InstanceFactoryMap = Map[Class[_], () => AnyRef]
   def apply(implsByClass: InstanceFactoryMap) = new Wired(implsByClass)
 }

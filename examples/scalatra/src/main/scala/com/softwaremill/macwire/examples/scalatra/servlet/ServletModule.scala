@@ -1,8 +1,8 @@
 package com.softwaremill.macwire.examples.scalatra.servlet
 
+import com.softwaremill.macwire._
 import com.softwaremill.macwire.examples.scalatra.logic.LogicModule
 import com.softwaremill.macwire.scopes.ThreadLocalScope
-import com.softwaremill.macwire.aop.ProxyingInterceptor
 import com.softwaremill.macwire.examples.scalatra.util.TimingInterceptor
 
 trait ServletModule extends LogicModule {

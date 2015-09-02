@@ -1,13 +1,12 @@
 package com.softwaremill.macwire
 
-import org.scalatest.matchers.ShouldMatchers
-import org.scalatest.FlatSpec
+import org.scalatest.{Matchers, FlatSpec}
 import io.Source
 import tools.reflect.ToolBoxError
 
-class CompileTests extends FlatSpec with ShouldMatchers {
+class CompileTests extends FlatSpec with Matchers {
 
-  val GlobalImports = "import com.softwaremill.macwire.MacwireMacros._\n\n"
+  val GlobalImports = "import com.softwaremill.macwire._\n\n"
   val DirectiveRegexp = "#include ([a-zA-Z]+)".r
   val EmptyResult = "\n\n()"
 
@@ -85,7 +84,7 @@ class CompileTests extends FlatSpec with ShouldMatchers {
     ("simpleWireWithImplicitsErrorDuplicateValue", compileErr(ambiguousResMsg("B"), "B.defaultB", "bDep")),
     ("taggedOk", success),
     ("taggedPrimitiveOk", success),
-    ("taggedErrorNoValueWithTag", compileErr(valueNotFound("com.softwaremill.macwire.Tagging.@@[Berry,Blue]"))),
+    ("taggedErrorNoValueWithTag", compileErr(valueNotFound("com.softwaremill.macwire.tagging.@@[Berry,Blue]"))),
     ("multipleMethodParametersFail", compileErr(ambiguousResMsg("A"), "a1", "a2")),
     ("anonFuncArgsWiredOk", success),
     ("anonFuncAndMethodsArgsWiredOk", success),
@@ -97,16 +96,14 @@ class CompileTests extends FlatSpec with ShouldMatchers {
     ("methodWithWiredWithinPatternMatchOk", success),
     ("methodWithSingleImplicitParamOk", success),
     ("methodWithTaggedParamsOk", success),
-    ("methodWithTaggedParamsNotFoundFail", compileErr(valueNotFound("com.softwaremill.macwire.Tagging.@@[Berry,Blue]"))),
-    ("methodWithTaggedParamsAmbiguousFail", compileErr(ambiguousResMsg("com.softwaremill.macwire.Tagging.@@[Berry,Blue]"), "blueberryArg1", "blueberryArg2")),
+    ("methodWithTaggedParamsNotFoundFail", compileErr(valueNotFound("com.softwaremill.macwire.tagging.@@[Berry,Blue]"))),
+    ("methodWithTaggedParamsAmbiguousFail", compileErr(ambiguousResMsg("com.softwaremill.macwire.tagging.@@[Berry,Blue]"), "blueberryArg1", "blueberryArg2")),
     ("wireSet", success),
     ("moduleWiring", success)
   )
 
   for ((testName, expectedErrors) <- tests)
     addTest(testName, expectedErrors)
-
-  addTest("simpleValsOkInTraitExtendingMacwire", Nil, "/* Note no additional import needed */")
 
   def addTest(testName: String, expectedResult: CompilationResult, imports: String = GlobalImports) {
     testName should (if (expectedResult == success) "compile & run" else "cause a compile error") in {

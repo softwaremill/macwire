@@ -1,5 +1,7 @@
 package com.softwaremill.macwire
 
+import com.softwaremill.macwire.Wired.InstanceFactoryMap
+
 private[macwire] trait InstanceLookup {
   private lazy val lookupMap = prepareLookupMap
 

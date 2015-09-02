@@ -1,5 +1,6 @@
 package com.softwaremill.macwire
 
+import com.softwaremill.macwire.Wired.InstanceFactoryMap
 import org.scalatest._
 
 class WiredTest extends FlatSpec with ShouldMatchers {

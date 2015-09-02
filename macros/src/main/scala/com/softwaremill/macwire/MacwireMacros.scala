@@ -2,17 +2,9 @@ package com.softwaremill.macwire
 
 import com.softwaremill.macwire.dependencyLookup._
 
-import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
-trait Macwire {
-  def wire[T]: T = macro MacwireMacros.wire_impl[T]
-  def wireSet[T]: Set[T] = macro MacwireMacros.wireSet_impl[T]
-  def wireImplicit[T]: T = macro MacwireMacros.wireImplicit_impl[T]
-  def wiredInModule(in: AnyRef): Wired = macro MacwireMacros.wiredInModule_impl
-}
-
-object MacwireMacros extends Macwire {
+object MacwireMacros {
   private val debug = new Debug()
 
   def wire_impl[T: c.WeakTypeTag](c: blackbox.Context): c.Expr[T] = doWire(c, wireWithImplicits = false)

@@ -1,8 +1,8 @@
 package com.softwaremill.macwire.packages.child
 
-import com.softwaremill.macwire.Macwire
+import com.softwaremill.macwire._
 import com.softwaremill.macwire.packages.A
 
-trait ChildModule extends Macwire {
+trait ChildModule {
   val a = wire[A]
 }

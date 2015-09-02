@@ -1,6 +1,6 @@
 package com.softwaremill.play24.modules
 
-import com.softwaremill.macwire.MacwireMacros._
+import com.softwaremill.macwire._
 import com.softwaremill.play24.controllers.{SupplierController, CoffeeController}
 import com.softwaremill.play24.dao.{CoffeeDao, SupplierDao}
 import play.api.libs.ws.WSClient

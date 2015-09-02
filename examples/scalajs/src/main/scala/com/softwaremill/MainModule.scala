@@ -1,6 +1,6 @@
 package com.softwaremill
 
-import com.softwaremill.macwire.MacwireMacros._
+import com.softwaremill.macwire._
 
 trait MainModule {
   lazy val moneyEarningBusinessLogic = wire[MoneyEarningBusinessLogic]

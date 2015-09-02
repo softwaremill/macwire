@@ -1,7 +1,6 @@
 package com.softwaremill.macwire
 
-// inspired by https://gist.github.com/milessabin/89c9b47a91017973a35f
-trait Tagging {
+package object tagging {
   type Tag[+U] = { type Tag <: U }
   type @@[T, +U] = T with Tag[U]
   type Tagged[T, +U] = T with Tag[U]
@@ -12,5 +11,3 @@ trait Tagging {
     def andTaggedWith[V]: T @@ (U with V) = t.asInstanceOf[T @@ (U with V)]
   }
 }
-
-object Tagging extends Tagging

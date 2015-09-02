@@ -1,8 +1,6 @@
 package com.softwaremill.macwire.scopes
 
-import org.scalatest.matchers.ShouldMatchers
-import org.scalatest.FlatSpec
-import com.softwaremill.macwire.Macwire
+import org.scalatest.{Matchers, FlatSpec}
 
 /*
 Alternative syntax:
@@ -29,7 +27,7 @@ but
 - can you do macro inside a macro?
 
 */
-class ThreadLocalScopeTest extends FlatSpec with ShouldMatchers {
+class ThreadLocalScopeTest extends FlatSpec with Matchers {
   it should "store object values per-storage" in {
     // Given
     val storage1 = new collection.mutable.HashMap[String, Any]()
@@ -87,7 +85,8 @@ class ThreadLocalScopeTest extends FlatSpec with ShouldMatchers {
     // When
     val scope = new ThreadLocalScope()
 
-    object Beans extends Macwire {
+    object Beans {
+      import com.softwaremill.macwire._
       val stateful1 = scope(wire[Stateful1])
       val service1 = wire[Service1]
     }

@@ -1,4 +1,4 @@
-import com.softwaremill.macwire.Tagging._
+import com.softwaremill.macwire.tagging._
 
 trait Usd
 trait Pln

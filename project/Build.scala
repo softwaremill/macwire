@@ -4,8 +4,8 @@ import Keys._
 object BuildSettings {
   val buildSettings = Defaults.coreDefaultSettings ++ Seq (
     organization  := "com.softwaremill.macwire",
-    version       := "1.0.7",
-    scalaVersion  := "2.11.6",
+    version       := "2.0.0-SNAPSHOT",
+    scalaVersion  := "2.11.7",
     // Sonatype OSS deployment
     publishTo <<= version { (v: String) =>
       val nexus = "https://oss.sonatype.org/"
@@ -37,7 +37,7 @@ object BuildSettings {
 
 object Dependencies {
   val scalatest     = "org.scalatest" %% "scalatest"  % "2.2.5"       % "test"
-  val javassist     = "org.javassist"  % "javassist"  % "3.19.0-GA"
+  val javassist     = "org.javassist"  % "javassist"  % "3.20.0-GA"
 }
 
 object MacwireBuild extends Build {
@@ -48,18 +48,24 @@ object MacwireBuild extends Build {
     "root",
     file("."),
     settings = buildSettings ++ Seq(publishArtifact := false)
-  ) aggregate(macros, runtime, tests, tests2, examplesScalatra)
+  ) aggregate(util, macros, proxy, tests, tests2, examplesScalatra)
+
+  lazy val util: Project = Project(
+    "util",
+    file("util"),
+    settings = buildSettings
+  )
 
   lazy val macros: Project = Project(
     "macros",
     file("macros"),
     settings = buildSettings ++ Seq(
       libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-reflect" % _))
-  )
+  ) dependsOn(util)
 
-  lazy val runtime: Project = Project(
-    "runtime",
-    file("runtime"),
+  lazy val proxy: Project = Project(
+    "proxy",
+    file("proxy"),
     settings = buildSettings ++ Seq(
       libraryDependencies ++= Seq(javassist, scalatest))
   ) dependsOn(macros % "test")
@@ -75,7 +81,7 @@ object MacwireBuild extends Build {
       // Otherwise when running tests in sbt, the macro is not visible
       // (both macro and usages are compiled in the same compiler run)
       fork in Test := true)
-  ) dependsOn(macros, runtime)
+  ) dependsOn(util, macros % "provided", proxy)
 
   // The tests here are that the tests compile.
   lazy val tests2: Project = Project(
@@ -87,14 +93,14 @@ object MacwireBuild extends Build {
       // Otherwise when running tests in sbt, the macro is not visible
       // (both macro and usages are compiled in the same compiler run)
       fork in test := true)
-  ) dependsOn(macros, runtime)
+  ) dependsOn(util, macros % "provided", proxy)
 
   lazy val examplesScalatra: Project = {
     val ScalatraVersion = "2.3.1"
     val scalatraCore = "org.scalatra" %% "scalatra" % ScalatraVersion
     val scalatraScalate = "org.scalatra" %% "scalatra-scalate" % ScalatraVersion
     val logback = "ch.qos.logback" % "logback-classic" % "1.1.3"
-    val jetty = "org.eclipse.jetty" % "jetty-webapp" % "9.2.0.v20140526" % "compile"
+    val jetty = "org.eclipse.jetty" % "jetty-webapp" % "9.3.3.v20150827" % "compile"
     val servletApi = "org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "compile" artifacts (Artifact("javax.servlet", "jar", "jar"))
 
     Project(
@@ -105,7 +111,7 @@ object MacwireBuild extends Build {
         classpathTypes ~= (_ + "orbit"),
         libraryDependencies ++= Seq(scalatraCore, scalatraScalate, jetty, servletApi, logback)
       )
-    ) dependsOn(macros, runtime)
+    ) dependsOn(util, macros % "provided", proxy)
   }
 
   // Enabling debug project-wide. Can't find a better way to pass options to scalac.
