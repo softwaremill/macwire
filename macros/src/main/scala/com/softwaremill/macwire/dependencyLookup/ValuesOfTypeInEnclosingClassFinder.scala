@@ -48,13 +48,18 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingClassFinder[C <: Context]
           case Import(expr, selectors) =>
             val matches = debug.withBlock(s"Looking up imports in [$tree]") {
 
-              val importCandidates =
+              val importCandidates : Map[Symbol, Name] =
                 if (selectors.exists { selector => selector.name.toString == "_" }) {
                   // wildcard import on `expr`
-                  typeCheckUtil.typeCheckIfNeeded(expr).members.filter { _.isPublic }.toList
+                  typeCheckUtil.typeCheckIfNeeded(expr).members.filter { _.isPublic }.map {
+                    s => s -> s.name.decodedName }.toMap
                 } else {
-                  val selectorNames = selectors.map(_.name).toSet
-                  typeCheckUtil.typeCheckIfNeeded(expr).members.filter { m => selectorNames.contains(m.name) }.toList
+                  val selectorNames = selectors.map(s => s.name -> s.rename).toMap
+                  typeCheckUtil.typeCheckIfNeeded(expr).
+                    members.
+                    collect { case m if selectorNames.contains(m.name) =>
+                      m -> selectorNames(m.name) }.
+                    toMap
                 }
 
               filterImportMembers(importCandidates)
@@ -66,8 +71,8 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingClassFinder[C <: Context]
       }
     }
 
-    def filterImportMembers(members: List[Symbol]) : List[Tree] = {
-      members.filter { m =>
+    def filterImportMembers(members: Map[Symbol, Name]) : List[Tree] = {
+      members.filter { case (m,name) =>
         debug.withBlock(s"Checking [$m]") {
           if( m.isImplicit ) {
             // ignore implicits as they will be picked by `ImplicitValueOfTypeFinder`
@@ -79,7 +84,7 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingClassFinder[C <: Context]
             ok
           }
         }
-      }.map { m => Ident(m.name) }
+      }.map { case (_,name) => Ident(name) }.toList
     }
 
     def treeToCheck(tree: Tree, rhs: Tree) = {
