@@ -1,0 +1,17 @@
+#include commonSimpleClasses
+
+class Base {
+    lazy val theA = wire[A]
+    lazy val theB = wire[B]
+}
+
+class Main(val base: Base) {
+    import base.{theA => blabla, theB => blibli}
+
+    lazy val theC = wire[C]
+}
+
+val main = new Main(new Base)
+
+require(main.theC.a eq main.base.theA)
+require(main.theC.b eq main.base.theB)

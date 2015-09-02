@@ -36,6 +36,7 @@ class CompileTests extends FlatSpec with Matchers {
     ("classesWithTraitsLazyValsOkInTrait", success),
     ("import", success),
     ("importAmbiguous", compileErr(ambiguousResMsg("A"), "myA", "theA")),
+    ("importRename", success),
     ("importWildcard", success),
     ("importWildcardVisibility", success),
     ("inheritanceSimpleLazyValsOkInTraits", success),
