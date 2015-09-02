@@ -81,6 +81,7 @@ class CompileTests extends FlatSpec with Matchers {
     ("implicitDepsNotWiredWithExplicitAndImplicitValsInParentsScope", compileErr(ambiguousResMsg("Dependency"), "regularDependency", "implicitDependency")),
     ("implicitDepsNotWiredWithoutAnyValsInScope", compileErr(valueNotFound("Dependency"))),
     ("diamondInheritance", success),
+    ("selfType", success),
     ("simpleWireWithImplicits", success),
     ("simpleWireWithImplicitsErrorDuplicateValue", compileErr(ambiguousResMsg("B"), "B.defaultB", "bDep")),
     ("taggedOk", success),

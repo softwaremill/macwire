@@ -62,12 +62,20 @@ private[dependencyLookup] class ValuesOfTypeInParentsFinder[C <: Context](val c:
     }
 
     val parents = c.enclosingClass match {
-      case ClassDef(_, _, _, Template(pp, _, _)) => pp
+      case ClassDef(_, _, _, Template(pp, self, _)) =>
+        val selfTypes = self.tpt match {
+          case ident : Ident => List(ident)
+          case CompoundTypeTree(Template(selfParents,_,_)) => selfParents
+          case _ => Nil
+        }
+        pp ++ selfTypes
+
       case ModuleDef(_, _, Template(pp, _, _)) => pp
       case e =>
         c.error(c.enclosingPosition, s"Unknown type of enclosing class: ${e.getClass}")
         Nil
     }
+
     findInParents(parents, Set()).map(Ident(_))(collection.breakOut)
   }
 }

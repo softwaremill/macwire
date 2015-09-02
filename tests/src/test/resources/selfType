@@ -1,0 +1,39 @@
+#include commonSimpleClasses
+
+trait AProvider {
+    def a : A
+}
+
+trait BProvider {
+    def b : B
+}
+
+trait ModuleSimple { this : AProvider =>
+    lazy val b = wire[B]
+    lazy val c = wire[C]
+}
+
+trait ModuleMultiple { this : AProvider with BProvider =>
+    lazy val c = wire[C]
+}
+
+trait AProviderImpl extends AProvider {
+    lazy val a = wire[A]
+}
+
+trait ABProviderImpl extends AProvider with BProvider {
+    lazy val a = wire[A]
+    lazy val b = wire[B]
+}
+
+object TestSimple extends ModuleSimple with AProviderImpl
+
+require(TestSimple.c.a == TestSimple.a)
+require(TestSimple.c.b == TestSimple.b)
+
+
+object TestMultiple extends ModuleMultiple with ABProviderImpl
+
+require(TestMultiple.c.a == TestMultiple.a)
+require(TestMultiple.c.b == TestMultiple.b)
+
