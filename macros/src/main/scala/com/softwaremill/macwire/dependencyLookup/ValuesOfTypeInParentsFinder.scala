@@ -11,7 +11,7 @@ private[dependencyLookup] class ValuesOfTypeInParentsFinder[C <: Context](val c:
   private val typeCheckUtil = new TypeCheckUtil[c.type](c, debug)
   private val positionUtil = new PositionUtil[c.type](c)
 
-  def find(t: Type, implicitValue: Option[Tree]): List[Tree] = {
+  def find(t: Type, implicitValue: Option[Tree] = None): List[Tree] = {
 
     def findInParent(parent: Tree): Set[Name] = {
       debug.withBlock(s"Checking parent: [$parent]") {
