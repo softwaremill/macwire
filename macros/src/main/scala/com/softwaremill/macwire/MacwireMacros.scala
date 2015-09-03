@@ -75,15 +75,13 @@ object MacwireMacros {
 
     val instances = dependencyResolver.resolveAll(targetType.tpe)
 
+    // The lack of hygiene can be seen here as a feature, the choice of Set implementation
+    // is left to the user - you want a `mutable.Set`, just import `mutable.Set` before the `wireSet[T]` call
     q"Set(..$instances)"
   }
 
-  def wiredInModule_impl(c: blackbox.Context)(in: c.Expr[AnyRef]): c.Expr[Wired] = {
+  def wiredInModule_impl(c: blackbox.Context)(in: c.Expr[AnyRef]): c.Tree = {
     import c.universe._
-
-    // Ident(scala.Predef)
-    val Expr(predefIdent) = reify { Predef }
-    val Expr(wiredIdent) = reify { Wired }
 
     def extractTypeFromNullaryType(tpe: Type) = {
       tpe match {
@@ -92,7 +90,7 @@ object MacwireMacros {
       }
     }
 
-    val capturedInName = c.freshName()
+    val capturedIn = TermName(c.freshName())
 
     def instanceFactoriesByClassInTree(tree: Tree): List[Tree] = {
       val members = tree.tpe.members
@@ -110,17 +108,11 @@ object MacwireMacros {
         .filter { case (_, tpe) => tpe <:< typeOf[AnyRef] }
         .map { case (member, tpe) =>
           val key = Literal(Constant(tpe))
-          val value = Select(Ident(TermName(capturedInName)), TermName(member.name.decodedName.toString.trim))
+          val value = q"$capturedIn.$member"
 
           debug(s"Found a mapping: $key -> $value")
 
-          // Generating: () => value
-          val valueExpr = c.Expr[AnyRef](value)
-          val createValueExpr = reify { () => valueExpr.splice }
-
-          // Generating: key -> value
-          Apply(Select(Apply(Select(predefIdent, TermName("ArrowAssoc")), List(key)),
-            TermName("$minus$greater")), List(createValueExpr.tree))
+          q"scala.Predef.ArrowAssoc($key) -> (() => $value)"
         }
 
       pairs.toList
@@ -129,15 +121,13 @@ object MacwireMacros {
     debug.withBlock(s"Generating wired-in-module for ${in.tree}") {
       val pairs = instanceFactoriesByClassInTree(in.tree)
 
-      // Generating:
-      // {
-      //   val inName = in
-      //   Wired(Map(...))
-      // }
-      val captureInTree = ValDef(Modifiers(), TermName(capturedInName), TypeTree(), in.tree)
-      val newWiredTree = Apply(Select(wiredIdent, TermName("apply")), List(
-        Apply(Select(Select(predefIdent, TermName("Map")), TermName("apply")), pairs)))
-      c.Expr[Wired](Block(captureInTree, newWiredTree))
+      val code = q"""
+          val $capturedIn = $in
+          com.softwaremill.macwire.Wired(scala.collection.immutable.Map(..$pairs))
+       """
+
+      debug(s"Generated code: " + show(code))
+      code
     }
   }
 }
