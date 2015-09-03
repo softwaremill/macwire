@@ -1,0 +1,24 @@
+#include commonSimpleClasses
+
+class Base {
+    lazy val theA = wire[A]
+}
+
+case class Stuff(a: A, i: Int, str: String)
+
+class Main(val base: Base) {
+    // this test makes sure that we don't consider
+    // object methods such as hashCode or toString
+    import base._
+
+    lazy val someInt = 42
+    lazy val someString = "toto"
+
+    lazy val stuff = wire[Stuff]
+}
+
+val main = new Main(new Base)
+
+require(main.stuff.a eq main.base.theA)
+require(main.stuff.i == main.someInt)
+require(main.stuff.str == main.someString)

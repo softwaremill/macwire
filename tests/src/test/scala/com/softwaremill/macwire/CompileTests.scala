@@ -40,6 +40,7 @@ class CompileTests extends FlatSpec with Matchers {
     ("importRename", success),
     ("importWildcard", success),
     ("importWildcardVisibility", success),
+    ("importWildcardDoNotImportObjectMethods", success),
     ("inheritanceSimpleLazyValsOkInTraits", success),
     ("inheritanceSimpleDefsOkInTraits", success),
     ("inheritanceParametrized", success),
@@ -105,6 +106,7 @@ class CompileTests extends FlatSpec with Matchers {
     ("moduleWiring", success),
     ("moduleAnnotation", success),
     ("moduleAnnotationFromParent", success),
+    ("moduleAnnotationDoNotImportObjectMethods", success),
     ("moduleAnnotationWithAscription", success)
   )
 

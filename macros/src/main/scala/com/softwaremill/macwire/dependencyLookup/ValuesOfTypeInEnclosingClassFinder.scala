@@ -107,17 +107,22 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingClassFinder[C <: Context]
     }
 
     def filterMember(member: Symbol, ignoreImplicit: Boolean) : Boolean = {
-      debug.withBlock(s"Checking [$member]") {
-        if( !member.isPublic ) {
-          false
-        } else if( ignoreImplicit && member.isImplicit ) {
-          // ignore implicits as they will be picked by `ImplicitValueOfTypeFinder`
-          debug("Ignoring implicit (will be picked later on)")
-          false
-        } else {
-          val ok = checkCandidate(target = t, tpt = member.typeSignature)
-          if (ok) debug("Found a match!")
-          ok
+      if( member.fullName.startsWith("java.lang.Object") ||
+          member.fullName.startsWith("scala.Any") ) {
+        false
+      } else {
+        debug.withBlock(s"Checking [$member]") {
+          if (!member.isPublic) {
+            false
+          } else if (ignoreImplicit && member.isImplicit) {
+            // ignore implicits as they will be picked by `ImplicitValueOfTypeFinder`
+            debug("Ignoring implicit (will be picked later on)")
+            false
+          } else {
+            val ok = checkCandidate(target = t, tpt = member.typeSignature)
+            if (ok) debug("Found a match!")
+            ok
+          }
         }
       }
     }
