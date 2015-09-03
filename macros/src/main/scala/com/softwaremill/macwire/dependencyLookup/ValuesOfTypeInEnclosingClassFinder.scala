@@ -34,7 +34,7 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingClassFinder[C <: Context]
       trees match {
         case Nil => acc
         case tree :: tail => tree match {
-          case ValDefOrDefDef(name, tpt, rhs, symbol) =>
+          case ValDefOrDefDef(name, tpt, rhs, symbol) if name.toString != "<init>" =>
             val candidateOk = checkCandidate(t, name, tpt, treeToCheck(tree, rhs),
               if (symbol.isMethod) "def" else "val")
 
@@ -54,7 +54,7 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingClassFinder[C <: Context]
               val valParentIsModule = hasSymbol && !valIsModule && typeCheckIfNeeded(tpt).baseClasses.exists(hasModuleAnnotation)
 
               if (valIsModule || valParentIsModule) {
-                val matches = debug.withBlock(s"Looking up members of module $tpt") {
+                val matches = debug.withBlock(s"$name is a module of type $tpt, looking up its members") {
                   typeCheckIfNeeded(tpt).members.filter(filterMember(_,ignoreImplicit = false)).map { member =>
                     q"$name.$member"
                   }.toList

@@ -1,0 +1,17 @@
+#include commonSimpleClasses
+
+@Module
+class App() {
+    lazy val a = wire[A]
+    lazy val b = wire[B]
+
+    // there used to be a bug where the ascription would make
+    // the macro find <init> to be eligible as a module, and therefore
+    // would find duplicated values
+    lazy val c: C = wire[C]
+}
+
+val app = wire[App]
+
+require(app.c.a eq app.a)
+require(app.c.b eq app.b)

@@ -104,7 +104,8 @@ class CompileTests extends FlatSpec with Matchers {
     ("wireSet", success),
     ("moduleWiring", success),
     ("moduleAnnotation", success),
-    ("moduleAnnotationFromParent", success)
+    ("moduleAnnotationFromParent", success),
+    ("moduleAnnotationWithAscription", success)
   )
 
   for ((testName, expectedErrors) <- tests)
