@@ -24,6 +24,7 @@ class CompileTests extends FlatSpec with Matchers {
     ("simpleValsOkInTrait", success),
     ("simpleValsOkInObject", success),
     ("simpleValsOkInClass", success),
+    ("simpleValsOkInClassParameters", success),
     ("simpleValsErrorMissingValue", compileErr(valueNotFound("B"))),
     ("simpleValsErrorDuplicateValue", compileErr(ambiguousResMsg("B"), "theB1", "theB2")),
     ("simpleDefsOkInTrait", success),

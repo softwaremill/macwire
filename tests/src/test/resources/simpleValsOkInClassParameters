@@ -1,0 +1,13 @@
+#include commonSimpleClasses
+
+class Test(theA: A,
+           val theB :B) {
+
+    val theC = wire[C]
+}
+
+val a = A()
+val test = new Test(a, B())
+
+require(test.theC.a eq a)
+require(test.theC.b eq test.theB)
