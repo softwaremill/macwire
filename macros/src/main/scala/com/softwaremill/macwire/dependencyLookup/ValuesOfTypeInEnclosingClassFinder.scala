@@ -49,14 +49,11 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingClassFinder[C <: Context]
 
               // it might be a @Module, let's see
               val hasSymbol = tpt.symbol != null // sometimes tpt has no symbol...
-              val valIsModule = hasSymbol && tpt.symbol.annotations.exists { annotation =>
-                  annotation.tree match {
-                    case q"new $parent()" => parent.symbol.fullName == "com.softwaremill.macwire.Module"
-                    case _ => false
-                  }
-                }
+              val valIsModule = hasSymbol && hasModuleAnnotation(tpt.symbol)
+              // the java @Inherited meta-annotation does not seem to be understood by scala-reflect...
+              val valParentIsModule = hasSymbol && !valIsModule && typeCheckIfNeeded(tpt).baseClasses.exists(hasModuleAnnotation)
 
-              if (valIsModule) {
+              if (valIsModule || valParentIsModule) {
                 val matches = debug.withBlock(s"Looking up members of module $tpt") {
                   typeCheckIfNeeded(tpt).members.filter(filterMember(_,ignoreImplicit = false)).map { member =>
                     q"$name.$member"
@@ -89,6 +86,15 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingClassFinder[C <: Context]
             doFind(tail, matches ::: acc)
 
           case _ => doFind(tail, acc)
+        }
+      }
+    }
+
+    def hasModuleAnnotation(symbol: Symbol) : Boolean = {
+      symbol.annotations.exists { annotation =>
+        annotation.tree match {
+          case q"new $parent()" => parent.symbol.fullName == "com.softwaremill.macwire.Module"
+          case _ => false
         }
       }
     }

@@ -103,7 +103,8 @@ class CompileTests extends FlatSpec with Matchers {
     ("methodWithTaggedParamsAmbiguousFail", compileErr(ambiguousResMsg("com.softwaremill.macwire.tagging.@@[Berry,Blue]"), "blueberryArg1", "blueberryArg2")),
     ("wireSet", success),
     ("moduleWiring", success),
-    ("moduleAnnotation", success)
+    ("moduleAnnotation", success),
+    ("moduleAnnotationFromParent", success)
   )
 
   for ((testName, expectedErrors) <- tests)
