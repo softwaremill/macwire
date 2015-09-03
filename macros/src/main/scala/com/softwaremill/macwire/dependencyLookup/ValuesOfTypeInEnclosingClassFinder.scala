@@ -11,6 +11,8 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingClassFinder[C <: Context]
   private val typeCheckUtil = new TypeCheckUtil[c.type](c, debug)
   private val positionUtil = new PositionUtil[c.type](c)
 
+  import typeCheckUtil._
+
   object ValDefOrDefDef {
     def unapply(t: Tree): Option[(TermName, Tree, Tree, Symbol)] = t match {
       case ValDef(_, name, tpt, rhs) => Some((name, tpt, rhs, t.symbol))
@@ -33,7 +35,7 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingClassFinder[C <: Context]
         case Nil => acc
         case tree :: tail => tree match {
           case ValDefOrDefDef(name, tpt, rhs, symbol) =>
-            val candidateOk = typeCheckUtil.checkCandidate(t, name, tpt, treeToCheck(tree, rhs),
+            val candidateOk = checkCandidate(t, name, tpt, treeToCheck(tree, rhs),
               if (symbol.isMethod) "def" else "val")
 
             if (candidateOk) {
@@ -43,7 +45,28 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingClassFinder[C <: Context]
               }
 
               doFind(tail, treeToAdd :: acc)
-            } else doFind(tail, acc)
+            } else {
+
+              // it might be a @Module, let's see
+              val hasSymbol = tpt.symbol != null // sometimes tpt has no symbol...
+              val valIsModule = hasSymbol && tpt.symbol.annotations.exists { annotation =>
+                  annotation.tree match {
+                    case q"new $parent()" => parent.symbol.fullName == "com.softwaremill.macwire.Module"
+                    case _ => false
+                  }
+                }
+
+              if (valIsModule) {
+                val matches = debug.withBlock(s"Looking up members of module $tpt") {
+                  typeCheckIfNeeded(tpt).members.filter(filterMember(_,ignoreImplicit = false)).map { member =>
+                    q"$name.$member"
+                  }.toList
+                }
+                doFind(tail, matches ::: acc)
+              } else {
+                doFind(tail, acc)
+              }
+            }
 
           case Import(expr, selectors) =>
             val matches = debug.withBlock(s"Looking up imports in [$tree]") {
@@ -51,12 +74,11 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingClassFinder[C <: Context]
               val importCandidates : Map[Symbol, Name] =
                 if (selectors.exists { selector => selector.name.toString == "_" }) {
                   // wildcard import on `expr`
-                  typeCheckUtil.typeCheckIfNeeded(expr).members.filter { _.isPublic }.map {
+                  typeCheckIfNeeded(expr).members.map {
                     s => s -> s.name.decodedName }.toMap
                 } else {
                   val selectorNames = selectors.map(s => s.name -> s.rename).toMap
-                  typeCheckUtil.typeCheckIfNeeded(expr).
-                    members.
+                  typeCheckIfNeeded(expr).members.
                     collect { case m if selectorNames.contains(m.name) =>
                       m -> selectorNames(m.name) }.
                     toMap
@@ -72,19 +94,26 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingClassFinder[C <: Context]
     }
 
     def filterImportMembers(members: Map[Symbol, Name]) : List[Tree] = {
-      members.filter { case (m,name) =>
-        debug.withBlock(s"Checking [$m]") {
-          if( m.isImplicit ) {
-            // ignore implicits as they will be picked by `ImplicitValueOfTypeFinder`
-            debug("Ignoring implicit (will be picked later on)")
-            false
-          } else {
-            val ok = typeCheckUtil.checkCandidate(target = t, tpt = m.typeSignature)
-            if (ok) debug("Found a match!")
-            ok
-          }
+      members.
+        filter { case (m,_) => filterMember(m, ignoreImplicit = true) }.
+        map { case (_,name) => Ident(name) }.
+        toList
+    }
+
+    def filterMember(member: Symbol, ignoreImplicit: Boolean) : Boolean = {
+      debug.withBlock(s"Checking [$member]") {
+        if( !member.isPublic ) {
+          false
+        } else if( ignoreImplicit && member.isImplicit ) {
+          // ignore implicits as they will be picked by `ImplicitValueOfTypeFinder`
+          debug("Ignoring implicit (will be picked later on)")
+          false
+        } else {
+          val ok = checkCandidate(target = t, tpt = member.typeSignature)
+          if (ok) debug("Found a match!")
+          ok
         }
-      }.map { case (_,name) => Ident(name) }.toList
+      }
     }
 
     def treeToCheck(tree: Tree, rhs: Tree) = {
