@@ -77,7 +77,10 @@ object MacwireMacros {
 
     // The lack of hygiene can be seen here as a feature, the choice of Set implementation
     // is left to the user - you want a `mutable.Set`, just import `mutable.Set` before the `wireSet[T]` call
-    q"Set(..$instances)"
+    val code = q"Set(..$instances)"
+
+    debug(s"Generated code: " + show(code))
+    code
   }
 
   def wiredInModule_impl(c: blackbox.Context)(in: c.Expr[AnyRef]): c.Tree = {
