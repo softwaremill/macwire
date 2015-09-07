@@ -18,7 +18,7 @@ object MacwireMacros {
 
     def createNewTargetWithParams(): Expr[T] = {
       val targetType = implicitly[c.WeakTypeTag[T]]
-      debug.withBlock(s"Trying to find parameters to create new instance of: [${targetType.tpe}]") {
+      debug.withBlock(s"Trying to find parameters to create new instance of: [${targetType.tpe}] at ${c.enclosingPosition}") {
         val targetConstructorOpt = targetType.tpe.members.find(m => m.isMethod && m.asMethod.isPrimaryConstructor)
         targetConstructorOpt match {
           case None =>
