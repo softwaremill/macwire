@@ -122,7 +122,7 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingClassFinder[C <: Context]
       }
     }
 
-    def evaluateImport(tree: c.universe.Tree, expr: c.universe.Tree, selectors: List[c.universe.ImportSelector]): List[(c.universe.Tree, c.universe.Tree)] = {
+    def evaluateImport(tree: Tree, expr: Tree, selectors: List[ImportSelector]): List[(Tree, Tree)] = {
       val matches = debug.withBlock(s"Looking up imports in [$tree]") {
 
         val importCandidates: List[(Symbol, (Tree, Tree))] =
@@ -148,7 +148,7 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingClassFinder[C <: Context]
       matches
     }
 
-    def evaluateValOrDef(tree: c.universe.Tree, name: c.universe.TermName, tpt: c.universe.Tree, rhs: c.universe.Tree, symbol: c.universe.Symbol): List[(c.universe.Tree, c.universe.Tree)] = {
+    def evaluateValOrDef(tree: Tree, name: TermName, tpt: Tree, rhs: Tree, symbol: Symbol): List[(Tree, Tree)] = {
       val candidateOk = checkCandidate(t, name, tpt, treeToCheck(tree, rhs),
         if (symbol.isMethod) "def" else "val")
 
