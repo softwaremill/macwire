@@ -16,7 +16,7 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingMethodsAndFunctionsFinder
     def containsCurrentlyExpandedWireCall(t: Tree): Boolean = t.exists(_.pos == c.enclosingPosition)
 
     @tailrec
-    def doFind(trees: List[Tree], acc: List[List[Name]]): List[List[Name]] = trees match {
+    def doFind(trees: List[Tree], acc: List[Name]): List[Name] = trees match {
       case Nil => acc
       case tree :: tail => tree match {
         case Block(statements, expr) => doFind(expr :: statements, acc)
@@ -25,10 +25,10 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingMethodsAndFunctionsFinder
           doFind(List(rhs), acc)
         case DefDef(_, name, _, curriedParams, tpt, rhs) if containsCurrentlyExpandedWireCall(rhs) =>
           debug(s"Looking in def $name")
-          doFind(List(rhs), extractMatchingParams(curriedParams.flatten) :: acc)
+          doFind(List(rhs), extractMatchingParams(curriedParams.flatten) ::: acc)
         case Function(params, body) if containsCurrentlyExpandedWireCall(body) =>
           debug(s"Looking in anonymous function")
-          doFind(List(body), extractMatchingParams(params) :: acc)
+          doFind(List(body), extractMatchingParams(params) ::: acc)
         case ifBlock @ If(cond, then, otherwise) if containsCurrentlyExpandedWireCall(ifBlock) =>
           doFind(List(then, otherwise), acc)
         case Match(_, cases) if cases.exists(containsCurrentlyExpandedWireCall) =>
@@ -54,7 +54,7 @@ private[dependencyLookup] class ValuesOfTypeInEnclosingMethodsAndFunctionsFinder
     }
 
     debug.withBlock(s"Looking in the enclosing methods/functions") {
-      doFind(enclosingClassBody, Nil).flatten.map(Ident(_))
+      doFind(enclosingClassBody, Nil).map(Ident(_))
     }
   }
 
