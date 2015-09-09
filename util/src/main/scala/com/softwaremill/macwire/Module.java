@@ -66,7 +66,7 @@ import java.lang.annotation.*;
  *     }
  * </pre>
  */
-@Retention(RetentionPolicy.SOURCE)
+@Retention(RetentionPolicy.CLASS)
 @Target(ElementType.TYPE)
 @Inherited
 public @interface Module {
