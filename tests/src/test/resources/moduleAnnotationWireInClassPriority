@@ -1,0 +1,41 @@
+#include commonSimpleClasses
+
+case class X(a: A, b: B, c: C, d: D)
+
+@Module
+class ABModule {
+    lazy val a = wire[A]
+    lazy val b = wire[B]
+    lazy val c = wire[C]
+    lazy val d = wire[D]
+}
+
+class DProvider {
+    val d: D = wire[D]
+}
+
+class Test(c: C, dProvider: DProvider, module: ABModule) {
+
+    // In this test we'll check the priority mechanic:
+    // although `module.{a,b,c,d}` are available
+    // macwire will look first at more accessible places:
+    //  - local members (`b`)
+    //  - class parameters (`c`)
+    //  - imported members (`d`)
+
+    import dProvider.d
+
+    lazy val b: B = wire[B]
+    lazy val x: X = wire[X]
+}
+
+val c = new C(A(), B())
+val dProvider = new DProvider
+val module = new ABModule
+
+val test = new Test(c, dProvider, module)
+
+require(test.x.a eq module.a)
+require(test.x.b eq test.b)
+require(test.x.c eq c)
+require(test.x.d eq dProvider.d)

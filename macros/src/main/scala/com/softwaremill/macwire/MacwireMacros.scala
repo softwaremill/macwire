@@ -7,14 +7,10 @@ import scala.reflect.macros.blackbox
 object MacwireMacros {
   private val debug = new Debug()
 
-  def wire_impl[T: c.WeakTypeTag](c: blackbox.Context): c.Expr[T] = doWire(c, wireWithImplicits = false)
-
-  def wireImplicit_impl[T: c.WeakTypeTag](c: blackbox.Context): c.Expr[T] = doWire(c, wireWithImplicits = true)
-
-  private def doWire[T: c.WeakTypeTag](c: blackbox.Context, wireWithImplicits: Boolean): c.Expr[T] = {
+  def wire_impl[T: c.WeakTypeTag](c: blackbox.Context): c.Expr[T] = {
     import c.universe._
 
-    lazy val dependencyResolver = new DependencyResolver[c.type](c, debug, wireWithImplicits)
+    lazy val dependencyResolver = new DependencyResolver[c.type](c, debug)
 
     def createNewTargetWithParams(): Expr[T] = {
       val targetType = implicitly[c.WeakTypeTag[T]]
@@ -37,7 +33,7 @@ object MacwireMacros {
             var newT: Tree = Select(New(Ident(targetTpe.typeSymbol)), termNames.CONSTRUCTOR)
 
             for {
-              targetConstructorParams <- targetConstructorParamLists
+              targetConstructorParams <- targetConstructorParamLists if !targetConstructorParams.exists(_.isImplicit)
             } {
               val constructorParams: List[c.Tree] = for (param <- targetConstructorParams) yield {
                 // Resolve type parameters
@@ -58,7 +54,7 @@ object MacwireMacros {
               newT = Apply(newT, constructorParams)
             }
 
-            debug(s"Generated code: ${c.universe.show(newT)}")
+            debug(s"Generated code: ${show(newT)}")
             c.Expr(newT)
         }
       }
@@ -71,7 +67,7 @@ object MacwireMacros {
     import c.universe._
     val targetType = implicitly[c.WeakTypeTag[T]]
 
-    val dependencyResolver = new DependencyResolver[c.type](c, debug, false)
+    val dependencyResolver = new DependencyResolver[c.type](c, debug)
 
     val instances = dependencyResolver.resolveAll(targetType.tpe)
 

@@ -71,21 +71,13 @@ class CompileTests extends FlatSpec with Matchers {
     ("implicitDepsWiredWithImplementedImplicitVals", success),
     ("implicitDepsWiredWithImplicitDefs", success),
     ("implicitDepsWiredWithImplicitVals", success),
-    ("implicitDepsWiredWithImplicitValsFromMethodScope", compileErr(ambiguousResMsg("Dependency"), "dependency", "implicitDependency")),
+    ("implicitDepsWiredWithImplicitValsFromMethodScope", success),
     ("implicitDepsWiredWithImplicitValsFromEnclosingModuleScope", success),
     ("implicitDepsWiredWithImplicitValsFromParentsScope", success),
     // implicit params should be resolved with regular values
-    ("implicitDepsWiredWithExplicitVals", success),
-    ("implicitDepsWiredWithExplicitValsFromEnclosingModuleScope", success),
-    ("implicitDepsWiredWithExplicitValsFromParentsScope", success),
     // dependency resolution should abort compilation when there are ambiguous dependencies in scope
-    ("implicitDepsNotWiredWithExplicitAndImplicitValsInEnclosingClassScope", compileErr(ambiguousResMsg("Dependency"), "regularDependency", "implicitDependency")),
-    ("implicitDepsNotWiredWithExplicitAndImplicitValsInParentsScope", compileErr(ambiguousResMsg("Dependency"), "regularDependency", "implicitDependency")),
-    ("implicitDepsNotWiredWithoutAnyValsInScope", compileErr(valueNotFound("Dependency"))),
     ("diamondInheritance", success),
     ("selfType", success),
-    ("simpleWireWithImplicits", success),
-    ("simpleWireWithImplicitsErrorDuplicateValue", compileErr(ambiguousResMsg("B"), "B.defaultB", "bDep")),
     ("taggedOk", success),
     ("taggedPrimitiveOk", success),
     ("taggedErrorNoValueWithTag", compileErr(valueNotFound("com.softwaremill.macwire.tagging.@@[Berry,Blue]"))),
@@ -104,11 +96,11 @@ class CompileTests extends FlatSpec with Matchers {
     ("methodWithTaggedParamsAmbiguousFail", compileErr(ambiguousResMsg("com.softwaremill.macwire.tagging.@@[Berry,Blue]"), "blueberryArg1", "blueberryArg2")),
     ("wireSet", success),
     ("moduleWiring", success),
-    ("moduleAnnotation", success),
-    ("moduleAnnotationAndImport", success),
+    ("moduleAnnotationWireInClass", success),
+    ("moduleAnnotationWireInClassOverlappedByImport", success),
     ("moduleAnnotationFromParent", success),
     ("moduleAnnotationWireSet", success),
-    ("moduleAnnotationDoNotImportObjectMethods", success),
+    ("moduleAnnotationWireInClassDoNotImportObjectMethods", success),
     ("moduleAnnotationWithAscription", success)
   )
 

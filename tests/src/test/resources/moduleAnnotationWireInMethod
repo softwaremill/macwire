@@ -1,0 +1,43 @@
+#include commonSimpleClasses
+
+case class X(a: A, b: B, c: C, d: D)
+
+@Module
+class ABModule {
+    lazy val a = wire[A]
+    lazy val b = wire[B]
+    lazy val c = wire[C]
+    lazy val d = wire[D]
+}
+
+class DProvider {
+    val d: D = D(C(A(),B()))
+}
+
+object Test {
+
+    def buildC(c: C, dProvider: DProvider): (X,ABModule,B) = {
+
+        // In this test we'll check as well the priority mechanic:
+        // although `module.{a,b,c,d}` are available
+        // macwire will look first at more accessible places:
+        //  - local variable (`b`)
+        //  - method parameters (`c`)
+        //  - imported variables (`d`)
+        val module = new ABModule
+
+        import dProvider.d
+        val b = B()
+        (wire[X],module,b)
+    }
+}
+
+val c = new C(A(), B())
+val dProvider = new DProvider
+
+val (x,module,b) = Test.buildC(c, dProvider)
+
+require(x.a eq module.a)
+require(x.b eq b)
+require(x.c eq c)
+require(x.d eq dProvider.d)
