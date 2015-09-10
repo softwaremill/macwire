@@ -80,22 +80,27 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
           doFind(tail, newValues)
 
         case Import(expr, selectors) =>
-          val newValues = debug.withBlock("Inspecting imports"){
-            val importCandidates: List[(Symbol, Tree)] =
-              (if (selectors.exists { selector => selector.name.toString == "_" }) {
-                // wildcard import on `expr`
-                typeCheckIfNeeded(expr).members.map {
-                  s => s -> s.name.decodedName
-                }
-              } else {
-                val selectorNames = selectors.map(s => s.name -> s.rename).toMap
-                typeCheckIfNeeded(expr).
-                  members.
-                  collect { case m if selectorNames.contains(m.name) =>
-                  m -> selectorNames(m.name)
-                }
-              }).map { case (s, name) => (s, Ident(name)) }.toList
-            values.putAll(scope, filterImportMembers(importCandidates).map(t => (t,t)))
+          val newValues = if( expr.symbol.isPackage ) {
+            // just ignore package imports
+            values
+          } else {
+            debug.withBlock("Inspecting imports"){
+              val importCandidates: List[(Symbol, Tree)] =
+                (if (selectors.exists { selector => selector.name.toString == "_" }) {
+                  // wildcard import on `expr`
+                  typeCheckIfNeeded(expr).members.map {
+                    s => s -> s.name.decodedName
+                  }
+                } else {
+                  val selectorNames = selectors.map(s => s.name -> s.rename).toMap
+                  typeCheckIfNeeded(expr).
+                    members.
+                    collect { case m if selectorNames.contains(m.name) =>
+                    m -> selectorNames(m.name)
+                  }
+                }).map { case (s, name) => (s, Ident(name)) }.toList
+              values.putAll(scope, filterImportMembers(importCandidates).map(t => (t,t)))
+            }
           }
 
           doFind(tail, newValues)
