@@ -11,7 +11,7 @@ class ABModule {
 }
 
 class DProvider {
-    val d: D = wire[D]
+    val d: D = D(C(A(),B()))
 }
 
 class Test(c: C, dProvider: DProvider, module: ABModule) {
