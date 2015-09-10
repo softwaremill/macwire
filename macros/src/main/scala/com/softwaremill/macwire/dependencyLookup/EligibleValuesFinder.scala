@@ -210,7 +210,7 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
       @tailrec
       def forScope(scope: Scope) : Set[Tree] = {
         findInScope(tpe, scope) match {
-          case set if set.isEmpty && scope < Scope.Max => forScope(scope.widen)
+          case set if set.isEmpty && !scope.isMax => forScope(scope.widen)
           case set if set.isEmpty => debug(s"Could not find $tpe in any scope"); Set.empty
           case exprs =>
             debug(s"Found [${exprs.mkString(", ")}] of type [$tpe] in scope $scope")
@@ -224,7 +224,7 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
       @tailrec
       def accInScope(scope: Scope, acc: Set[Tree]): Set[Tree] = {
         val newAcc = findInScope(tpe, scope) ++ acc
-        if( scope < Scope.Max ) accInScope(scope.widen, newAcc) else newAcc
+        if( !scope.isMax ) accInScope(scope.widen, newAcc) else newAcc
       }
       TreeSet.empty(Util.structuralTreeOrdering[c.type](c)) ++ accInScope(Scope.Local, Set.empty)
     }
@@ -263,9 +263,7 @@ object EligibleValuesFinder {
     /** @return the next Scope until Max */
     def widen: Scope
 
-    /** @return the previous Scope, or Local if this is already the Local scope */
-    def narrow: Scope
-
+    def isMax: Boolean = widen == this
     override def compare(that: Scope): Int = this.value.compare(that.value)
     override def equals(other: Any): Boolean = other match {
       case otherScope: Scope => this.value == otherScope.value
@@ -278,18 +276,14 @@ object EligibleValuesFinder {
 
     /** The smallest Scope */
     case object Local extends Scope(1) {
-      def narrow: Scope = Local
       def widen: Scope = Class
     }
     case object Class extends Scope(2) {
-      def narrow: Scope = Local
       def widen: Scope = ParentOrModule
     }
     case object ParentOrModule extends Scope(3) {
-      def narrow: Scope = Class
       def widen: Scope = ParentOrModule
     }
-    lazy val Max = ParentOrModule
 
     override def compare(a: Scope, b: Scope): Int = a.compare(b)
   }
