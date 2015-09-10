@@ -1,11 +1,11 @@
 package com.softwaremill.macwire.dependencyLookup
 
-import com.softwaremill.macwire.Debug
+import com.softwaremill.macwire.Logger
 import com.softwaremill.macwire.Util._
 
 import scala.reflect.macros.blackbox
 
-private[macwire] class DependencyResolver[C <: blackbox.Context](val c: C, debug: Debug) {
+private[macwire] class DependencyResolver[C <: blackbox.Context](val c: C, debug: Logger) {
 
   import c.universe._
 

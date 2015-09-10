@@ -1,17 +1,17 @@
 package com.softwaremill.macwire.dependencyLookup
 
-import com.softwaremill.macwire.{Util, TypeCheckUtil, Debug}
+import com.softwaremill.macwire.{Util, TypeCheckUtil, Logger}
 
 import scala.annotation.tailrec
 import scala.collection.immutable.TreeSet
 import scala.reflect.macros.blackbox
 
-private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val c: C, debug: Debug) {
+private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val c: C, log: Logger) {
 
   import c.universe.{Scope => RScope, _}
   import EligibleValuesFinder._
 
-  private val typeCheckUtil = new TypeCheckUtil[c.type](c, debug)
+  private val typeCheckUtil = new TypeCheckUtil[c.type](c, log)
   import typeCheckUtil._
 
   // we're not interested in ordering the Tree other than structurally
@@ -37,12 +37,12 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
               (List(rhs), values)
 
             case DefDef(_, name, _, curriedParams, tpt, rhs) =>
-              debug.withBlock(s"Inspecting the parameters of method $name") {
+              log.withBlock(s"Inspecting the parameters of method $name") {
                 (List(rhs), values.putAll(Scope.Local, extractMatchingParams(curriedParams.flatten)))
               }
 
             case Function(params, body) =>
-              debug.withBlock("Inspecting a function that contains the wire call") {
+              log.withBlock("Inspecting a function that contains the wire call") {
                 (List(body), values.putAll(Scope.Local, extractMatchingParams(params)))
               }
 
@@ -71,7 +71,7 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
           val valParentIsModule = hasSymbol && !valIsModule && typeCheckIfNeeded(tpt).baseClasses.exists(hasModuleAnnotation)
 
           if (valIsModule || valParentIsModule) {
-            newValues = debug.withBlock(s"Inspecting module $tpt") {
+            newValues = log.withBlock(s"Inspecting module $tpt") {
               val moduleExprs: List[(Tree,Tree)] = typeCheckIfNeeded(tpt).members.filter(filterMember(_, ignoreImplicit = false)).map { member =>
                 val tree = q"$name.$member"
                 (tree,tree)
@@ -87,7 +87,7 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
             // just ignore package imports
             values
           } else {
-            debug.withBlock("Inspecting imports"){
+            log.withBlock("Inspecting imports"){
               val importCandidates: List[(Symbol, Tree)] =
                 (if (selectors.exists { selector => selector.name.toString == "_" }) {
                   // wildcard import on `expr`
@@ -113,7 +113,7 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
       }
     }
 
-    debug.withBlock("Building eligible values") {
+    log.withBlock("Building eligible values") {
       registerParentsMembers(
         doFind(enclosingClassBody.map(Scope.Class -> _), EligibleValues.empty))
     }
@@ -144,7 +144,7 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
       if (tpe.symbol.fullName == "scala.AnyRef") {
         newValues
       } else {
-        debug.withBlock(s"Inspecting parent $tpe members") {
+        log.withBlock(s"Inspecting parent $tpe members") {
           typeCheckIfNeeded(tpe).members.
             filter(filterMember(_, ignoreImplicit = false)).
             foldLeft(newValues) { case (newValues, symbol) =>
@@ -208,7 +208,7 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
     }
     
     def put(scope: Scope, tpe: Type, expr: Tree): EligibleValues = {
-      debug(s"Found $expr of type $tpe in scope $scope")
+      log(s"Found $expr of type $tpe in scope $scope")
       val set = values.getOrElse(scope, TreeSet.empty[EligibleValue]) + EligibleValue(tpe, expr)
       new EligibleValues(values.updated(scope, set))
     }
@@ -218,9 +218,9 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
       def forScope(scope: Scope) : Set[Tree] = {
         findInScope(tpe, scope) match {
           case set if set.isEmpty && !scope.isMax => forScope(scope.widen)
-          case set if set.isEmpty => debug(s"Could not find $tpe in any scope"); Set.empty
+          case set if set.isEmpty => log(s"Could not find $tpe in any scope"); Set.empty
           case exprs =>
-            debug(s"Found [${exprs.mkString(", ")}] of type [$tpe] in scope $scope")
+            log(s"Found [${exprs.mkString(", ")}] of type [$tpe] in scope $scope")
             exprs
         }
       }

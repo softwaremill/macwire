@@ -5,16 +5,16 @@ import com.softwaremill.macwire.dependencyLookup._
 import scala.reflect.macros.blackbox
 
 object MacwireMacros {
-  private val debug = new Debug()
+  private val log = new Logger()
 
   def wire_impl[T: c.WeakTypeTag](c: blackbox.Context): c.Expr[T] = {
     import c.universe._
 
-    lazy val dependencyResolver = new DependencyResolver[c.type](c, debug)
+    lazy val dependencyResolver = new DependencyResolver[c.type](c, log)
 
     def createNewTargetWithParams(): Expr[T] = {
       val targetType = implicitly[c.WeakTypeTag[T]]
-      debug.withBlock(s"Trying to find parameters to create new instance of: [${targetType.tpe}] at ${c.enclosingPosition}") {
+      log.withBlock(s"Trying to find parameters to create new instance of: [${targetType.tpe}] at ${c.enclosingPosition}") {
         val targetConstructorOpt = targetType.tpe.members.find(m => m.isMethod && m.asMethod.isPrimaryConstructor)
         targetConstructorOpt match {
           case None =>
@@ -54,7 +54,7 @@ object MacwireMacros {
               newT = Apply(newT, constructorParams)
             }
 
-            debug(s"Generated code: ${show(newT)}")
+            log(s"Generated code: ${show(newT)}")
             c.Expr(newT)
         }
       }
@@ -67,7 +67,7 @@ object MacwireMacros {
     import c.universe._
     val targetType = implicitly[c.WeakTypeTag[T]]
 
-    val dependencyResolver = new DependencyResolver[c.type](c, debug)
+    val dependencyResolver = new DependencyResolver[c.type](c, log)
 
     val instances = dependencyResolver.resolveAll(targetType.tpe)
 
@@ -75,7 +75,7 @@ object MacwireMacros {
     // is left to the user - you want a `mutable.Set`, just import `mutable.Set` before the `wireSet[T]` call
     val code = q"Set(..$instances)"
 
-    debug(s"Generated code: " + show(code))
+    log(s"Generated code: " + show(code))
     code
   }
 
@@ -100,7 +100,7 @@ object MacwireMacros {
           extractTypeFromNullaryType(m.typeSignature) match {
             case Some(tpe) => Some((m, tpe))
             case None =>
-              debug(s"Cannot extract type from ${m.typeSignature} for member $m!")
+              log(s"Cannot extract type from ${m.typeSignature} for member $m!")
               None
           }
         }
@@ -109,7 +109,7 @@ object MacwireMacros {
           val key = Literal(Constant(tpe))
           val value = q"$capturedIn.$member"
 
-          debug(s"Found a mapping: $key -> $value")
+          log(s"Found a mapping: $key -> $value")
 
           q"scala.Predef.ArrowAssoc($key) -> (() => $value)"
         }
@@ -117,7 +117,7 @@ object MacwireMacros {
       pairs.toList
     }
 
-    debug.withBlock(s"Generating wired-in-module for ${in.tree}") {
+    log.withBlock(s"Generating wired-in-module for ${in.tree}") {
       val pairs = instanceFactoriesByClassInTree(in.tree)
 
       val code = q"""
@@ -125,7 +125,7 @@ object MacwireMacros {
           com.softwaremill.macwire.Wired(scala.collection.immutable.Map(..$pairs))
        """
 
-      debug(s"Generated code: " + show(code))
+      log(s"Generated code: " + show(code))
       code
     }
   }
