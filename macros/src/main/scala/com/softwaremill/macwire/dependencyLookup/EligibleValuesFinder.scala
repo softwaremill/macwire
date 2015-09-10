@@ -14,6 +14,9 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
   private val typeCheckUtil = new TypeCheckUtil[c.type](c, debug)
   import typeCheckUtil._
 
+  // we're not interested in ordering the Tree other than structurally
+  private implicit val structuralTreeOrdering: Ordering[Tree] = Util.structuralTreeOrdering[c.type](c)
+
   def find(): EligibleValues = {
     def containsCurrentlyExpandedWireCall(t: Tree): Boolean = t.exists(_.pos == c.enclosingPosition)
 
@@ -187,6 +190,10 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
 
   case class EligibleValue(tpe: Type, expr: Tree)
 
+  object EligibleValue {
+    implicit val ordering: Ordering[EligibleValue] = Ordering.by[EligibleValue,Tree](_.expr)
+  }
+
   class EligibleValues(values: Map[Scope,Set[EligibleValue]]) {
 
     def putAll(scope: Scope, exprs: List[(Tree,Tree)]): EligibleValues = {
@@ -202,7 +209,7 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
     
     def put(scope: Scope, tpe: Type, expr: Tree): EligibleValues = {
       debug(s"Found $expr of type $tpe in scope $scope")
-      val set = values.getOrElse(scope, Set.empty) + EligibleValue(tpe, expr)
+      val set = values.getOrElse(scope, TreeSet.empty[EligibleValue]) + EligibleValue(tpe, expr)
       new EligibleValues(values.updated(scope, set))
     }
 
@@ -217,7 +224,7 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
             exprs
         }
       }
-      TreeSet.empty(Util.structuralTreeOrdering[c.type](c)) ++ forScope(startingWith)
+      forScope(startingWith)
     }
 
     def findInAllScope(tpe: Type): Set[Tree] = {
@@ -226,7 +233,7 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
         val newAcc = findInScope(tpe, scope) ++ acc
         if( !scope.isMax ) accInScope(scope.widen, newAcc) else newAcc
       }
-      TreeSet.empty(Util.structuralTreeOrdering[c.type](c)) ++ accInScope(Scope.Local, Set.empty)
+      accInScope(Scope.Local, Set.empty)
     }
 
     def findInScope(tpe: Type, scope: Scope): Set[Tree] = {
