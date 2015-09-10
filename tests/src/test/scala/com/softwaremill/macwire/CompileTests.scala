@@ -146,7 +146,7 @@ class CompileTests extends FlatSpec with Matchers {
   def resolveDirectives(in: String): String = {
     DirectiveRegexp.findAllMatchIn(in).foldLeft(in)((acc, m) => {
       val includeName = m.group(1)
-      val replacement = loadResource(includeName)
+      val replacement = loadResource("include/" + includeName)
       acc.replaceAll("#include " + includeName + "(?!\\w)", replacement)
     })
   }
