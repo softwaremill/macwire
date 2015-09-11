@@ -1,5 +1,7 @@
 package com.softwaremill.macwire
 
+import java.io.File
+
 import org.scalatest.{Matchers, FlatSpec}
 import io.Source
 import tools.reflect.ToolBoxError
@@ -11,134 +13,103 @@ class CompileTests extends FlatSpec with Matchers {
   val EmptyResult = "\n\n()"
 
   def ambiguousResMsg(depClassName: String): String = s"Found multiple values of type [$depClassName]"
-
   def valueNotFound(depClassName: String): String = s"Cannot find a value of type: [$depClassName]"
   
-  type CompilationResult = List[String]
+  type ExpectedFailures = List[String]
   
-  val success: CompilationResult = Nil
+  val expectedFailures = List(
+    "explicitDepsNotWiredWithImplicitVals" -> List(valueNotFound("A")),
+    "explicitDepsWiredWithImplicitValsFromMethodScope" -> List(ambiguousResMsg("A"), "dependency", "implicitDependencyA"),
+    "importAmbiguous" -> List(ambiguousResMsg("A"), "myA", "theA"),
+    "methodWithTaggedParamsNotFound" -> List(valueNotFound("com.softwaremill.macwire.tagging.@@[Berry,Blue]")),
+    "methodWithTaggedParamsAmbiguous" -> List(ambiguousResMsg("com.softwaremill.macwire.tagging.@@[Berry,Blue]"), "blueberryArg1", "blueberryArg2"),
+    "multipleMethodParameters" -> List(ambiguousResMsg("A"), "a1", "a2"),
+    "nestedMethodsWired" -> List(ambiguousResMsg("A"), "outerA", "innerA"),
+    "nestedWithManyMatchingParamsWired" -> List(ambiguousResMsg("A"), "a1", "a2", "a3"),
+    "simpleValsMissingValue" -> List(valueNotFound("B")),
+    "simpleValsDuplicateValue" -> List(ambiguousResMsg("B"), "theB1", "theB2"),
+    "taggedNoValueWithTag" -> List(valueNotFound("com.softwaremill.macwire.tagging.@@[Berry,Blue]"))
+  ).map{ case (n,errs) => (n + ".failure", errs)}
+
+  val expectedFailuresMap = expectedFailures.toMap
   
-  def compileErr(messageParts: String*): CompilationResult = List.apply(messageParts: _*)
+  checkNoDuplicatedExpectedFailure()
 
-  val tests = List(
-    ("simpleValsOkInTrait", success),
-    ("simpleValsOkInObject", success),
-    ("simpleValsOkInClass", success),
-    ("simpleValsOkInClassParameters", success),
-    ("simpleValsErrorMissingValue", compileErr(valueNotFound("B"))),
-    ("simpleValsErrorDuplicateValue", compileErr(ambiguousResMsg("B"), "theB1", "theB2")),
-    ("simpleDefsOkInTrait", success),
-    ("simpleLazyValsOkInTrait", success),
-    ("simpleWithAbstractOk", success),
-    ("simpleValsReferenceWithAscriptionOk", success),
-    ("simpleLazyValsNotInOrderOk", success),
-    ("simpleValsMultipleParameterLists", success),
-    ("simpleValsImplicitParameterLists", success),
-    ("classesWithTraitsLazyValsOkInTrait", success),
-    ("import", success),
-    ("importAmbiguous", compileErr(ambiguousResMsg("A"), "myA", "theA")),
-    ("importRename", success),
-    ("importWildcard", success),
-    ("importWildcardVisibility", success),
-    ("inheritanceSimpleLazyValsOkInTraits", success),
-    ("inheritanceSimpleDefsOkInTraits", success),
-    ("inheritanceParametrized", success),
-    ("inheritanceTwoLevelSimpleLazyValsOkInTraits", success),
-    ("inheritanceDoubleSimpleLazyValsOkInTraits", success),
-    ("inheritanceClassesWithTraitsLazyValsOkInTraits", success),
-    ("simpleWithAbstractScopeOk", success),
-    ("methodSingleParamOk", success),
-    ("methodParamsOk", success),
-    ("methodParamsInApplyOk", success),
-    ("methodMixedOk", success),
-    ("wiredSimple", success),
-    ("wiredLazy", success),
-    ("wiredPrimitive", success),
-    ("wiredWithWire", success),
-    ("wiredInherited", success),
-    ("wiredDefs", success),
-    ("wiredFromClass", success),
-    ("wiredVisibility", success),
-    ("wiredClassWithTypeParameters", success),
-    // explicit param should not be resolved with implicit value when dependency cannot be found during plain, old regular lookup
-    ("explicitDepsNotWiredWithImplicitVals", compileErr(valueNotFound("A"))),
-    // non-implicit params should be resolved with implicit values if are in scope
-    ("explicitDepsWiredWithImplicitValsFromMethodScope", compileErr(ambiguousResMsg("A"), "dependency", "implicitDependencyA")),
-    ("explicitDepsWiredWithImplicitValsFromEnclosingModuleScope", success),
-    ("explicitDepsWiredWithImplicitValsFromParentsScope", success),
-    // implicit params should be resolved with implicit values or defs
-    ("implicitDepsWiredWithImplementedImplicitVals", success),
-    ("implicitDepsWiredWithImplicitDefs", success),
-    ("implicitDepsWiredWithImplicitVals", success),
-    ("implicitDepsWiredWithImplicitValsFromMethodScope", compileErr(ambiguousResMsg("Dependency"), "dependency", "implicitDependency")),
-    ("implicitDepsWiredWithImplicitValsFromEnclosingModuleScope", success),
-    ("implicitDepsWiredWithImplicitValsFromParentsScope", success),
-    // implicit params should be resolved with regular values
-    ("implicitDepsWiredWithExplicitVals", success),
-    ("implicitDepsWiredWithExplicitValsFromEnclosingModuleScope", success),
-    ("implicitDepsWiredWithExplicitValsFromParentsScope", success),
-    // dependency resolution should abort compilation when there are ambiguous dependencies in scope
-    ("implicitDepsNotWiredWithExplicitAndImplicitValsInEnclosingClassScope", compileErr(ambiguousResMsg("Dependency"), "regularDependency", "implicitDependency")),
-    ("implicitDepsNotWiredWithExplicitAndImplicitValsInParentsScope", compileErr(ambiguousResMsg("Dependency"), "regularDependency", "implicitDependency")),
-    ("implicitDepsNotWiredWithoutAnyValsInScope", compileErr(valueNotFound("Dependency"))),
-    ("diamondInheritance", success),
-    ("selfType", success),
-    ("simpleWireWithImplicits", success),
-    ("simpleWireWithImplicitsErrorDuplicateValue", compileErr(ambiguousResMsg("B"), "B.defaultB", "bDep")),
-    ("taggedOk", success),
-    ("taggedPrimitiveOk", success),
-    ("taggedErrorNoValueWithTag", compileErr(valueNotFound("com.softwaremill.macwire.tagging.@@[Berry,Blue]"))),
-    ("multipleMethodParametersFail", compileErr(ambiguousResMsg("A"), "a1", "a2")),
-    ("anonFuncArgsWiredOk", success),
-    ("anonFuncAndMethodsArgsWiredOk", success),
-    ("nestedAnonFuncsWiredOk", success),
-    ("nestedMethodsWiredOk", success),
-    ("nestedMethodsWiredFail", compileErr(ambiguousResMsg("A"), "outerA", "innerA")),
-    ("nestedWithManyMatchingParamsWiredFail", compileErr(ambiguousResMsg("A"), "a1", "a2", "a3")),
-    ("methodWithWiredWithinIfThenElseOk", success),
-    ("methodWithWiredWithinPatternMatchOk", success),
-    ("methodWithSingleImplicitParamOk", success),
-    ("methodWithTaggedParamsOk", success),
-    ("methodWithTaggedParamsNotFoundFail", compileErr(valueNotFound("com.softwaremill.macwire.tagging.@@[Berry,Blue]"))),
-    ("methodWithTaggedParamsAmbiguousFail", compileErr(ambiguousResMsg("com.softwaremill.macwire.tagging.@@[Berry,Blue]"), "blueberryArg1", "blueberryArg2")),
-    ("wireSet", success),
-    ("moduleWiring", success)
-  )
+  val testCaseNames = findTestCaseFiles(basedOn = "import.success").map(_.getName).sorted
+  val (successNames,failureNames) = partitionSuccessAndFailures(testCaseNames)
 
-  for ((testName, expectedErrors) <- tests)
-    addTest(testName, expectedErrors)
+  checkEachExpectedFailureMatchAFailureTestCase(expectedFailures, failureNames)
 
-  def addTest(testName: String, expectedResult: CompilationResult, imports: String = GlobalImports) {
-    testName should (if (expectedResult == success) "compile & run" else "cause a compile error") in {
+  // add the tests
+  successNames.foreach(addTest(_, Nil))
+  failureNames.foreach(name => addTest(name, expectedFailuresMap.getOrElse(name,
+    sys.error(s"Cannot find expected failures for $name")) ))
+
+  def checkNoDuplicatedExpectedFailure(): Unit = {
+    if (expectedFailures.size > expectedFailuresMap.size) {
+      val duplicates = expectedFailures.map(_._1).diff(expectedFailuresMap.keySet.toList)
+      sys.error("You have duplicated expected failures:\n- " + duplicates.mkString("\n- "))
+    }
+  }
+  
+  def checkEachExpectedFailureMatchAFailureTestCase(expectedFailures: List[(String, ExpectedFailures)], testCaseNames: List[String]): Unit = {
+    val missingFileNames = expectedFailures.map(_._1).filter { name => !testCaseNames.contains(name) }
+    if( missingFileNames.nonEmpty ) {
+      sys.error("You have defined expected failures that are not matched by a '.failure' test-case file:\n- " +
+        missingFileNames.mkString("\n- "))
+    }
+  }
+
+  def partitionSuccessAndFailures(names: List[String]): (List[String], List[String]) = {
+    val res@(_, failureNames) = names.partition(_.endsWith(".success"))
+    failureNames.filterNot(_.endsWith(".failure")) match {
+      case Nil => ()
+      case neitherSuccessNorFailure => sys.error("Test case files must either end with .success or .failure:\n- " +
+        neitherSuccessNorFailure.mkString("\n- "))
+    }
+    res
+  }
+
+  def addTest(testName: String, expectedFailures: ExpectedFailures, imports: String = GlobalImports) {
+    testName should (if (expectedFailures.isEmpty) "compile & run" else "cause a compile error") in {
       import scala.reflect.runtime._
       val cm = universe.runtimeMirror(getClass.getClassLoader)
 
       import scala.tools.reflect.ToolBox
       val tb = cm.mkToolBox()
 
-      val source = loadTest(testName, imports)
+      val source = loadTest("/test-cases/" + testName, imports)
 
       try {
         tb.eval(tb.parse(source))
-        if (expectedResult != success) {
-          fail(s"Expected the following compile errors: $expectedResult")
+        if (expectedFailures.nonEmpty) {
+          fail(s"Expected the following compile errors: $expectedFailures")
         }
       } catch {
         case e: ToolBoxError => {
-          if (expectedResult == success) {
+          if (expectedFailures.isEmpty) {
             fail(s"Expected compilation & evaluation to be successful, but got an error: ${e.message}", e)
           } else {
-            expectedResult.foreach(expectedError => e.message should include (expectedError))
+            expectedFailures.foreach(expectedError => e.message should include (expectedError))
           }
         }
       }
     }
   }
 
+  def findTestCaseFiles(basedOn: String): List[File] = {
+    val resource = this.getClass.getResource("/test-cases/" + basedOn)
+    val file = new File(resource.toURI)
+    file.getParentFile.listFiles().toList.filter(_.isFile) match {
+      case Nil => sys.error(s"No test found, make sure /test-cases/$basedOn exists in your classpath.")
+      case testCaseFiles => testCaseFiles
+    }
+  }
+
   def loadTest(name: String, imports: String) = imports + resolveDirectives(loadResource(name)) + EmptyResult
 
   def loadResource(name: String) = {
-    val resource = this.getClass.getResourceAsStream("/" + name)
+    val resource = this.getClass.getResourceAsStream(name)
     if (resource == null) throw new IllegalArgumentException(s"Cannot find resource: $name")
     Source.fromInputStream(resource).getLines().mkString("\n")
   }
@@ -146,7 +117,7 @@ class CompileTests extends FlatSpec with Matchers {
   def resolveDirectives(in: String): String = {
     DirectiveRegexp.findAllMatchIn(in).foldLeft(in)((acc, m) => {
       val includeName = m.group(1)
-      val replacement = loadResource(includeName)
+      val replacement = loadResource("/include/" + includeName)
       acc.replaceAll("#include " + includeName + "(?!\\w)", replacement)
     })
   }

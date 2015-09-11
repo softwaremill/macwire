@@ -1,0 +1,32 @@
+#include commonSimpleClasses
+
+@Module class ModuleA1 { lazy val a: A = wire[A] }
+@Module class ModuleA2 { lazy val a: A = wire[A] }
+
+class AProvider { lazy val a: A = wire[A] }
+
+class App(ma1: ModuleA1,
+          ma2: ModuleA2) {
+
+    lazy val as: Set[A] = wireSet[A] // should look into modules
+}
+
+class App2(ma1: ModuleA1, aProvider: AProvider) {
+
+    // local definitions or imports shouldn't shadow modules
+    import aProvider.{a => aProvided}
+    lazy val a: A = wire[A]
+
+    lazy val as: Set[A] = wireSet[A] // => Set(a, ma1.a, aProvided)
+}
+
+object Test {
+    val ma1 = wire[ModuleA1]
+    val ma2 = wire[ModuleA2]
+    val aProvider = wire[AProvider]
+    val app = wire[App]
+    val app2 = wire[App2]
+}
+
+require(Test.app.as == Set(Test.ma1.a, Test.ma2.a))
+require(Test.app2.as == Set(Test.ma1.a, Test.app2.a, Test.aProvider.a))

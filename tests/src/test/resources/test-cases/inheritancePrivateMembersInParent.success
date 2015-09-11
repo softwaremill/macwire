@@ -1,0 +1,13 @@
+#include commonSimpleClasses
+
+trait Base {
+  private lazy val privateA: A = A()
+  lazy val publicA: A = A()
+}
+
+object Module extends Base {
+  lazy val b: B = wire[B]
+  lazy val c: C = wire[C]
+}
+
+require(Module.c.a eq Module.publicA)

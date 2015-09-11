@@ -1,0 +1,24 @@
+#include commonSimpleClasses
+
+@Module
+trait AModule {
+    lazy val a = wire[A]
+}
+
+trait BModule extends AModule {
+    lazy val b = wire[B]
+}
+
+class ABModule extends BModule
+
+class App(abModule: ABModule) {
+    lazy val c = wire[C]
+}
+
+object Test {
+    lazy val abModule = wire[ABModule]
+    lazy val app = wire[App]
+}
+
+require(Test.app.c.a eq Test.abModule.a)
+require(Test.app.c.b eq Test.abModule.b)

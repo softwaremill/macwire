@@ -1,0 +1,22 @@
+#include commonSimpleClasses
+
+@Module
+class ABModule {
+    lazy val a = wire[A]
+    lazy val b = wire[B]
+}
+
+class App(abModule: ABModule) {
+    // Make sure no ambiguity is found as `a` is equivalent to `abModule.a`
+    import abModule.a
+
+    lazy val c = wire[C]
+}
+
+object Test {
+    lazy val abModule = wire[ABModule]
+    lazy val app = wire[App]
+}
+
+require(Test.app.c.a eq Test.abModule.a)
+require(Test.app.c.b eq Test.abModule.b)

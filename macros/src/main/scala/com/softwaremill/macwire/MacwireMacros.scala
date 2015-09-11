@@ -5,20 +5,16 @@ import com.softwaremill.macwire.dependencyLookup._
 import scala.reflect.macros.blackbox
 
 object MacwireMacros {
-  private val debug = new Debug()
+  private val log = new Logger()
 
-  def wire_impl[T: c.WeakTypeTag](c: blackbox.Context): c.Expr[T] = doWire(c, wireWithImplicits = false)
-
-  def wireImplicit_impl[T: c.WeakTypeTag](c: blackbox.Context): c.Expr[T] = doWire(c, wireWithImplicits = true)
-
-  private def doWire[T: c.WeakTypeTag](c: blackbox.Context, wireWithImplicits: Boolean): c.Expr[T] = {
+  def wire_impl[T: c.WeakTypeTag](c: blackbox.Context): c.Expr[T] = {
     import c.universe._
 
-    lazy val dependencyResolver = new DependencyResolver[c.type](c, debug, wireWithImplicits)
+    lazy val dependencyResolver = new DependencyResolver[c.type](c, log)
 
     def createNewTargetWithParams(): Expr[T] = {
       val targetType = implicitly[c.WeakTypeTag[T]]
-      debug.withBlock(s"Trying to find parameters to create new instance of: [${targetType.tpe}]") {
+      log.withBlock(s"Trying to find parameters to create new instance of: [${targetType.tpe}] at ${c.enclosingPosition}") {
         val targetConstructorOpt = targetType.tpe.members.find(m => m.isMethod && m.asMethod.isPrimaryConstructor)
         targetConstructorOpt match {
           case None =>
@@ -37,7 +33,7 @@ object MacwireMacros {
             var newT: Tree = Select(New(Ident(targetTpe.typeSymbol)), termNames.CONSTRUCTOR)
 
             for {
-              targetConstructorParams <- targetConstructorParamLists
+              targetConstructorParams <- targetConstructorParamLists if !targetConstructorParams.exists(_.isImplicit)
             } {
               val constructorParams: List[c.Tree] = for (param <- targetConstructorParams) yield {
                 // Resolve type parameters
@@ -58,7 +54,7 @@ object MacwireMacros {
               newT = Apply(newT, constructorParams)
             }
 
-            debug(s"Generated code: ${c.universe.show(newT)}")
+            log(s"Generated code: ${show(newT)}")
             c.Expr(newT)
         }
       }
@@ -71,13 +67,16 @@ object MacwireMacros {
     import c.universe._
     val targetType = implicitly[c.WeakTypeTag[T]]
 
-    val dependencyResolver = new DependencyResolver[c.type](c, debug, false)
+    val dependencyResolver = new DependencyResolver[c.type](c, log)
 
     val instances = dependencyResolver.resolveAll(targetType.tpe)
 
     // The lack of hygiene can be seen here as a feature, the choice of Set implementation
     // is left to the user - you want a `mutable.Set`, just import `mutable.Set` before the `wireSet[T]` call
-    q"Set(..$instances)"
+    val code = q"Set(..$instances)"
+
+    log(s"Generated code: " + show(code))
+    code
   }
 
   def wiredInModule_impl(c: blackbox.Context)(in: c.Expr[AnyRef]): c.Tree = {
@@ -101,7 +100,7 @@ object MacwireMacros {
           extractTypeFromNullaryType(m.typeSignature) match {
             case Some(tpe) => Some((m, tpe))
             case None =>
-              debug(s"Cannot extract type from ${m.typeSignature} for member $m!")
+              log(s"Cannot extract type from ${m.typeSignature} for member $m!")
               None
           }
         }
@@ -110,7 +109,7 @@ object MacwireMacros {
           val key = Literal(Constant(tpe))
           val value = q"$capturedIn.$member"
 
-          debug(s"Found a mapping: $key -> $value")
+          log(s"Found a mapping: $key -> $value")
 
           q"scala.Predef.ArrowAssoc($key) -> (() => $value)"
         }
@@ -118,7 +117,7 @@ object MacwireMacros {
       pairs.toList
     }
 
-    debug.withBlock(s"Generating wired-in-module for ${in.tree}") {
+    log.withBlock(s"Generating wired-in-module for ${in.tree}") {
       val pairs = instanceFactoriesByClassInTree(in.tree)
 
       val code = q"""
@@ -126,7 +125,7 @@ object MacwireMacros {
           com.softwaremill.macwire.Wired(scala.collection.immutable.Map(..$pairs))
        """
 
-      debug(s"Generated code: " + show(code))
+      log(s"Generated code: " + show(code))
       code
     }
   }

@@ -1,0 +1,26 @@
+trait A
+case class A1() extends A
+case class A2() extends A
+case class A3() extends A
+case class B(a: A)
+
+object Test {
+   def apply(i: Int) : B = {
+      if( i > 1 ) {
+         if( i > 2 ) {
+           val a = A3()
+           wire[B]
+         } else {
+           val a = A2()
+           wire[B]
+         }
+      } else {
+         val a = A1()
+         wire[B]
+      }
+   }
+}
+
+require(Test(1).a == A1())
+require(Test(2).a == A2())
+require(Test(3).a == A3())

@@ -1,0 +1,14 @@
+class A
+class B(val a: A)
+
+object Test {
+   // import package or package object should be ignored
+   import com.softwaremill.macwire._
+
+   import scala.collection.mutable._
+
+   lazy val a = wire[A]
+   lazy val b = wire[B]
+}
+
+require(Test.b.a eq Test.a)
