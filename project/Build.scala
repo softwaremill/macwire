@@ -1,11 +1,14 @@
 import sbt._
-import Keys._
+import sbt.Keys._
 
 object BuildSettings {
-  val buildSettings = Defaults.coreDefaultSettings ++ Seq (
+
+  val commonSettings = Defaults.coreDefaultSettings ++ Seq (
     organization  := "com.softwaremill.macwire",
     version       := "2.0.0-SNAPSHOT",
-    scalaVersion  := "2.11.7",
+    scalaVersion  := "2.11.7")
+
+  val buildSettings = commonSettings ++ Seq (
     // Sonatype OSS deployment
     publishTo <<= version { (v: String) =>
       val nexus = "https://oss.sonatype.org/"
@@ -33,10 +36,18 @@ object BuildSettings {
     licenses      := ("Apache2", new java.net.URL("http://www.apache.org/licenses/LICENSE-2.0.txt")) :: Nil,
     homepage      := Some(new java.net.URL("http://www.softwaremill.com"))
   )
+
+  val testSettings = commonSettings ++ Seq(
+    publishArtifact := false,
+    scalacOptions ++= Seq("-Ywarn-dead-code"),
+    // Otherwise when running tests in sbt, the macro is not visible
+    // (both macro and usages are compiled in the same compiler run)
+    fork in Test := true
+  )
 }
 
 object Dependencies {
-  val scalatest     = "org.scalatest" %% "scalatest"  % "2.2.5"       % "test"
+  val scalatest     = "org.scalatest" %% "scalatest"  % "2.2.5"
   val javassist     = "org.javassist"  % "javassist"  % "3.20.0-GA"
 }
 
@@ -44,56 +55,56 @@ object MacwireBuild extends Build {
   import BuildSettings._
   import Dependencies._
 
-  lazy val root: Project = Project(
-    "root",
-    file("."),
-    settings = buildSettings ++ Seq(publishArtifact := false)
-  ) aggregate(util, macros, proxy, tests, tests2, examplesScalatra)
+  lazy val root = project.in(file(".")).
+    settings(buildSettings).
+    settings(
+      publishArtifact := false).
+    aggregate(
+      util, macros, proxy, tests, tests2, testUtil, utilTests, examplesScalatra)
 
-  lazy val util: Project = Project(
-    "util",
-    file("util"),
-    settings = buildSettings
-  )
+  lazy val util = project.in(file("util")).
+    settings(buildSettings)
 
-  lazy val macros: Project = Project(
-    "macros",
-    file("macros"),
-    settings = buildSettings ++ Seq(
-      libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-reflect" % _))
-  ) dependsOn(util)
+  lazy val macros = project.in(file("macros")).
+    settings(buildSettings).
+    settings(
+      libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value).
+    dependsOn(util % "provided")
 
-  lazy val proxy: Project = Project(
-    "proxy",
-    file("proxy"),
-    settings = buildSettings ++ Seq(
-      libraryDependencies ++= Seq(javassist, scalatest))
-  ) dependsOn(macros % "test")
+  lazy val proxy = project.in(file("proxy")).
+    settings(buildSettings).
+    settings(
+      libraryDependencies ++= Seq(javassist, scalatest)).
+    dependsOn(macros % "test")
 
-  lazy val tests: Project = Project(
-    "tests",
-    file("tests"),
-    settings = buildSettings ++ Seq(
-      publishArtifact := false,
-      libraryDependencies ++= Seq(scalatest),
-      libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-compiler" % _ % "test"),
-      scalacOptions ++= Seq("-Ywarn-dead-code"),
-      // Otherwise when running tests in sbt, the macro is not visible
-      // (both macro and usages are compiled in the same compiler run)
-      fork in Test := true)
-  ) dependsOn(util, macros % "provided", proxy)
+  lazy val testUtil = project.in(file("test-util")).
+    settings(testSettings).
+    settings(
+      libraryDependencies ++= Seq(
+        scalatest,
+        "org.scala-lang" % "scala-compiler" % scalaVersion.value))
+
+  lazy val tests = project.in(file("tests")).
+    settings(testSettings).
+    dependsOn(
+      macros % "provided",
+      testUtil % "test",
+      proxy)
+
+  lazy val utilTests = project.in(file("util-tests")).
+    settings(testSettings).
+    dependsOn(
+      macros % "provided",
+      util % "test",
+      testUtil % "test")
 
   // The tests here are that the tests compile.
-  lazy val tests2: Project = Project(
-    "tests2",
-    file("tests2"),
-    settings = buildSettings ++ Seq(
-      publishArtifact := false,
-      libraryDependencies ++= Seq(scalatest),
-      // Otherwise when running tests in sbt, the macro is not visible
-      // (both macro and usages are compiled in the same compiler run)
-      fork in test := true)
-  ) dependsOn(util, macros % "provided", proxy)
+  lazy val tests2 = project.in(file("tests2")).
+    settings(testSettings).
+    settings(
+      libraryDependencies += scalatest).
+    dependsOn(
+      util, macros % "provided", proxy)
 
   lazy val examplesScalatra: Project = {
     val ScalatraVersion = "2.3.1"
