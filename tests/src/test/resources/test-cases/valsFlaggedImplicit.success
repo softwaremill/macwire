@@ -1,0 +1,17 @@
+#include commonSimpleClasses
+
+// b isn't an implicit parameter it is an implicit member
+// this is (to me at least) a shadowy part of the specification
+class Service(val a: A, implicit val b: B)
+
+object Test {
+    lazy val a = wire[A]
+    lazy val b = wire[B]
+
+    // if macwire let the compiler wire the dependencies it will fail
+    // as `a` isn't implicit
+    lazy val service = wire[Service]
+}
+
+require(Test.service.a eq Test.a)
+require(Test.service.b eq Test.b)

@@ -33,7 +33,7 @@ object MacwireMacros {
             var newT: Tree = Select(New(Ident(targetTpe.typeSymbol)), termNames.CONSTRUCTOR)
 
             for {
-              targetConstructorParams <- targetConstructorParamLists if !targetConstructorParams.exists(_.isImplicit)
+              targetConstructorParams <- targetConstructorParamLists if !targetConstructorParams.headOption.exists(_.isImplicit)
             } {
               val constructorParams: List[c.Tree] = for (param <- targetConstructorParams) yield {
                 // Resolve type parameters
