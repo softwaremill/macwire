@@ -28,7 +28,12 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
         case _ if containsCurrentlyExpandedWireCall(tree) =>
           val (treesToAdd, newValues) = tree match {
 
-            case block@Block(statements, expr) =>
+            // Look into things like
+            //    `x.map { ... wire[Y] ... }`
+            case Apply(_, args) =>
+              (args, values)
+
+            case Block(statements, expr) =>
               // the statements might contain vals, defs, or imports which will be
               // analyzed in the match clauses below (see `case ValDefOrDefDef`)
               (statements :+ expr, values)
@@ -52,14 +57,26 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
             case Match(_, cases) =>
               (cases, values)
 
-            case CaseDef(_, _, body) =>
-              (List(body), values)
+            // Looking into things like
+            //     `{ case Deconstruct(x,y) => ... wire[Z] ... }`
+            // Note that `x` and `y` will be analyzed in the `Bind` case below
+            case CaseDef(Apply(_, args), _, body) =>
+              (args ++ List(body), values)
+
+            // Looking into things like
+            //     `{ case x => ... wire[Y] ... }`
+            // Note that `x` will be analyzed in the `Bind` case below
+            case CaseDef(pat, _, body) =>
+              (List(pat, body), values)
 
             case _ =>
               (Nil, values)
           }
           // we're in a block that contains the wire call, therefore we're looking at the smallest scope, Local
           doFind(treesToAdd.map(Scope.Local -> _) ::: tail, newValues)
+
+        case Bind(name, body) =>
+          doFind(tail, values.put(scope, Ident(name), body))
 
         case ValDefOrDefDef(name, tpt, rhs, symbol) if name.toString != "<init>" =>
           var newValues = values.put(scope, Ident(name), treeToCheck(tree, rhs)) // rhs might be empty for local def

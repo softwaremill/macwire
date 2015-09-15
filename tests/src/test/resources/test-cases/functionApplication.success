@@ -1,0 +1,46 @@
+
+case class A()
+case class B(a: A)
+case class C(a: A, b: B)
+
+object Test {
+
+  val someA = Some(A())
+
+  def build(opt: Option[A]): Option[B] = {
+    opt.map { a => wire[B] }
+  }
+
+  def buildSimpleCase(opt: Option[A]): Option[B] = {
+    opt.map { case a => wire[B] }
+  }
+
+  // equivalent with a for
+  def forBuild(opt: Option[A]): Option[B] = {
+    for (a <- opt) yield {
+      wire[B]
+    }
+  }
+
+  def buildDeconstructingCase: Option[C] = {
+    ab.map { case (a,b) => wire[C] }
+  }
+
+  // equivalent with a for
+  def forBuildDeconstructingCase: Option[C] = {
+    for ((a,b) <- ab) yield {
+      wire[C]
+    }
+  }
+
+  lazy val ab: Option[(A,B)] = Some(A(),B(A()))
+}
+
+require(Test.build(Test.someA).get.a eq Test.someA.get)
+require(Test.buildSimpleCase(Test.someA).get.a eq Test.someA.get)
+require(Test.buildDeconstructingCase.get.a eq Test.ab.get._1)
+require(Test.buildDeconstructingCase.get.b eq Test.ab.get._2)
+
+require(Test.forBuild(Test.someA).get.a eq Test.someA.get)
+require(Test.forBuildDeconstructingCase.get.a eq Test.ab.get._1)
+require(Test.forBuildDeconstructingCase.get.b eq Test.ab.get._2)
