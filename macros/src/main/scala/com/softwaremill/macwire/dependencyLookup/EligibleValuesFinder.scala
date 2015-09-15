@@ -26,54 +26,57 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
       case (scope, tree) :: tail => tree match {
 
         case _ if containsCurrentlyExpandedWireCall(tree) =>
-          val (treesToAdd, newValues) = tree match {
+          val (treesToAdd, forwardTrees, newValues) = tree match {
 
             // Look into things like
             //    `x.map { ... wire[Y] ... }`
             case Apply(_, args) =>
-              (args, values)
+              (args, Nil, values)
 
             case Block(statements, expr) =>
               // the statements might contain vals, defs, or imports which will be
               // analyzed in the match clauses below (see `case ValDefOrDefDef`)
-              (statements :+ expr, values)
+              val (before,after) = partitionStatementsAfterWireCall(statements :+ expr)
+              (before, after, values)
 
             case ValDef(_, name, _, rhs) =>
-              (List(rhs), values)
+              (List(rhs), Nil, values)
 
             case DefDef(_, name, _, curriedParams, tpt, rhs) =>
               log.withBlock(s"Inspecting the parameters of method $name") {
-                (List(rhs), values.putAll(Scope.Local, extractMatchingParams(curriedParams.flatten)))
+                (List(rhs), Nil, values.putAll(Scope.Local, extractMatchingParams(curriedParams.flatten)))
               }
 
             case Function(params, body) =>
               log.withBlock("Inspecting a function that contains the wire call") {
-                (List(body), values.putAll(Scope.Local, extractMatchingParams(params)))
+                (List(body), Nil, values.putAll(Scope.Local, extractMatchingParams(params)))
               }
 
             case ifBlock@If(cond, then, otherwise) =>
-              (List(then, otherwise), values)
+              (List(then, otherwise), Nil, values)
 
             case Match(_, cases) =>
-              (cases, values)
+              (cases, Nil, values)
 
             // Looking into things like
             //     `{ case Deconstruct(x,y) => ... wire[Z] ... }`
             // Note that `x` and `y` will be analyzed in the `Bind` case below
             case CaseDef(Apply(_, args), _, body) =>
-              (args ++ List(body), values)
+              (args ++ List(body), Nil, values)
 
             // Looking into things like
             //     `{ case x => ... wire[Y] ... }`
             // Note that `x` will be analyzed in the `Bind` case below
             case CaseDef(pat, _, body) =>
-              (List(pat, body), values)
+              (List(pat, body), Nil, values)
 
             case _ =>
-              (Nil, values)
+              (Nil, Nil, values)
           }
           // we're in a block that contains the wire call, therefore we're looking at the smallest scope, Local
-          doFind(treesToAdd.map(Scope.Local -> _) ::: tail, newValues)
+          doFind(treesToAdd.map(Scope.Local -> _) :::
+                 forwardTrees.map(Scope.LocalForward -> _) :::
+                 tail, newValues)
 
         case Bind(name, body) =>
           doFind(tail, values.put(scope, Ident(name), body))
@@ -135,7 +138,7 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
         doFind(enclosingClassBody.map(Scope.Class -> _), EligibleValues.empty))
     }
   }
-  
+
   /** @return all the members of all the parents */
   private def registerParentsMembers(values: EligibleValues): EligibleValues = {
     val parents = c.enclosingClass match {
@@ -180,6 +183,11 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
         case _ => false
       }
     }
+  }
+
+  /** @return (statements-before-wire, statements-after-wire) */
+  private def partitionStatementsAfterWireCall(statements: List[Tree]): (List[Tree], List[Tree]) = {
+    statements.partition { _.pos.end <= c.enclosingPosition.start }
   }
 
   private def filterImportMembers[T](members: List[(Symbol,T)]) : List[T] = {
@@ -307,6 +315,12 @@ object EligibleValuesFinder {
     }
     case object ParentOrModule extends Scope(3) {
       def widen: Scope = ParentOrModule
+    }
+
+    /** A special scope for values that are located in a block after the wire call
+      * and therefore not reachable. */
+    case object LocalForward extends Scope(9) {
+      def widen: Scope = LocalForward
     }
 
     override def compare(a: Scope, b: Scope): Int = a.compare(b)

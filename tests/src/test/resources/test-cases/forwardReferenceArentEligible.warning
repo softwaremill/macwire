@@ -1,0 +1,31 @@
+
+case class A()
+case class B(a: A)
+
+trait Parent {
+    lazy val a = wire[A]
+}
+
+object Test extends Parent {
+
+    def build: B = {
+        val b = wire[B]
+
+        // there used to be a bug where forwardA would be found eligible
+        // and preferred over Parent.a
+        val forwardA = A()
+        b
+    }
+
+    def buildWithLazyDep: B = {
+        val b = wire[B]
+
+        // even though forwardA is lazy it is still not enough for it to
+        // be eligible - if it was (eligible), that would fail too in a forward reference error
+        lazy val forwardA = A()
+        b
+    }
+}
+
+require(Test.build.a eq Test.a)
+require(Test.buildWithLazyDep.a eq Test.a)

@@ -1,0 +1,20 @@
+
+case class A(i: Int)
+case class B(a: A)
+
+object Test {
+    def build: B = {
+        // Ideally this should work, but that would require
+        // to make sure that the wire call isn't affected to a non-lazy val
+        // which is a little tedious.
+        //
+        // Anyway, this is probably a bad idea to wire forward references in a block,
+        // as wiring in a block is supposed to be relatively simple (we shouldn't wire too many
+        // things in a block)
+        lazy val b = wire[B]
+        lazy val forwardA = A(42)
+        b
+    }
+}
+
+require(Test.build.a == A(42))
