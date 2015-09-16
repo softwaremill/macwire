@@ -5,11 +5,11 @@ object Module {
   val c1 = (b: B) => wire[C]
   val c2 = (b: B) => {
     val c: C = {
-        3 + 3
+        System.getProperty("mary")
         wire[C]
     }
     // do sthg
-    2+2
+    System.getProperty("john")
     c
   }
 }

@@ -17,52 +17,61 @@ trait CompileTestsSupport extends FlatSpec with Matchers {
    def ambiguousResMsg(depClassName: String): String = s"Found multiple values of type [$depClassName]"
    def valueNotFound(depClassName: String): String = s"Cannot find a value of type: [$depClassName]"
 
-   def runTestsWithExpectedFailures(failures: (String,ExpectedFailures)*): Unit = {
-     val expectedFailures = List(failures: _*).map{ case (n,errs) => (n + ".failure", errs)}
+   def runTestsWith(expectedFailures: List[(String,ExpectedFailures)], expectedWarnings: List[(String, List[String])] = Nil): Unit = {
      val expectedFailuresMap = expectedFailures.toMap
-     checkNoDuplicatedExpectedFailure(expectedFailures, expectedFailuresMap)
+     checkNoDuplicatedExpectation(expectedFailures, expectedFailuresMap)
+
+     val expectedWarningsMap = expectedWarnings.toMap
+     checkNoDuplicatedExpectation(expectedWarnings, expectedWarningsMap)
 
      val firstFailureTestCase = expectedFailures.headOption.map(_._1).getOrElse(
-       sys.error("At least one failure expected -- change this code otherwise"))
+       sys.error("At least one failure expected -- change this code otherwise")) + ".failure"
      val testCaseNames = findTestCaseFiles(basedOn = firstFailureTestCase).map(_.getName).sorted
-     val (successNames,failureNames) = partitionSuccessAndFailures(testCaseNames)
+     val (successNames,failureNames,warningNames) = partitionSuccessFailureWarnings(testCaseNames)
 
-     checkEachExpectedFailureMatchAFailureTestCase(expectedFailures, failureNames)
+     checkEachExpectationMatchATestCase(expectedFailures, failureNames)
+     checkEachExpectationMatchATestCase(expectedWarnings, warningNames)
 
      // add the tests
-     successNames.foreach(addTest(_, Nil))
-     failureNames.foreach(name => addTest(name, expectedFailuresMap.getOrElse(name,
-       sys.error(s"Cannot find expected failures for $name")) ))
-
+     successNames.foreach(name => addTest(name + ".success", Nil, Nil))
+     warningNames.foreach(name => addTest(name + ".warning", Nil, expectedWarningsMap.getOrElse(name,
+       sys.error(s"Cannot find expected warning for $name"))))
+     failureNames.foreach(name => addTest(name + ".failure", expectedFailuresMap.getOrElse(name,
+       sys.error(s"Cannot find expected failures for $name")), Nil ))
    }
 
-   private def checkNoDuplicatedExpectedFailure(expectedFailures: List[(String, ExpectedFailures)],
-                                        expectedFailuresMap: Map[String, ExpectedFailures]): Unit = {
-     if (expectedFailures.size > expectedFailuresMap.size) {
-       val duplicates = expectedFailures.map(_._1).diff(expectedFailuresMap.keySet.toList)
-       sys.error("You have duplicated expected failures:\n- " + duplicates.mkString("\n- "))
+   private def checkNoDuplicatedExpectation(expectationList: List[(String, ExpectedFailures)],
+                                            expectationMap: Map[String, ExpectedFailures]): Unit = {
+     if (expectationList.size > expectationMap.size) {
+       val duplicates = expectationList.map(_._1).diff(expectationMap.keySet.toList)
+       sys.error("You have duplicated expectation:\n- " + duplicates.mkString("\n- "))
      }
    }
 
-   private def checkEachExpectedFailureMatchAFailureTestCase(expectedFailures: List[(String, ExpectedFailures)], testCaseNames: List[String]): Unit = {
-     val missingFileNames = expectedFailures.map(_._1).filter { name => !testCaseNames.contains(name) }
+   private def checkEachExpectationMatchATestCase(expectations: List[(String, ExpectedFailures)], testCaseNames: List[String]): Unit = {
+     val missingFileNames = expectations.map(_._1).filter { name => !testCaseNames.contains(name) }
      if( missingFileNames.nonEmpty ) {
-       sys.error("You have defined expected failures that are not matched by a '.failure' test-case file:\n- " +
+       sys.error("You have defined expectations that are not matched by a test-case file:\n- " +
          missingFileNames.mkString("\n- "))
      }
    }
 
-   private def partitionSuccessAndFailures(names: List[String]): (List[String], List[String]) = {
-     val res@(_, failureNames) = names.partition(_.endsWith(".success"))
+   /** @return (successes, failures, warnings) stripped of their suffix */
+   private def partitionSuccessFailureWarnings(names: List[String]): (List[String], List[String], List[String]) = {
+     val (successNames, nonSuccess) = names.partition(_.endsWith(".success"))
+     val (warningNames, failureNames) = nonSuccess.partition(_.endsWith(".warning"))
      failureNames.filterNot(_.endsWith(".failure")) match {
        case Nil => ()
-       case neitherSuccessNorFailure => sys.error("Test case files must either end with .success or .failure:\n- " +
+       case neitherSuccessNorFailure => sys.error("Test case files must either end with .success, .failure or .warning:\n- " +
          neitherSuccessNorFailure.mkString("\n- "))
      }
-     res
+
+     (successNames.map(_.stripSuffix(".success")),
+       failureNames.map(_.stripSuffix(".failure")),
+        warningNames.map(_.stripSuffix(".warning")))
    }
 
-   private def addTest(testName: String, expectedFailures: ExpectedFailures, imports: String = GlobalImports) {
+   def addTest(testName: String, expectedFailures: ExpectedFailures, expectedWarningsFragments: List[String], imports: String = GlobalImports) {
      testName should (if (expectedFailures.isEmpty) "compile & run" else "cause a compile error") in {
        import scala.reflect.runtime._
        val cm = universe.runtimeMirror(getClass.getClassLoader)
@@ -76,6 +85,24 @@ trait CompileTestsSupport extends FlatSpec with Matchers {
          tb.eval(tb.parse(source))
          if (expectedFailures.nonEmpty) {
            fail(s"Expected the following compile errors: $expectedFailures")
+         }
+         val warnings = tb.frontEnd.infos.filter(_.severity == tb.frontEnd.WARNING).map(_.msg).toList
+         lazy val warningsString = "\n - " + warnings.mkString("\n - ")
+         (warnings, expectedWarningsFragments) match {
+           case (Nil, Nil)  => () // ok
+           case (_,   Nil)  => fail(s"Expected compilation to have no warning, but got:" + warningsString )
+           case (Nil, _)    => fail(s"Expected the following compile warnings fragments: $expectedWarningsFragments")
+           case (one :: Nil, _)    => expectedWarningsFragments.foreach(expectedWarning => one should include (expectedWarning))
+           case (_, _) => fail(s"More than one warning found:" + warningsString)
+         }
+         if (tb.frontEnd.hasWarnings) {
+
+           if (expectedWarningsFragments.isEmpty) {
+             fail(s"Expected compilation to have no warning, but got:\n - " + warnings.mkString("\n - ") )
+           } else {
+           }
+         } else if (expectedWarningsFragments.nonEmpty) {
+           fail(s"Expected the following compile warnings: $expectedWarningsFragments")
          }
        } catch {
          case e: ToolBoxError => {
