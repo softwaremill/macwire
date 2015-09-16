@@ -82,25 +82,8 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
           doFind(tail, values.put(scope, Ident(name), body))
 
         case ValDefOrDefDef(name, tpt, rhs, symbol) if name.toString != "<init>" =>
-          var newValues = values.put(scope, Ident(name), treeToCheck(tree, rhs)) // rhs might be empty for local def
-
-          // it might be a @Module, let's see
-          val hasSymbol = tpt.symbol != null // sometimes tpt has no symbol...
-          val valIsModule = hasSymbol && hasModuleAnnotation(tpt.symbol)
-          // the java @Inherited meta-annotation does not seem to be understood by scala-reflect...
-          val valParentIsModule = hasSymbol && !valIsModule && typeCheckIfNeeded(tpt).baseClasses.exists(hasModuleAnnotation)
-
-          if (valIsModule || valParentIsModule) {
-            newValues = log.withBlock(s"Inspecting module $tpt") {
-              val moduleExprs: List[(Tree,Tree)] = typeCheckIfNeeded(tpt).members.filter(filterMember(_, ignoreImplicit = false)).map { member =>
-                val tree = q"$name.$member"
-                (tree,tree)
-              }.toList
-              // the module members are put in the wider scope
-              newValues.putAll(scope.widen, moduleExprs)
-            }
-          }
-          doFind(tail, newValues)
+          // rhs might be empty for local def
+          doFind(tail, values.put(scope, Ident(name), treeToCheck(tree, rhs)))
 
         case Import(expr, selectors) =>
           val newValues = if( expr.symbol.isPackage ) {
@@ -221,21 +204,50 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
 
   class EligibleValues(values: Map[Scope,Set[EligibleValue]]) {
 
+    /** Add all `exprs` to `scope` and possibly their respective members if they denote a module */
     def putAll(scope: Scope, exprs: List[(Tree,Tree)]): EligibleValues = {
       exprs.foldLeft(this) {
         case (ev, (expr,tree)) => ev.put(scope, expr, tree)
       }
     }
 
+    /** Add `expr` to `scope` and possibly its members if it denotes a module */
     def put(scope: Scope, expr: Tree, tree: Tree): EligibleValues = {
       val tpe = typeCheckUtil.typeCheckIfNeeded(expr, tree)
       put(scope, tpe, expr)
     }
-    
+
+    /** Add `expr` to `scope` and possibly its members if it denotes a module */
     def put(scope: Scope, tpe: Type, expr: Tree): EligibleValues = {
+      doPut(scope, tpe, expr).
+        inspectModule(scope, tpe, expr)
+    }
+
+    private def doPut(scope: Scope, tpe: Type, expr: Tree): EligibleValues = {
       log(s"Found $expr of type $tpe in scope $scope")
       val set = values.getOrElse(scope, TreeSet.empty[EligibleValue]) + EligibleValue(tpe, expr)
       new EligibleValues(values.updated(scope, set))
+    }
+
+    private def inspectModule(scope: Scope, tpe: Type, expr: Tree): EligibleValues = {
+      // it might be a @Module, let's see
+      val hasSymbol = expr.symbol != null // sometimes expr has no symbol...
+      val valIsModule = hasSymbol && hasModuleAnnotation(expr.symbol)
+      // the java @Inherited meta-annotation does not seem to be understood by scala-reflect...
+      val valParentIsModule = hasSymbol && !valIsModule && tpe.baseClasses.exists(hasModuleAnnotation)
+
+      if (valIsModule || valParentIsModule) {
+        log.withBlock(s"Inspecting module $tpe") {
+          val moduleExprs: List[(Tree,Tree)] = tpe.members.filter(filterMember(_, ignoreImplicit = false)).map { member =>
+            val tree = q"$expr.$member"
+            (tree,tree)
+          }.toList
+          // the module members are put in the wider scope
+          putAll(scope.widen, moduleExprs)
+        }
+      } else {
+        this // unchanged
+      }
     }
 
     def findInFirstScope(tpe: Type, startingWith: Scope = Scope.Local): Set[Tree] = {
