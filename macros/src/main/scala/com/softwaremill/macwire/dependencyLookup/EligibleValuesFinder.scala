@@ -149,7 +149,7 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
       } else {
         log.withBlock(s"Inspecting parent $tpe members") {
           typeCheckIfNeeded(tpe).members.
-            filter(filterMember(_, ignoreImplicit = false)).
+            filter(filterMember).
             foldLeft(newValues) { case (newValues, symbol) =>
             newValues.put(Scope.ParentOrModule, symbol.typeSignature,
               Ident(TermName(symbol.name.decodedName.toString.trim()))) // q"$symbol" crashes the compiler...
@@ -174,16 +174,15 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
   }
 
   private def filterImportMembers[T](members: List[(Symbol,T)]) : List[T] = {
-    members.collect { case (m,t) if filterMember(m, ignoreImplicit = true) => t }
+    members.collect { case (m,t) if filterMember(m) => t }
   }
 
-  private def filterMember(member: Symbol, ignoreImplicit: Boolean) : Boolean = {
+  private def filterMember(member: Symbol) : Boolean = {
     !member.fullName.startsWith("java.lang.Object") &&
     !member.fullName.startsWith("scala.Any") &&
     !member.fullName.endsWith("<init>") &&
     !member.fullName.endsWith("$init$") &&
-    member.isPublic &&
-    !(ignoreImplicit && member.isImplicit)
+    member.isPublic
   }
 
   private def treeToCheck(tree: Tree, rhs: Tree) = {
@@ -238,7 +237,7 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
 
       if (valIsModule || valParentIsModule) {
         log.withBlock(s"Inspecting module $tpe") {
-          val moduleExprs: List[(Tree,Tree)] = tpe.members.filter(filterMember(_, ignoreImplicit = false)).map { member =>
+          val moduleExprs: List[(Tree,Tree)] = tpe.members.filter(filterMember).map { member =>
             val tree = q"$expr.$member"
             (tree,tree)
           }.toList
