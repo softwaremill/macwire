@@ -13,6 +13,6 @@ class CompileTests extends CompileTestsSupport {
       "simpleValsMissingValue" -> List(valueNotFound("B")),
       "simpleValsDuplicateValue" -> List(ambiguousResMsg("B"), "theB1", "theB2")),
     expectedWarnings = List(
-      "forwardReferenceArentEligible" -> List("Found [a] for parameter [a], but a forward reference [forwardA] was also eligible"))
+      "forwardReferenceInBlock" -> List("Found [a] for parameter [a], but a forward reference [forwardA] was also eligible"))
   )
 }
