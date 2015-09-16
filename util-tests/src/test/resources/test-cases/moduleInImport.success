@@ -1,0 +1,21 @@
+case class A()
+case class B(a: A)
+
+@Module
+class MyModule {
+    lazy val a: A = A()
+}
+
+object Global {
+    val module = new MyModule
+}
+
+object Test {
+    // this is a bit twisted but we ought to be
+    // coherent with our features
+    import Global.module
+
+    lazy val b = wire[B]
+}
+
+require(Test.b.a eq Global.module.a)

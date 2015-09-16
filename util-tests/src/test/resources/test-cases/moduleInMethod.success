@@ -30,6 +30,12 @@ object Test {
         val b = B()
         (wire[X],module,b)
     }
+
+    // check that module as a method parameter is also
+    // recognized
+    def buildFromModule(module: ABModule): X = {
+        wire[X]
+    }
 }
 
 val c = new C(A(), B())
@@ -41,3 +47,11 @@ require(x.a eq module.a)
 require(x.b eq b)
 require(x.c eq c)
 require(x.d eq dProvider.d)
+
+val module2 = wire[ABModule]
+val x2 = Test.buildFromModule(module2)
+
+require(x2.a eq module2.a)
+require(x2.b eq module2.b)
+require(x2.c eq module2.c)
+require(x2.d eq module2.d)

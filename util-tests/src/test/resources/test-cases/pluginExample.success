@@ -1,6 +1,7 @@
 
 class CoreService
 
+@Module
 class CoreModule {
     lazy val coreService: CoreService = wire[CoreService]
 }
@@ -16,8 +17,6 @@ trait PluginModule {
 class Plugin1Service(coreService: CoreService) extends Service
 
 class Plugin1Module(core: CoreModule) extends PluginModule {
-    import core._
-
     lazy val service: Plugin1Service = wire[Plugin1Service]
 }
 
@@ -26,8 +25,6 @@ class Plugin1Module(core: CoreModule) extends PluginModule {
 class Plugin2Service(coreService: CoreService) extends Service
 
 class Plugin2Module(core: CoreModule) extends PluginModule {
-    import core._
-
     lazy val service: Plugin2Service = wire[Plugin2Service]
 }
 

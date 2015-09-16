@@ -1,0 +1,17 @@
+
+case class A()
+case class B(a: A)
+
+@Module
+class MyModule {
+    lazy val a: A = A()
+}
+
+trait Base {
+    lazy val parentA: A = A()
+}
+
+class Test(module: MyModule) extends Base {
+
+    lazy val b: B = wire[B]
+}
