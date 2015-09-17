@@ -115,7 +115,7 @@ object MacwireBuild extends Build {
     Project(
       "examples-scalatra",
       file("examples/scalatra"),
-      settings = buildSettings ++ Seq(
+      settings = commonSettings ++ Seq(
         publishArtifact := false,
         classpathTypes ~= (_ + "orbit"),
         libraryDependencies ++= Seq(scalatraCore, scalatraScalate, jetty, servletApi, logback)
