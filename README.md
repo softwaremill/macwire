@@ -6,6 +6,7 @@ Table of Contents
 * [How wiring works](#how-wiring-works)
 * [Factories](#factories)
 * [`lazy val` vs. `val`](#lazy-val-vs-val)
+* [Composing modules](#composing-modules)
 * [Scopes](#scopes)
 * [Accessing wired instances dynamically](#accessing-wired-instances-dynamically)
 * [Interceptors](#interceptors)
