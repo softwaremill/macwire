@@ -63,6 +63,24 @@ object MacwireMacros {
     createNewTargetWithParams()
   }
 
+  def wireWith_impl[T: c.WeakTypeTag](c: blackbox.Context)(factory: c.Tree): c.Tree = {
+    import c.universe._
+
+    val typeCheckUtil = new TypeCheckUtil[c.type](c, log)
+    val dependencyResolver = new DependencyResolver[c.type](c, log)
+    import typeCheckUtil.typeCheckIfNeeded
+
+    val Block(Nil, Function(params, Apply(fun, _))) = factory
+    val values = params.map {
+      case vd @ ValDef(_, name, tpt, rhs) =>
+        dependencyResolver.resolve(vd.symbol, typeCheckIfNeeded(tpt)).getOrElse(reify(null).tree)
+    }
+    val code = q"$fun(..$values)"
+
+    log("Generated code: " + showCode(code))
+    code
+  }
+
   def wireSet_impl[T: c.WeakTypeTag](c: blackbox.Context): c.Tree = {
     import c.universe._
     val targetType = implicitly[c.WeakTypeTag[T]]
@@ -75,7 +93,7 @@ object MacwireMacros {
     // is left to the user - you want a `mutable.Set`, just import `mutable.Set` before the `wireSet[T]` call
     val code = q"Set(..$instances)"
 
-    log(s"Generated code: " + show(code))
+    log("Generated code: " + show(code))
     code
   }
 
