@@ -5,13 +5,12 @@ Table of Contents
 * [Guide to DI in Scala](http://di-in-scala.github.io/) (external link)
 * [How wiring works](#how-wiring-works)
 * [Factories](#factories)
-* [Limitations](#limitations)
 * [`lazy val` vs. `val`](#lazy-val-vs-val)
 * [Scopes](#scopes)
 * [Accessing wired instances dynamically](#accessing-wired-instances-dynamically)
 * [Interceptors](#interceptors)
-* [Wiring with implicit values](#wiring-with-implicit-values)
-* [Qualifiers](#qualifiers)
+* [Qualifiers](#qualifiers)           
+* [Limitations](#limitations)
 * [Installation, using with SBT](#installation-using-with-sbt)
 * [Debugging](#debugging)
 * [Scala.js](#scalajs)
@@ -36,8 +35,9 @@ MacWire helps to implement the Dependency Injection (DI) pattern, by removing th
 class-wiring code by hand. Instead, it is enough to declare which classes should be wired, and how the instances
 should be accessed (see Scopes).
 
-Classes that should be wired should be organized in "modules", which can be Scala `trait`s, `class`es or `object`s.
-Multiple modules can be combined using inheritance; values from the inherited modules are also used for wiring.
+Classes to be wired should be organized in "modules", which can be Scala `trait`s, `class`es or `object`s.
+Multiple modules can be combined using inheritance or composition; values from the inherited/nested modules are also 
+used for wiring.
 
 MacWire can be in many cases a replacement for DI containers, offering greater control on when and how classes are
 instantiated, typesafety and using only language (Scala) mechanisms.
@@ -80,8 +80,6 @@ trait UserModuleForTests extends UserModule {
 }
 ````
 
-Instead of importing the wire method in each module you can also extend `com.softwaremill.macwire.Macwire` trait.
-
 The core library has no dependencies.
 
 For more motivation behind the project see also these blogs:
@@ -104,7 +102,8 @@ How wiring works
 For each constructor parameter of the given class, MacWire tries to find a value which is a subtype of the parameter's
 type in the enclosing method and trait/class/object:
 
-* first it tries to find a unique value declared as the argument of enclosing methods and anonymous functions.
+* first it tries to find a unique value declared as a value in the current block, argument of enclosing methods 
+and anonymous functions.
 * then it tries to find a unique value declared or imported in the enclosing type
 * then it tries to find a unique value in parent types (traits/classes)
 * if the parameter is marked as implicit, additionally the usual implicit lookup mechanism is used
@@ -113,8 +112,8 @@ Here value means either a `val` or a no-parameter `def`, as long as the return t
 
 A compile-time error occurs if:
 
-* there are multiple values of a given type declared in the enclosing method/function's arguments list, enclosing type or its parents.
-* parameter is marked as implicit and both implicit lookup and searching in enclosing/parent types find a value
+* there are multiple values of a given type declared in the enclosing block/method/function's arguments list, enclosing type or its parents.
+* parameter is marked as implicit and implicit lookup fails to find a value
 * there is no value of a given type
 
 The generated code is then once again type-checked by the Scala compiler.
@@ -124,9 +123,6 @@ Factories
 
 A factory is simply a method. The constructor of the wired class can contain parameters both from
 the factory (method) parameters, and from the enclosing/super type(s).
-
-Unlike wiring in other places, if multiple values of the desired type are found, they are additionally filtered by-name.
-In general this could give unpredictable results, but should be safe in the scope of a method.
 
 For example:
 
@@ -156,46 +152,46 @@ trait TaxModule {
 }
 ````
 
-Limitations
------------
-
-When:
-
-* referencing wired values within the trait/class/object
-* using multiple modules in the same compilation unit
-* using multiple modules with scopes
-
-due to limitations of the current macros implementation in Scala (for more details see
-[this discussion](https://groups.google.com/forum/?fromgroups=#!topic/scala-user/k_2KCvO5g04))
-to avoid compilation errors it is recommended to add type ascriptions to the dependencies. This is a way of helping
-the type-checker that is invoked by the macro to figure out the types of the values which
-can be wired.
-
-For example:
-
-````scala
-class A()
-class B(a: A)
-
-// note the explicit type. Without it wiring would fail with recursive type compile errors
-lazy val theA: A = wire[A]
-// reference to theA; if for some reason we need explicitly write the constructor call
-lazy val theB = new B(theA)
-````
-
-This is an inconvenience, but hopefully will get resolved once post-typer macros are introduced to the language.
-
-Also, wiring will probably not work properly for traits and classes defined inside the containing trait/class, or in
-super traits/classes.
-
-Note that the type ascription may be a subtype of the wired type. This can be useful if you want to expose e.g. a trait
-that the wired class extends, instead of the full implementation.
-
 `lazy val` vs. `val`
 --------------------
 
 It is safer to use `lazy val`s, as when using `val`, if a value is forward-referenced, it's value during initialization
 will be `null`. With `lazy val` the correct order of initialization is resolved by Scala.
+
+Composing modules
+-----------------
+
+Modules (traits or classes containing parts of the object graph) can be combined using inheritance or composition.
+The inheritance case is straightforward, as `wire` simply looks for values in parent traits/classes. With composition,
+you need to tell MacWire that it should look inside the nested modules.
+
+To do that, you can use imports:
+
+````scala
+class FacebookAccess(userFind: UserFinder) 
+
+class UserModule { ... } // as before
+
+class SocialModule(userModule: UserModule) {
+  import userModule._
+  
+  lazy val facebookAccess = wire[FacebookAccess] 
+}
+````
+
+Or, if you are using that pattern a lot, you can annotate your modules using `@Module`, and they will be used when
+searching for values automatically:
+
+````scala
+class FacebookAccess(userFind: UserFinder) 
+
+@Module
+class UserModule { ... } // as before
+
+class SocialModule(userModule: UserModule) {
+  lazy val facebookAccess = wire[FacebookAccess] 
+}
+````
 
 Scopes
 ------
@@ -205,7 +201,7 @@ There are two "built-in" scopes, depending on how the dependency is defined:
 * dependent - separate instance for each dependency usage: `def`
 
 MacWire also supports user-defined scopes, which can be used to implement request or session scopes in web applications.
-The `runtime` subproject defines a `Scope` trait, which has two methods:
+The `proxy` subproject defines a `Scope` trait, which has two methods:
 
 * `apply`, to create a scoped value
 * `get`, to get or create the current value from the scope
@@ -239,7 +235,7 @@ sources.
 
 You can run the example with `sbt examples-scalatra/run` and going to [http://localhost:8080](http://localhost:8080).
 
-Note that the `runtime` subproject does not depend on MacWire core, and can be used stand-alone with manual wiring or any other
+Note that the `proxy` subproject does not depend on MacWire core, and can be used stand-alone with manual wiring or any other
 frameworks.
 
 Accessing wired instances dynamically
@@ -247,7 +243,7 @@ Accessing wired instances dynamically
 
 To integrate with some frameworks (e.g. [Play 2](http://www.playframework.com/)) or to create instances of classes
 which names are only known at run-time (e.g. plugins) it is necessary to access the wired instances dynamically.
-MacWire contains a utility class, `Wired`, to support such functionality.
+MacWire contains a utility class in the `util` subproject, `Wired`, to support such functionality.
 
 An instance of `Wired` can be obtained using the `wiredInModule` macro, given an instance of a module containing the
 wired object graph. Any `vals`, `lazy val`s and parameter-less `def`s (factories) from the module which are references
@@ -295,7 +291,7 @@ Interceptors
 ------------
 
 MacWire contains an implementation of interceptors, which can be applied to class instances in the modules.
-Similarly to scopes, the `runtime` subproject defines an `Interceptor` trait, which has only one method: `apply`.
+Similarly to scopes, the `proxy` subproject defines an `Interceptor` trait, which has only one method: `apply`.
 When applied to an instance, it should return an instance of the same class, but with the interceptor applied.
 
 There are two implementations of the `Interceptor` trait provided:
@@ -344,44 +340,6 @@ For more general AOP, e.g. if you want to apply an interceptor to all methods ma
 you should use [AspectJ](http://eclipse.org/aspectj/) or an equivalent library. The interceptors that are implemented
 in MacWire correspond to annotation-based interceptors in Java.
 
-Wiring with implicit values
----------------------------
-
-It is also possible to wire an object taking into account implicit values and values in scope using `wireImplicit`.
-This makes it possible to wire with objects that are defined inside a method body, as default implicit values
-and others which aren't part of the usual scope where MacWire looks.
-
-`wireImplicit` for each constructor parameter does an implicit lookup and looks in the current scope. If multiple
-values are found, an error is reported.
-
-For example:
-
-````scala
-class DatabaseAccess()
-class SecurityFilter()
-class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
-
-object SecurityFilter {
-    implicit val default = wire[SecurityFilter]
-}
-
-object Implicits {
-    implicit lazy val theDatabaseAccess = wire[DatabaseAccess]
-}
-
-trait UserModule {
-    def run() {
-        import com.softwaremill.macwire._
-        import Implicits._
-
-        lazy val theUserFinder = wireImplicit[UserFinder]
-    }
-}
-````
-
-Note that the signature of `UserFinder` is unaffected by the way the wiring is done, that is its parameter list
-doesn't have to be marked as `implicit`.
-
 Qualifiers
 ----------
 
@@ -391,10 +349,9 @@ be useful to give the instances distinct types, to get compile-time checking.
 
 For that purpose Macwire includes support for tagging, which lets you attach tags to instances to qualify them. This
 is a compile-time only operation, and doesn't affect the runtime. The tags are derived from
-[Miles Sabin's gist](via https://gist.github.com/milessabin/89c9b47a91017973a35f).
+[Miles Sabin's gist](https://gist.github.com/milessabin/89c9b47a91017973a35f).
 
-To bring the tagging into scope, import `com.softwaremill.macwire._`, or the more specific
-`com.softwaremill.macwire.Tagging._`.
+To bring the tagging into scope, import `com.softwaremill.macwire.tagging._`.
 
 Using tagging has two sides. In the constructor, when declaring a dependency, you need to declare what tag it needs
 to have. You can do this with the `_ @@ _` type constructor, or if you prefer another syntax `Tagged[_, _]`. The first
@@ -428,6 +385,41 @@ lazy val blackblueberry = wire[Berry].taggedWith[Black].andTaggedWith[Blue]
 
 The resulting value has type `Berry @ (Black with Blue)` and can be used both as a blackberry and as a blueberry.
 
+Limitations
+-----------
+
+When:
+
+* referencing wired values within the trait/class/object
+* using multiple modules in the same compilation unit
+* using multiple modules with scopes
+
+due to limitations of the current macros implementation in Scala (for more details see
+[this discussion](https://groups.google.com/forum/?fromgroups=#!topic/scala-user/k_2KCvO5g04))
+to avoid compilation errors it is recommended to add type ascriptions to the dependencies. This is a way of helping
+the type-checker that is invoked by the macro to figure out the types of the values which
+can be wired.
+
+For example:
+
+````scala
+class A()
+class B(a: A)
+
+// note the explicit type. Without it wiring would fail with recursive type compile errors
+lazy val theA: A = wire[A]
+// reference to theA; if for some reason we need explicitly write the constructor call
+lazy val theB = new B(theA)
+````
+
+This is an inconvenience, but hopefully will get resolved once post-typer macros are introduced to the language.
+
+Also, wiring will probably not work properly for traits and classes defined inside the containing trait/class, or in
+super traits/classes.
+
+Note that the type ascription may be a subtype of the wired type. This can be useful if you want to expose e.g. a trait
+that the wired class extends, instead of the full implementation.
+
 Installation, using with SBT
 ----------------------------
 
@@ -435,22 +427,39 @@ The jars are deployed to [Sonatype's OSS repository](https://oss.sonatype.org/co
 To use MacWire in your project, add a dependency:
 
 ````scala
-libraryDependencies += "com.softwaremill.macwire" %% "macros" % "1.0.7"
+libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.0.0" % "provided"
 
-libraryDependencies += "com.softwaremill.macwire" %% "runtime" % "1.0.7"
+libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.0.0"
+                  
+libraryDependencies += "com.softwaremill.macwire" %% "proxy" % "2.0.0"
 ````
+
+The `macros` subproject contains only code which is used at compile-time, hence the `provided` scope. 
+
+The `util` subproject contains tagging, `Wired` and the `@Module` annotation; if you don't use these features, you don't
+need to include this dependency.
+
+The `proxy` subproject contains interceptors and scopes, and has a dependency on `javassist`.
 
 To use the snapshot version:
 
 ````scala
 resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
-libraryDependencies += "com.softwaremill.macwire" %% "macros" % "1.0.8-SNAPSHOT"
+libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.0.1-SNAPSHOT" % "provided"
 
-libraryDependencies += "com.softwaremill.macwire" %% "runtime" % "1.0.8-SNAPSHOT"
+libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.0.1-SNAPSHOT"
 ````
 
-MacWire works with Scala 2.10 and 2.11.
+Currently 2.x supports only Scala 2.11. 
+
+Older 1.x release for Scala 2.10 and 2.11:
+
+````scala
+libraryDependencies += "com.softwaremill.macwire" %% "macros" % "1.0.7"
+
+libraryDependencies += "com.softwaremill.macwire" %% "runtime" % "1.0.7"
+````
 
 Debugging
 ---------
@@ -478,6 +487,14 @@ There are two Typesafe Activators which can help you to get started with Scala, 
 
 * [No-framework Dependency Injection with MacWire and Akka Activator](https://typesafe.com/activator/template/macwire-akka-activator)
 * [No-framework Dependency Injection with MacWire and Play Activator](https://typesafe.com/activator/template/macwire-activator)
+
+Migrating from 1.x
+------------------
+
+* changed how code is split across modules. You'll need to depend on `util` to get tagging & `Wired`, and `proxy` 
+to get interceptors and scopes
+* tagging moved to a separate package. If you use tagging, you'll need to import `com.softwaremill.macwire.tagging._`
+* removed `wireImplicit`
 
 Play 2.4.x <a id="play24x"></a>
 --------
