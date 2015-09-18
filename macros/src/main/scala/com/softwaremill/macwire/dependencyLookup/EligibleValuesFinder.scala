@@ -325,7 +325,10 @@ object EligibleValuesFinder {
       def widen: Scope = ParentOrModule
     }
     case object ParentOrModule extends Scope(3) {
-      def widen: Scope = ParentOrModule
+      def widen: Scope = ModuleInParent
+    }
+    case object ModuleInParent extends Scope(4) {
+      def widen: Scope = ModuleInParent
     }
 
     /** A special scope for values that are located in a block after the wire call

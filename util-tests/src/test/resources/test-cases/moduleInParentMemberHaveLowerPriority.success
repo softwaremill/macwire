@@ -1,0 +1,21 @@
+case class A()
+case class B(a: A)
+
+@Module
+class MyModule {
+    lazy val a: A = wire[A]
+}
+
+trait Base {
+    lazy val a: A = wire[A]
+    lazy val module: MyModule = wire[MyModule]
+}
+
+object Test extends Base {
+
+    // `a` is in scope `Parent` whereas `module.a` is in scope `ModuleInParent`
+    // so there are no ambiguity and `a` gets picked
+    lazy val b: B = wire[B]
+}
+
+require(Test.b.a eq Test.a)
