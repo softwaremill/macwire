@@ -100,14 +100,14 @@ A similar project for Java is [Dagger](https://github.com/square/dagger).
 How wiring works
 ----------------
 
-For each constructor parameter of the given class, MacWire tries to find a value which is a subtype of the parameter's
+For each constructor parameter of the given class, MacWire tries to find a value [conforming](http://www.scala-lang.org/files/archive/spec/2.11/03-types.html#conformance) to the parameter's
 type in the enclosing method and trait/class/object:
 
 * first it tries to find a unique value declared as a value in the current block, argument of enclosing methods 
 and anonymous functions.
 * then it tries to find a unique value declared or imported in the enclosing type
 * then it tries to find a unique value in parent types (traits/classes)
-* if the parameter is marked as implicit, additionally the usual implicit lookup mechanism is used
+* if the parameter is marked as implicit, it is ignored by MacWire and handled by the normal implicit resolution mechanism 
 
 Here value means either a `val` or a no-parameter `def`, as long as the return type matches.
 
@@ -496,6 +496,8 @@ Migrating from 1.x
 to get interceptors and scopes
 * tagging moved to a separate package. If you use tagging, you'll need to import `com.softwaremill.macwire.tagging._`
 * removed `wireImplicit`
+* implicit parameters aren't handled by `wire` at all (they used to be subject to the same lookup procedure as normal
+parameters + implicit lookup)
 
 Play 2.4.x <a id="play24x"></a>
 --------
