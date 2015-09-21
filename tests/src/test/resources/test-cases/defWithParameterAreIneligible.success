@@ -1,0 +1,13 @@
+case class A()
+case class B(a: A)
+
+object Test {
+
+    lazy val a: A = wire[A]
+
+    def buildSomeA(i: Int): A = A()
+
+    lazy val b: B = wire[B]
+}
+
+require(Test.b.a eq Test.a)

@@ -1,0 +1,18 @@
+case class A()
+case class B(a: A)
+
+object Test {
+
+    var countA: Int = 0
+
+    def a: A = {
+        countA += 1
+        A()
+    }
+
+    lazy val b1: B = wire[B]
+    lazy val b2: B = wire[B]
+}
+
+require(!(Test.b1.a eq Test.b2.a))
+require(Test.countA == 2)

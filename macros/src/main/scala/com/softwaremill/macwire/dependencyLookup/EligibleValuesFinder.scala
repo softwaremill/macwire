@@ -81,7 +81,7 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
         case Bind(name, body) =>
           doFind(tail, values.put(scope, Ident(name), body))
 
-        case ValDefOrDefDef(name, tpt, rhs, symbol) if name.toString != "<init>" =>
+        case ValDefOrEmptyDefDef(name, tpt, rhs, symbol) if name.toString != "<init>" =>
           // rhs might be empty for local def
           doFind(tail, values.put(scope, Ident(name), treeToCheck(tree, rhs)))
 
@@ -283,10 +283,10 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
     val empty: EligibleValues = new EligibleValues(Map.empty)
   }
 
-  object ValDefOrDefDef {
+  object ValDefOrEmptyDefDef {
     def unapply(t: Tree): Option[(TermName, Tree, Tree, Symbol)] = t match {
       case ValDef(_, name, tpt, rhs) => Some((name, tpt, rhs, t.symbol))
-      case DefDef(_, name, _, _, tpt, rhs) => Some((name, tpt, rhs, t.symbol))
+      case DefDef(_, name, _, Nil, tpt, rhs) => Some((name, tpt, rhs, t.symbol))
       case _ => None
     }
   }
