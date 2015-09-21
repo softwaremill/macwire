@@ -5,6 +5,7 @@ trait AModule {
     lazy val a = wire[A]
 }
 
+// BModule inherits the 'module' feature from its parent
 trait BModule extends AModule {
     lazy val b = wire[B]
 }
