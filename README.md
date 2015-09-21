@@ -194,6 +194,9 @@ class SocialModule(userModule: UserModule) {
 }
 ````
 
+**Warning**: the `@Module` annotation is an experimental feature, if you have any feedback regarding its usage, let
+us know!
+
 Scopes
 ------
 

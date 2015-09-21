@@ -65,6 +65,8 @@ import java.lang.annotation.*;
  *         lazy val y = wire[Y]
  *     }
  * </pre>
+ *
+ * <strong>Warning:</strong> the annotation is an experimental feature
  */
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.TYPE)
