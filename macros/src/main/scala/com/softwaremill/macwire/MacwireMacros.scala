@@ -10,53 +10,93 @@ object MacwireMacros {
   def wire_impl[T: c.WeakTypeTag](c: blackbox.Context): c.Expr[T] = {
     import c.universe._
 
+    def abort(msg: String): Nothing = c.abort(c.enclosingPosition, msg)
+
     lazy val dependencyResolver = new DependencyResolver[c.type](c, log)
 
-    def createNewTargetWithParams(): Expr[T] = {
-      val targetType = implicitly[c.WeakTypeTag[T]]
-      log.withBlock(s"Trying to find parameters to create new instance of: [${targetType.tpe}] at ${c.enclosingPosition}") {
-        val targetConstructorOpt = targetType.tpe.members.find(m => m.isMethod && m.asMethod.isPrimaryConstructor)
-        targetConstructorOpt match {
-          case None =>
-            c.abort(c.enclosingPosition, "Cannot find constructor for " + targetType)
-          case Some(targetConstructor) =>
-            val targetConstructorParamLists = targetConstructor.asMethod.paramLists
-            // We need to get the "real" type in case the type parameter is a type alias - then it cannot
-            // be directly instatiated
-            val targetTpe = targetType.tpe.dealias
+    def tryCompanionObject(targetType: Type): Tree = {
+      if (targetType.companion == NoType) {
+        abort(s"Cannot find a public constructor nor a companion object for $targetType")
+      } else {
 
-            val (sym, tpeArgs) = targetTpe match {
-              case TypeRef(_, sym, tpeArgs) => (sym, tpeArgs)
-              case t => c.abort(c.enclosingPosition, s"Target type not supported for wiring: $t. Please file a bug report with your use-case.")
-            }
-
-            var newT: Tree = Select(New(Ident(targetTpe.typeSymbol)), termNames.CONSTRUCTOR)
-
-            for {
-              targetConstructorParams <- targetConstructorParamLists if !targetConstructorParams.headOption.exists(_.isImplicit)
-            } {
-              val constructorParams: List[c.Tree] = for (param <- targetConstructorParams) yield {
-                // Resolve type parameters
-                val pTpe = param.typeSignature.substituteTypes(sym.asClass.typeParams, tpeArgs)
-
-                val pEffectiveTpe = if (param.asTerm.isByNameParam) {
-                  pTpe.typeArgs.head
-                } else {
-                  pTpe
-                }
-
-                val wireToOpt = dependencyResolver.resolve(param, pEffectiveTpe)
-
-                // If no value is found, an error has been already reported.
-                wireToOpt.getOrElse(reify(null).tree)
-              }
-
-              newT = Apply(newT, constructorParams)
-            }
-
-            log(s"Generated code: ${show(newT)}")
-            c.Expr(newT)
+        val isCompanionMethodFactory = (method: Symbol) => {
+          method.isMethod &&
+          method.isPublic &&
+          method.asMethod.returnType <:< targetType &&
+          method.asMethod.name.decodedName.toString == "apply"
         }
+
+        targetType.companion.members.filter(isCompanionMethodFactory).toList match {
+          case Nil => abort(s"Cannot find a public constructor for $targetType, nor apply method in its companion object")
+          case applyMethod :: Nil =>
+            wireParameters(
+              Select(Ident(targetType.typeSymbol.companion), applyMethod),
+              applyMethod.asMethod.paramLists,
+              _.typeSignature)
+
+          case moreThanOne => abort(s"No public primary constructor found for $targetType and " +
+            "multiple matching apply method in its companion object were found.")
+        }
+      }
+    }
+
+    def wireParameters(constructionMethodTree: Tree, paramLists: List[List[Symbol]], resolveType: c.Symbol => c.Type): Tree = {
+      filterOutImplicitParams(paramLists).foldLeft(constructionMethodTree) { case (applicationTree, paramList) =>
+        val constructorParams: List[Tree] = for (param <- paramList) yield {
+          val wireToOpt = dependencyResolver.resolve(param, resolveType(param))
+
+          // If no value is found, an error has been already reported.
+          wireToOpt.getOrElse(reify(null).tree)
+        }
+        Apply(applicationTree, constructorParams)
+      }
+    }
+
+    def filterOutImplicitParams(targetConstructorParamLists: List[List[Symbol]]): List[List[Symbol]] = {
+      targetConstructorParamLists.filterNot(_.headOption.exists(_.isImplicit))
+    }
+
+    def wirePrimaryConstructor(targetType: Type, targetConstructor: Symbol): Tree = {
+      // We need to get the "real" type in case the type parameter is a type alias - then it cannot
+      // be directly instantiated
+      val targetTpe = targetType.dealias
+
+      val (sym, tpeArgs) = targetTpe match {
+        case TypeRef(_, sym, tpeArgs) => (sym, tpeArgs)
+        case t => abort(s"Target type not supported for wiring: $t. Please file a bug report with your use-case.")
+      }
+
+      def paramType(param: Symbol): Type = {
+        val pTpe = param.typeSignature.substituteTypes(sym.asClass.typeParams, tpeArgs)
+
+        if (param.asTerm.isByNameParam) {
+          pTpe.typeArgs.head
+        } else {
+          pTpe
+        }
+      }
+
+      val constructionMethodTree = Select(New(Ident(targetTpe.typeSymbol)), termNames.CONSTRUCTOR)
+
+      wireParameters(
+        constructionMethodTree,
+        targetConstructor.asMethod.paramLists,
+        sym => paramType(sym)) // SI-4751
+    }
+
+    def createNewTargetWithParams(): Expr[T] = {
+      val targetType = implicitly[c.WeakTypeTag[T]].tpe
+      log.withBlock(s"Trying to find parameters to create new instance of: [$targetType] at ${c.enclosingPosition}") {
+        val targetConstructorOpt = targetType.members.find(m => m.isMethod && m.asMethod.isPrimaryConstructor && m.isPublic)
+        val code = targetConstructorOpt match {
+          case None =>
+            tryCompanionObject(targetType)
+
+          case Some(targetConstructor) =>
+            wirePrimaryConstructor(targetType, targetConstructor)
+        }
+        log(s"Generated code: ${showRaw(code)}")
+        c.Expr(code)
       }
     }
 

@@ -1,0 +1,13 @@
+case class A(i: Int)
+
+object Test {
+
+    class PrivConstructor private(val a : A) {}
+    object PrivConstructor {
+      def apply(a: A) : PrivConstructor = new PrivConstructor(A(a.i + 1))
+      def apply(a: A, i: Int) : PrivConstructor = new PrivConstructor(A(a.i + i))
+    }
+
+    val a = A(3)
+    val pc = wire[PrivConstructor]
+}
