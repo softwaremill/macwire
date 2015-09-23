@@ -195,7 +195,15 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
     case param@ValDef(_, name, tpt, _) => (Ident(name), treeToCheck(param, tpt))
   }
 
-  case class EligibleValue(tpe: Type, expr: Tree)
+  case class EligibleValue(tpe: Type, expr: Tree) {
+    // equal trees should have equal hash codes; if trees are equal structurally they should have the same toString?
+    override def hashCode() = expr.toString().hashCode
+
+    override def equals(obj: scala.Any) = obj match {
+      case EligibleValue(_, e) => expr.equalsStructure(e)
+      case _ => false
+    }
+  }
 
   object EligibleValue {
     implicit val ordering: Ordering[EligibleValue] = Ordering.by[EligibleValue,Tree](_.expr)
@@ -273,9 +281,10 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
     }
 
     def findInScope(tpe: Type, scope: Scope): Set[Tree] = {
-      for( scopedValue <- values.getOrElse(scope, Set.empty) if checkCandidate(target = tpe, tpt = scopedValue.tpe)) yield {
+      //TreeSet.empty[Tree] ++
+      (for( scopedValue <- values.getOrElse(scope, Set.empty) if checkCandidate(target = tpe, tpt = scopedValue.tpe)) yield {
         scopedValue.expr
-      }
+      })
     }
   }
 
