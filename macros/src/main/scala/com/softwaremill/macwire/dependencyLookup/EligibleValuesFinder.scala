@@ -281,10 +281,9 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
     }
 
     def findInScope(tpe: Type, scope: Scope): Set[Tree] = {
-      //TreeSet.empty[Tree] ++
-      (for( scopedValue <- values.getOrElse(scope, Set.empty) if checkCandidate(target = tpe, tpt = scopedValue.tpe)) yield {
+      for( scopedValue <- values.getOrElse(scope, Set.empty) if checkCandidate(target = tpe, tpt = scopedValue.tpe)) yield {
         scopedValue.expr
-      })
+      }
     }
   }
 
