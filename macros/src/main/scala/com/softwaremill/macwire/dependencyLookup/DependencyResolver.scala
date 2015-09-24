@@ -40,7 +40,7 @@ private[macwire] class DependencyResolver[C <: blackbox.Context](val c: C, debug
 
   /** @return all the instances of type `t` that are accessible.
     */
-  def resolveAll(t: Type): Set[Tree] = {
+  def resolveAll(t: Type): Iterable[Tree] = {
     eligibleValues.findInAllScope(t)
   }
 }
