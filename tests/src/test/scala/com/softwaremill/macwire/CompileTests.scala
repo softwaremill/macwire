@@ -13,7 +13,8 @@ class CompileTests extends CompileTestsSupport {
       "nestedWithManyMatchingParamsWired" -> List(ambiguousResMsg("A"), "a1", "a2", "a3"),
       "multipleMethodParameters" -> List(ambiguousResMsg("A"), "a1", "a2"),
       "simpleValsMissingValue" -> List(valueNotFound("B")),
-      "simpleValsDuplicateValue" -> List(ambiguousResMsg("B"), "theB1", "theB2")),
+      "simpleValsDuplicateValue" -> List(ambiguousResMsg("B"), "theB1", "theB2"),
+      "secondaryConstructorNotAnnotated" -> List(valueNotFound("String"))),
     expectedWarnings = List(
       "forwardReferenceInBlock" -> List("Found [a] for parameter [a], but a forward reference [forwardA] was also eligible"))
   )

@@ -1,0 +1,10 @@
+class A()
+
+class B(val s: String, val a: A) {
+  def this(a: A) = this("?", a)
+}
+
+object Test {
+  val a = wire[A]
+  val b = wire[B]
+}

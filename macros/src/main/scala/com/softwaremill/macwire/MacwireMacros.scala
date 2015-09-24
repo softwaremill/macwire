@@ -56,7 +56,7 @@ object MacwireMacros {
       targetConstructorParamLists.filterNot(_.headOption.exists(_.isImplicit))
     }
 
-    def wirePrimaryConstructor(targetType: Type, targetConstructor: Symbol): Tree = {
+    def wireConstructor(targetType: Type, targetConstructor: Symbol): Tree = {
       // We need to get the "real" type in case the type parameter is a type alias - then it cannot
       // be directly instantiated
       val targetTpe = targetType.dealias
@@ -85,15 +85,20 @@ object MacwireMacros {
     }
 
     def createNewTargetWithParams(): Expr[T] = {
+      val isInjectAnnotation = (a: Annotation) => a.toString == "javax.inject.Inject"
+
       val targetType = implicitly[c.WeakTypeTag[T]].tpe
       log.withBlock(s"Trying to find parameters to create new instance of: [$targetType] at ${c.enclosingPosition}") {
-        val targetConstructorOpt = targetType.members.find(m => m.isMethod && m.asMethod.isPrimaryConstructor && m.isPublic)
+        val publicCtors = targetType.members.filter(m => m.isMethod && m.asMethod.isConstructor && m.isPublic)
+        val injectCtor = publicCtors.find(_.annotations.exists(isInjectAnnotation))
+        val targetConstructorOpt = injectCtor.orElse(publicCtors.find(_.asMethod.isPrimaryConstructor))
+
         val code = targetConstructorOpt match {
           case None =>
             tryCompanionObject(targetType)
 
           case Some(targetConstructor) =>
-            wirePrimaryConstructor(targetType, targetConstructor)
+            wireConstructor(targetType, targetConstructor)
         }
         log(s"Generated code: ${showRaw(code)}")
         c.Expr(code)
