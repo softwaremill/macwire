@@ -10,7 +10,7 @@ import scala.concurrent.ExecutionContext
 trait ControllerModule {
 
   // Dependencies
-  def ec: ExecutionContext
+  implicit def ec: ExecutionContext
   def wsClient: WSClient
   def supplierDoa: SupplierDao
   def coffeeDoa: CoffeeDao

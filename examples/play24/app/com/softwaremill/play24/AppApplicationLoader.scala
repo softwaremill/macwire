@@ -8,7 +8,7 @@ import play.api._
 import play.api.libs.ws.ning.NingWSComponents
 import play.api.routing.Router
 import router.Routes
-import com.softwaremill.macwire.MacwireMacros._
+import com.softwaremill.macwire._
 
 import scala.concurrent.ExecutionContext
 
