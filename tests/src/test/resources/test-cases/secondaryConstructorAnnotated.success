@@ -11,4 +11,4 @@ object Test {
 }
 
 require(Test.b.s == "?")
-require(Test.b.a == test.Test.a)
+require(Test.b.a == Test.a)
