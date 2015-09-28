@@ -1,0 +1,14 @@
+class A()
+
+class B(val s: String, val a: A) {
+  @javax.inject.Inject
+  def this(a: A) = this("?", a)
+}
+
+object Test {
+  val a = wire[A]
+  val b = wire[B]
+}
+
+require(Test.b.s == "?")
+require(Test.b.a == Test.a)
