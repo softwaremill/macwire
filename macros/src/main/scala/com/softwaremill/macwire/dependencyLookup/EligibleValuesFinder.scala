@@ -1,9 +1,8 @@
 package com.softwaremill.macwire.dependencyLookup
 
-import com.softwaremill.macwire.{Util, TypeCheckUtil, Logger}
+import com.softwaremill.macwire.{TypeCheckUtil, Logger}
 
 import scala.annotation.tailrec
-import scala.collection.immutable.TreeSet
 import scala.reflect.macros.blackbox
 
 private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val c: C, log: Logger) {
@@ -13,9 +12,6 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
 
   private val typeCheckUtil = new TypeCheckUtil[c.type](c, log)
   import typeCheckUtil._
-
-  // we're not interested in ordering the Tree other than structurally
-  private implicit val structuralTreeOrdering: Ordering[Tree] = Util.structuralTreeOrdering[c.type](c)
 
   def find(): EligibleValues = {
     def containsCurrentlyExpandedWireCall(t: Tree): Boolean = t.exists(_.pos == c.enclosingPosition)
@@ -195,13 +191,17 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
     case param@ValDef(_, name, tpt, _) => (Ident(name), treeToCheck(param, tpt))
   }
 
-  case class EligibleValue(tpe: Type, expr: Tree)
+  case class EligibleValue(tpe: Type, expr: Tree) {
+    // equal trees should have equal hash codes; if trees are equal structurally they should have the same toString?
+    override def hashCode() = expr.toString().hashCode
 
-  object EligibleValue {
-    implicit val ordering: Ordering[EligibleValue] = Ordering.by[EligibleValue,Tree](_.expr)
+    override def equals(obj: scala.Any) = obj match {
+      case EligibleValue(_, e) => expr.equalsStructure(e)
+      case _ => false
+    }
   }
 
-  class EligibleValues(values: Map[Scope,Set[EligibleValue]]) {
+  class EligibleValues(values: Map[Scope, List[EligibleValue]]) {
 
     /** Add all `exprs` to `scope` and possibly their respective members if they denote a module */
     def putAll(scope: Scope, exprs: List[(Tree,Tree)]): EligibleValues = {
@@ -224,7 +224,7 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
 
     private def doPut(scope: Scope, tpe: Type, expr: Tree): EligibleValues = {
       log(s"Found $expr of type $tpe in scope $scope")
-      val set = values.getOrElse(scope, TreeSet.empty[EligibleValue]) + EligibleValue(tpe, expr)
+      val set = EligibleValue(tpe, expr) :: values.getOrElse(scope, Nil)
       new EligibleValues(values.updated(scope, set))
     }
 
@@ -249,12 +249,32 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
       }
     }
 
-    def findInFirstScope(tpe: Type, startingWith: Scope = Scope.Local): Set[Tree] = {
+    private def doFindInScope(tpe: Type, scope: Scope): List[Tree] = {
+      for( scopedValue <- values.getOrElse(scope, Nil) if checkCandidate(target = tpe, tpt = scopedValue.tpe)) yield {
+        scopedValue.expr
+      }
+    }
+
+    private def uniqueTrees(trees: List[Tree]): Iterable[Tree] = {
+      // the only reliable method to compare trees is using structural equality, but there shouldn't be a lot of
+      // trees with a given type, so the n^2 complexity shouldn't hurt
+      def addIfUnique(addTo: List[Tree], t: Tree): List[Tree] = {
+        addTo.find(_.equalsStructure(t)).fold(t :: addTo)(_ => addTo)
+      }
+
+      trees.foldLeft(List.empty[Tree])(addIfUnique)
+    }
+
+    def findInScope(tpe: Type, scope: Scope): Iterable[Tree] = {
+      uniqueTrees(doFindInScope(tpe, scope))
+    }
+
+    def findInFirstScope(tpe: Type, startingWith: Scope = Scope.Local): Iterable[Tree] = {
       @tailrec
-      def forScope(scope: Scope) : Set[Tree] = {
+      def forScope(scope: Scope): Iterable[Tree] = {
         findInScope(tpe, scope) match {
-          case set if set.isEmpty && !scope.isMax => forScope(scope.widen)
-          case set if set.isEmpty => log(s"Could not find $tpe in any scope"); Set.empty
+          case coll if coll.isEmpty && !scope.isMax => forScope(scope.widen)
+          case coll if coll.isEmpty => log(s"Could not find $tpe in any scope"); Nil
           case exprs =>
             log(s"Found [${exprs.mkString(", ")}] of type [$tpe] in scope $scope")
             exprs
@@ -263,19 +283,13 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
       forScope(startingWith)
     }
 
-    def findInAllScope(tpe: Type): Set[Tree] = {
+    def findInAllScope(tpe: Type): Iterable[Tree] = {
       @tailrec
-      def accInScope(scope: Scope, acc: Set[Tree]): Set[Tree] = {
-        val newAcc = findInScope(tpe, scope) ++ acc
+      def accInScope(scope: Scope, acc: List[Tree]): List[Tree] = {
+        val newAcc = doFindInScope(tpe, scope) ++ acc
         if( !scope.isMax ) accInScope(scope.widen, newAcc) else newAcc
       }
-      accInScope(Scope.Local, Set.empty)
-    }
-
-    def findInScope(tpe: Type, scope: Scope): Set[Tree] = {
-      for( scopedValue <- values.getOrElse(scope, Set.empty) if checkCandidate(target = tpe, tpt = scopedValue.tpe)) yield {
-        scopedValue.expr
-      }
+      uniqueTrees(accInScope(Scope.Local, Nil))
     }
   }
 

@@ -1,0 +1,23 @@
+// See https://github.com/adamw/macwire/issues/82
+// *sometimes* (not on every compiler run) the trees for the identifiers X.a and Y.a were different hash codes, but
+// equal structurally. This only occurred when Y.a was also used in another wired class.
+
+class A()
+class B(val a: A)
+class C(val a: A)
+
+trait X {
+  def a: A
+}
+
+trait Y {
+  lazy val a = wire[A]
+  lazy val c = wire[C]
+}
+
+object Z extends Y with X {
+  val b = wire[B]
+}
+
+require(Z.b.a eq Z.a)
+require(Z.c.a eq Z.a)

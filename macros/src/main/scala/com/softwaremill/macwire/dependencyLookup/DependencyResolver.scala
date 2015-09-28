@@ -1,7 +1,6 @@
 package com.softwaremill.macwire.dependencyLookup
 
 import com.softwaremill.macwire.Logger
-import com.softwaremill.macwire.Util._
 import com.softwaremill.macwire.dependencyLookup.EligibleValuesFinder.Scope.LocalForward
 
 import scala.reflect.macros.blackbox
@@ -41,7 +40,7 @@ private[macwire] class DependencyResolver[C <: blackbox.Context](val c: C, debug
 
   /** @return all the instances of type `t` that are accessible.
     */
-  def resolveAll(t: Type): Set[Tree] = {
+  def resolveAll(t: Type): Iterable[Tree] = {
     eligibleValues.findInAllScope(t)
   }
 }
