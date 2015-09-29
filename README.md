@@ -18,6 +18,7 @@ Table of Contents
 * [Scala.js](#scalajs)
 * [Future development - vote!](#future-development---vote)
 * [Activators](#activators)
+* [Migrating from 1.x](#migrating)
 * [Play 2.4.x](#play24x)
 
 MacWire
@@ -513,7 +514,7 @@ There are two Typesafe Activators which can help you to get started with Scala, 
 * [No-framework Dependency Injection with MacWire and Akka Activator](https://typesafe.com/activator/template/macwire-akka-activator)
 * [No-framework Dependency Injection with MacWire and Play Activator](https://typesafe.com/activator/template/macwire-activator)
 
-Migrating from 1.x
+Migrating from 1.x <a id="migrating"></a>
 ------------------
 
 * changed how code is split across modules. You'll need to depend on `util` to get tagging & `Wired`, and `proxy` 
