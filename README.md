@@ -5,6 +5,7 @@ Table of Contents
 * [Guide to DI in Scala](http://di-in-scala.github.io/) (external link)
 * [How wiring works](#how-wiring-works)
 * [Factories](#factories)
+* [Factory methods](#factory-methods)
 * [`lazy val` vs. `val`](#lazy-val-vs-val)
 * [Composing modules](#composing-modules)
 * [Scopes](#scopes)
@@ -150,6 +151,26 @@ trait TaxModule {
     lazy val theTaxDeductionLibrary = new TaxDeductionLibrary(theDatabaseAccess)
     def taxCalculator(taxBase: Double, taxFreeAmount: Double) =
        new TaxCalculator(taxBase, taxFreeAmount, theTaxDeductionLibrary)
+}
+````
+
+Factory methods
+---------------
+
+You can also wire an object using a factory method, instead of a constructor. For that, use `wireWith` instead of 
+`wire`. For example:
+
+````scala
+class A()
+
+class C(a: A, specialValue: Int)
+object C {
+  def create(a: A) = new C(a, 42)
+}
+
+trait MyModule {
+  lazy val a = wire[A]
+  lazy val c = wireWith(C.create _)
 }
 ````
 
@@ -431,11 +452,11 @@ The jars are deployed to [Sonatype's OSS repository](https://oss.sonatype.org/co
 To use MacWire in your project, add a dependency:
 
 ````scala
-libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.0.0" % "provided"
+libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.1.0" % "provided"
 
-libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.0.0"
+libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.1.0"
                   
-libraryDependencies += "com.softwaremill.macwire" %% "proxy" % "2.0.0"
+libraryDependencies += "com.softwaremill.macwire" %% "proxy" % "2.1.0"
 ````
 
 The `macros` subproject contains only code which is used at compile-time, hence the `provided` scope. 
@@ -450,9 +471,9 @@ To use the snapshot version:
 ````scala
 resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
-libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.0.1-SNAPSHOT" % "provided"
+libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.1.1-SNAPSHOT" % "provided"
 
-libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.0.1-SNAPSHOT"
+libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.1.1-SNAPSHOT"
 ````
 
 Currently 2.x supports only Scala 2.11. 
