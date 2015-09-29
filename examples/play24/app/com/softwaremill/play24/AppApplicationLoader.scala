@@ -28,7 +28,8 @@ with ControllerModule // Application controllers
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   lazy val assets: Assets = wire[Assets]
-  lazy val router: Router = wire[Routes] withPrefix "/"
+  lazy val prefix = "/"
+  lazy val router: Router = wire[Routes]
 
   // The seed method is here just for demonstration purposes. Ideally this will be run in a task.
   def coffeeDoa: CoffeeDao
