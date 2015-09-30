@@ -193,7 +193,9 @@ To do that, you can use imports:
 ````scala
 class FacebookAccess(userFind: UserFinder) 
 
-class UserModule { ... } // as before
+class UserModule { 
+  lazy val userFinder = ... // as before 
+} 
 
 class SocialModule(userModule: UserModule) {
   import userModule._
@@ -545,7 +547,8 @@ class AppApplicationLoader extends ApplicationLoader {
 
 trait AppComponents extends BuiltInComponents with AppModule {
   lazy val assets: Assets = wire[Assets]
-  lazy val router: Router = wire[Routes] withPrefix "/"
+  lazy val prefix: String = "/"
+  lazy val router: Router = wire[Routes]
 }
 
 trait AppModule {
