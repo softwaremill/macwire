@@ -541,6 +541,10 @@ import com.softwaremill.macwire._
 
 class AppApplicationLoader extends ApplicationLoader {
   def load(context: Context) = {
+    
+    // make sure logging is configured
+    Logger.configure(context.environment)
+
     (new BuiltInComponentsFromContext(context) with AppComponents).application
   }
 }
