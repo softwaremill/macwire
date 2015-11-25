@@ -12,8 +12,8 @@ libraryDependencies ++= Seq(
   ws,
   specs2 % Test,
   "com.typesafe.slick" %% "slick" % "3.0.0",
-  "com.softwaremill.macwire" %% "macros" % "2.1.0" % "provided",
-  "com.softwaremill.macwire" %% "util" % "2.1.0"
+  "com.softwaremill.macwire" %% "macros" % "2.2.0" % "provided",
+  "com.softwaremill.macwire" %% "util" % "2.2.0"
 )
 
 resolvers += "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"
