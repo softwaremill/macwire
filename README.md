@@ -375,11 +375,12 @@ Sometimes you have multiple objects of the same type that you want to use during
 way of telling the instances apart. As with other things, the answer is: types! Even when not using `wire`, it may
 be useful to give the instances distinct types, to get compile-time checking.
 
-For that purpose Macwire includes support for tagging, which lets you attach tags to instances to qualify them. This
+For that purpose Macwire includes support for tagging via [scala-common](https://github.com/softwaremill/scala-common), 
+which lets you attach tags to instances to qualify them. This
 is a compile-time only operation, and doesn't affect the runtime. The tags are derived from
 [Miles Sabin's gist](https://gist.github.com/milessabin/89c9b47a91017973a35f).
 
-To bring the tagging into scope, import `com.softwaremill.macwire.tagging._`.
+To bring the tagging into scope, import `com.softwaremill.tagging._`.
 
 Using tagging has two sides. In the constructor, when declaring a dependency, you need to declare what tag it needs
 to have. You can do this with the `_ @@ _` type constructor, or if you prefer another syntax `Tagged[_, _]`. The first
@@ -455,11 +456,11 @@ The jars are deployed to [Sonatype's OSS repository](https://oss.sonatype.org/co
 To use MacWire in your project, add a dependency:
 
 ````scala
-libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.1.0" % "provided"
+libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.2.0" % "provided"
 
-libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.1.0"
+libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.2.0"
                   
-libraryDependencies += "com.softwaremill.macwire" %% "proxy" % "2.1.0"
+libraryDependencies += "com.softwaremill.macwire" %% "proxy" % "2.2.0"
 ````
 
 The `macros` subproject contains only code which is used at compile-time, hence the `provided` scope. 
@@ -474,9 +475,9 @@ To use the snapshot version:
 ````scala
 resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
-libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.1.1-SNAPSHOT" % "provided"
+libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.2.1-SNAPSHOT" % "provided"
 
-libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.1.1-SNAPSHOT"
+libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.2.1-SNAPSHOT"
 ````
 
 Currently 2.x supports only Scala 2.11. 
@@ -521,7 +522,7 @@ Migrating from 1.x <a id="migrating"></a>
 
 * changed how code is split across modules. You'll need to depend on `util` to get tagging & `Wired`, and `proxy` 
 to get interceptors and scopes
-* tagging moved to a separate package. If you use tagging, you'll need to import `com.softwaremill.macwire.tagging._`
+* tagging moved to a separate package. If you use tagging, you'll need to import `com.softwaremill.tagging._`
 * removed `wireImplicit`
 * implicit parameters aren't handled by `wire` at all (they used to be subject to the same lookup procedure as normal
 parameters + implicit lookup)

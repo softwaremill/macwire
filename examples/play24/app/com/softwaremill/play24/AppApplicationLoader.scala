@@ -1,6 +1,7 @@
 package com.softwaremill.play24
 
 import _root_.controllers.Assets
+import akka.actor.ActorSystem
 import com.softwaremill.play24.dao.{SupplierDao, CoffeeDao}
 import com.softwaremill.play24.modules.{DatabaseModule, ControllerModule, DaoModule}
 import play.api.ApplicationLoader.Context
@@ -37,6 +38,8 @@ with ControllerModule // Application controllers
     wire[Routes]
   }
 
+  wire[Z]
+
   // The seed method is here just for demonstration purposes. Ideally this will be run in a task.
   def coffeeDoa: CoffeeDao
   def supplierDoa: SupplierDao
@@ -44,4 +47,5 @@ with ControllerModule // Application controllers
   seed.run()
 }
 
+class Z(as: ActorSystem)
 

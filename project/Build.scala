@@ -5,7 +5,7 @@ object BuildSettings {
 
   val commonSettings = Defaults.coreDefaultSettings ++ Seq (
     organization  := "com.softwaremill.macwire",
-    version       := "2.1.0",
+    version       := "2.2.0",
     scalaVersion  := "2.11.7",
     // Sonatype OSS deployment
     publishTo <<= version { (v: String) =>
@@ -45,6 +45,7 @@ object BuildSettings {
 }
 
 object Dependencies {
+  val tagging       = "com.softwaremill.common" %% "tagging" % "1.0.0"
   val scalatest     = "org.scalatest" %% "scalatest"  % "2.2.5"
   val javassist     = "org.javassist"  % "javassist"  % "3.20.0-GA"
 }
@@ -61,6 +62,8 @@ object MacwireBuild extends Build {
       util, macros, proxy, tests, tests2, testUtil, utilTests, examplesScalatra)
 
   lazy val util = project.in(file("util")).
+    settings(
+      libraryDependencies += tagging).
     settings(commonSettings)
 
   lazy val macros = project.in(file("macros")).

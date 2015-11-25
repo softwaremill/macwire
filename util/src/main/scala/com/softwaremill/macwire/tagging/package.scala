@@ -1,13 +1,22 @@
 package com.softwaremill.macwire
 
 package object tagging {
-  type Tag[+U] = { type Tag <: U }
-  type @@[T, +U] = T with Tag[U]
-  type Tagged[T, +U] = T with Tag[U]
+  @deprecated("Use com.softwaremill.tagging instead")
+  type Tag[+U] = com.softwaremill.tagging.Tag[U]
+
+  @deprecated("Use com.softwaremill.tagging instead")
+  type @@[T, +U] = com.softwaremill.tagging.@@[T, U]
+
+  @deprecated("Use com.softwaremill.tagging instead")
+  type Tagged[T, +U] = com.softwaremill.tagging.Tagged[T, U]
+
   implicit class Tagger[T](t: T) {
-    def taggedWith[U]: T @@ U = t.asInstanceOf[T @@ U]
+    @deprecated("Use com.softwaremill.tagging instead")
+    def taggedWith[U]: T @@ U = new com.softwaremill.tagging.Tagger(t).taggedWith[U]
   }
+
   implicit class AndTagger[T, U](t: T @@ U) {
-    def andTaggedWith[V]: T @@ (U with V) = t.asInstanceOf[T @@ (U with V)]
+    @deprecated("Use com.softwaremill.tagging instead")
+    def andTaggedWith[V]: T @@ (U with V) = new com.softwaremill.tagging.AndTagger[T, U](t).andTaggedWith[V]
   }
 }

@@ -4,9 +4,9 @@ class CompileTests extends CompileTestsSupport {
 
   runTestsWith(
     expectedFailures = List(
-      "methodWithTaggedParamsNotFound" -> List(valueNotFound("com.softwaremill.macwire.tagging.@@[Berry,Blue]")),
-      "methodWithTaggedParamsAmbiguous" -> List(ambiguousResMsg("com.softwaremill.macwire.tagging.@@[Berry,Blue]"), "blueberryArg1", "blueberryArg2"),
+      "methodWithTaggedParamsNotFound" -> List(valueNotFound("com.softwaremill.tagging.@@[Berry,Blue]")),
+      "methodWithTaggedParamsAmbiguous" -> List(ambiguousResMsg("com.softwaremill.tagging.@@[Berry,Blue]"), "blueberryArg1", "blueberryArg2"),
       "moduleAmbiguousWithParent" -> List(ambiguousResMsg("A"), "module.a", "parentA"),
-      "taggedNoValueWithTag" -> List(valueNotFound("com.softwaremill.macwire.tagging.@@[Berry,Blue]")))
+      "taggedNoValueWithTag" -> List(valueNotFound("com.softwaremill.tagging.@@[Berry,Blue]")))
   )
 }
