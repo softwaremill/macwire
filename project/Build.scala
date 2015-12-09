@@ -5,7 +5,7 @@ object BuildSettings {
 
   val commonSettings = Defaults.coreDefaultSettings ++ Seq (
     organization  := "com.softwaremill.macwire",
-    version       := "2.2.0",
+    version       := "2.2.1",
     scalaVersion  := "2.11.7",
     // Sonatype OSS deployment
     publishTo <<= version { (v: String) =>
