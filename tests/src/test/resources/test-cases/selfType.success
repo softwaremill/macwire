@@ -37,3 +37,14 @@ object TestMultiple extends ModuleMultiple with ABProviderImpl
 require(TestMultiple.c.a == TestMultiple.a)
 require(TestMultiple.c.b == TestMultiple.b)
 
+object ProviderAliasing {
+  type AAndB = AProvider with BProvider
+}
+
+trait AliasedMultiModule { this: ProviderAliasing.AAndB =>
+  lazy val c = wire[C]
+}
+
+object TestAliasedMultiple extends AliasedMultiModule with ABProviderImpl
+require(TestAliasedMultiple.c.a == TestAliasedMultiple.a)
+require(TestAliasedMultiple.c.b == TestAliasedMultiple.b)
