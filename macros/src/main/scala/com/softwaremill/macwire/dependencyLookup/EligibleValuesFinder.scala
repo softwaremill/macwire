@@ -125,6 +125,7 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
         val selfTypes = self.tpt match {
           case ident : Ident => List(ident)
           case CompoundTypeTree(Template(selfParents,_,_)) => selfParents
+          case x : Select if x.isType => List(x)
           case _ => Nil
         }
         pp ++ selfTypes
