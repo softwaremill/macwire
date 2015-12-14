@@ -69,7 +69,11 @@ object MacwireBuild extends Build {
   lazy val macros = project.in(file("macros")).
     settings(commonSettings).
     settings(
-      libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value).
+      libraryDependencies ++= Seq(
+        "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+        "com.chuusai" %% "shapeless" % "2.2.5"
+      )
+    ).
     dependsOn(util % "provided")
 
   lazy val proxy = project.in(file("proxy")).

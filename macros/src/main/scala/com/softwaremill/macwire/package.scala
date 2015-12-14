@@ -1,11 +1,14 @@
 package com.softwaremill
 
 import scala.language.experimental.macros
+import shapeless._
 
 package object macwire {
   def wire[T]: T = macro MacwireMacros.wire_impl[T]
 
   def wireSet[T]: Set[T] = macro MacwireMacros.wireSet_impl[T]
+
+  def wireHList[T]: HListWrapper[T] = macro MacwireMacros.wireHList_impl[T]
 
   def wireWith[A,RES](factory: (A) => RES): RES = macro MacwireMacros.wireWith_impl[RES]
   def wireWith[A,B,RES](factory: (A,B) => RES): RES = macro MacwireMacros.wireWith_impl[RES]
