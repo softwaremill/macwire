@@ -26,13 +26,13 @@ class App(plugin1: Plugin1, plugin2: Plugin2) extends Module3 {
 
     lazy val a4: A = wire[A4]
 
-    // wireSet look at the usual places:
+    // wireHList look at the usual places:
     // - enclosing members
     // - enclosing imports
     // - parents
     lazy val as : HListWrapper[A] = wireHList[A]
 
-    // inject that Set of A into Group
+    // inject that HListWrapper of A into Group
     lazy val group: Group = wire[Group]
 }
 
