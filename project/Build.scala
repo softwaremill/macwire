@@ -58,6 +58,7 @@ object MacwireBuild extends Build {
   lazy val root = project.in(file(".")).
     settings(commonSettings).
     settings(
+      name := "macwire",
       publishArtifact := false).
     aggregate(
       util, macros, proxy, tests, tests2, testUtil, utilTests, examplesScalatra)
