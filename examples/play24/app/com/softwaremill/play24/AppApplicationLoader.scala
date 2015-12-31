@@ -41,8 +41,8 @@ with ControllerModule // Application controllers
   wire[Z]
 
   // The seed method is here just for demonstration purposes. Ideally this will be run in a task.
-  def coffeeDoa: CoffeeDao
-  def supplierDoa: SupplierDao
+  def coffeeDao: CoffeeDao
+  def supplierDao: SupplierDao
   val seed = wire[Seed]
   seed.run()
 }

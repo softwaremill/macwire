@@ -4,6 +4,6 @@ import com.softwaremill.play24.dao.{CoffeeDao, SupplierDao}
 import org.specs2.mock.Mockito
 
 trait MockDaoModule extends Mockito {
-  lazy val coffeeDoa = mock[CoffeeDao]
-  lazy val supplierDoa = mock[SupplierDao]
+  lazy val coffeeDao = mock[CoffeeDao]
+  lazy val supplierDao = mock[SupplierDao]
 }

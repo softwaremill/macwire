@@ -12,8 +12,8 @@ trait ControllerModule {
   // Dependencies
   implicit def ec: ExecutionContext
   def wsClient: WSClient
-  def supplierDoa: SupplierDao
-  def coffeeDoa: CoffeeDao
+  def supplierDao: SupplierDao
+  def coffeeDao: CoffeeDao
 
   // Controllers
   lazy val supplierController = wire[SupplierController]

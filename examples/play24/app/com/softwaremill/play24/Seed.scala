@@ -2,16 +2,22 @@ package com.softwaremill.play24
 
 import com.softwaremill.play24.dao.{SupplierDao, CoffeeDao}
 import com.softwaremill.play24.models.{Supplier, Coffee}
-import slick.driver.H2Driver.api._
+import slick.backend.DatabaseConfig
+import slick.driver.JdbcProfile
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 class Seed(
-  val db: Database,
+  val dbConfig: DatabaseConfig[JdbcProfile],
   val coffeeDao: CoffeeDao,
   val supplierDao: SupplierDao
 ) {
+
+  import dbConfig.driver.api._
+  val db = dbConfig.db
+
   def run(): Unit = {
     val setup = DBIO.seq(
       // Create the tables, including primary and foreign keys
