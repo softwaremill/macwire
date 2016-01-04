@@ -10,7 +10,7 @@ class CoffeeController(
   coffeeDao: CoffeeDao
 )(implicit ec: ExecutionContext) extends Controller {
 
-  def getAll() = Action.async { request =>
+  def fetchAll() = Action.async { request =>
     coffeeDao.all.map { coffees =>
       Ok(Json.toJson(coffees))
     }

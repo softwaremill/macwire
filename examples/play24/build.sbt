@@ -4,14 +4,14 @@ version := "1.0-SNAPSHOT"
 
 lazy val root = (project in file(".")).enablePlugins(PlayScala)
 
-scalaVersion := "2.11.6"
+scalaVersion := "2.11.7"
 
 libraryDependencies ++= Seq(
   jdbc,
   cache,
   ws,
   specs2 % Test,
-  "com.typesafe.slick" %% "slick" % "3.0.0",
+  "com.typesafe.play" %% "play-slick" % "1.1.1",
   "com.softwaremill.macwire" %% "macros" % "2.2.0" % "provided",
   "com.softwaremill.macwire" %% "util" % "2.2.0"
 )

@@ -10,7 +10,7 @@ class SupplierController(
   supplierDao: SupplierDao
 )(implicit ec: ExecutionContext) extends Controller {
 
-  def getAll() = Action.async { request =>
+  def fetchAll() = Action.async { request =>
     supplierDao.all.map { suppliers =>
       Ok(Json.toJson(suppliers))
     }

@@ -1,11 +1,15 @@
 package com.softwaremill.play24.dao
 
-import com.softwaremill.play24.models.{CoffeeTable, Coffee}
-import slick.driver.H2Driver.api._
+import com.softwaremill.play24.models.{Coffee, CoffeeTable}
+import slick.backend.DatabaseConfig
+import slick.driver.JdbcProfile
 
 import scala.concurrent.Future
 
-class CoffeeDao(db: Database, supplierDao: SupplierDao) {
+class CoffeeDao(dbConfig: DatabaseConfig[JdbcProfile], supplierDao: SupplierDao) {
+  import dbConfig.driver.api._
+
+  val db = dbConfig.db
   val query = TableQuery[CoffeeTable]
 
   def all: Future[Seq[Coffee]] = db.run(query.result)

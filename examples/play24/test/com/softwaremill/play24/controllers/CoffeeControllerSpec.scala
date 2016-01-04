@@ -23,8 +23,8 @@ class CoffeeControllerSpec extends Specification {
         Coffee("coffee5", 4, 20, 30, 80)
       )
 
-      coffeeDoa.all returns Future.successful(coffees)
-      val response = coffeeController.getAll()(FakeRequest())
+      coffeeDao.all returns Future.successful(coffees)
+      val response = coffeeController.fetchAll()(FakeRequest())
 
       status(response) must be equalTo OK
       val json = contentAsJson(response)
@@ -39,7 +39,7 @@ class CoffeeControllerSpec extends Specification {
         ("coffee3", "supplier3")
       )
 
-      coffeeDoa.byPriceWithSuppliers(anyDouble) returns Future.successful(coffees)
+      coffeeDao.byPriceWithSuppliers(anyDouble) returns Future.successful(coffees)
       val response = coffeeController.priced(10)(FakeRequest())
 
       status(response) must be equalTo OK

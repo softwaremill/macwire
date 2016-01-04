@@ -3,8 +3,8 @@
 # ~~~~
 
 # Home page
-GET        /supplier/all                com.softwaremill.play24.controllers.SupplierController.getAll()
-GET        /coffee/all                  com.softwaremill.play24.controllers.CoffeeController.getAll()
+GET        /supplier/all                com.softwaremill.play24.controllers.SupplierController.fetchAll()
+GET        /coffee/all                  com.softwaremill.play24.controllers.CoffeeController.fetchAll()
 GET        /coffee/priced/:price        com.softwaremill.play24.controllers.CoffeeController.priced(price: Double)
 
 
