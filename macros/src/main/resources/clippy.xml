@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<clippy>
-    <notfound>
-        <what>value wire</what>
-        <advice>you need to import com.softwaremill.macwire._</advice>
-    </notfound>
-</clippy>
