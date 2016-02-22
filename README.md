@@ -133,15 +133,15 @@ For example:
 ````scala
 class DatabaseAccess()
 class TaxDeductionLibrary(databaseAccess: DatabaseAccess)
-class TaxCalculator(taxBase: Double, taxFreeAmount: Double, taxDeductionLibrary: TaxDeductionLibrary)
+class TaxCalculator(taxBase: Double, taxDeductionLibrary: TaxDeductionLibrary)
 
 trait TaxModule {
     import com.softwaremill.macwire._
 
     lazy val theDatabaseAccess      = wire[DatabaseAccess]
     lazy val theTaxDeductionLibrary = wire[TaxDeductionLibrary]
-    def taxCalculator(taxBase: Double, taxFreeAmount: Double) = wire[TaxCalculator]
-    // or: lazy val taxCalculator = (taxBase: Double, taxFreeAmount: Double) => wire[TaxCalculator]
+    def taxCalculator(taxBase: Double) = wire[TaxCalculator]
+    // or: lazy val taxCalculator = (taxBase: Double) => wire[TaxCalculator]
 }
 ````
 
@@ -151,8 +151,8 @@ will generate:
 trait TaxModule {
     lazy val theDatabaseAccess      = new DatabaseAccess()
     lazy val theTaxDeductionLibrary = new TaxDeductionLibrary(theDatabaseAccess)
-    def taxCalculator(taxBase: Double, taxFreeAmount: Double) =
-       new TaxCalculator(taxBase, taxFreeAmount, theTaxDeductionLibrary)
+    def taxCalculator(taxBase: Double) =
+       new TaxCalculator(taxBase, theTaxDeductionLibrary)
 }
 ````
 
