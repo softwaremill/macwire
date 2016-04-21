@@ -4,4 +4,4 @@ scala:
    - 2.11.7
 script:
    - sbt ++$TRAVIS_SCALA_VERSION test
-   - '[ "${TRAVIS_PULL_REQUEST}" = "false" ] && sbt updateImpactSubmit || false'
+   - '[ "${TRAVIS_PULL_REQUEST}" = "false" ] && sbt updateImpactSubmit || true'
