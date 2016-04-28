@@ -554,7 +554,7 @@ class AppApplicationLoader extends ApplicationLoader {
 trait AppComponents extends BuiltInComponents with AppModule {
   lazy val assets: Assets = wire[Assets]
   lazy val prefix: String = "/"
-  lazy val router: Router = wire[Router]
+  lazy val router: Router = wire[Routes]
 }
 
 trait AppModule {
