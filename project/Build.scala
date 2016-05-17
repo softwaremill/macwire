@@ -5,8 +5,8 @@ object BuildSettings {
 
   val commonSettings = Defaults.coreDefaultSettings ++ Seq (
     organization  := "com.softwaremill.macwire",
-    version       := "2.2.2",
-    scalaVersion  := "2.11.7",
+    version       := "2.2.3",
+    scalaVersion  := "2.11.8",
     // Sonatype OSS deployment
     publishTo <<= version { (v: String) =>
       val nexus = "https://oss.sonatype.org/"
@@ -46,7 +46,7 @@ object BuildSettings {
 
 object Dependencies {
   val tagging       = "com.softwaremill.common" %% "tagging" % "1.0.0"
-  val scalatest     = "org.scalatest" %% "scalatest"  % "2.2.5"
+  val scalatest     = "org.scalatest" %% "scalatest"  % "2.2.6"
   val javassist     = "org.javassist"  % "javassist"  % "3.20.0-GA"
 }
 

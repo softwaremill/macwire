@@ -1,7 +1,7 @@
 sudo: false
 language: scala
 scala:
-   - 2.11.7
+   - 2.11.8
 script:
    - sbt ++$TRAVIS_SCALA_VERSION test
    - '[ "${TRAVIS_PULL_REQUEST}" = "false" ] && sbt updateImpactSubmit || true'
