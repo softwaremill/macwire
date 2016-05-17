@@ -76,7 +76,7 @@ object MacwireBuild extends Build {
   lazy val proxy = project.in(file("proxy")).
     settings(commonSettings).
     settings(
-      libraryDependencies ++= Seq(javassist, scalatest)).
+      libraryDependencies ++= Seq(javassist, scalatest % "test")).
     dependsOn(macros % "test")
 
   lazy val testUtil = project.in(file("test-util")).
@@ -104,7 +104,7 @@ object MacwireBuild extends Build {
   lazy val tests2 = project.in(file("tests2")).
     settings(testSettings).
     settings(
-      libraryDependencies += scalatest).
+      libraryDependencies += scalatest % "test").
     dependsOn(
       util, macros % "provided", proxy)
 
