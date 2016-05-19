@@ -174,7 +174,7 @@ trait MyModule {
   lazy val a = wire[A]
   lazy val c = wireWith(C.create _)
 }
-````2
+````
 
 `lazy val` vs. `val`
 --------------------
