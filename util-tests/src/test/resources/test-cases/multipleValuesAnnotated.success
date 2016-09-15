@@ -1,0 +1,16 @@
+trait A
+trait B
+case class C(a:A)
+
+object Test{
+  val a:A = new A with B
+  val b:B = new A with B
+  val res = wire[C]
+}
+
+val wired = wiredInModule(Test)
+
+// no exceptions
+wired.lookupSingleOrThrow(classOf[A])
+wired.lookupSingleOrThrow(classOf[B])
+wired.lookupSingleOrThrow(classOf[C])
