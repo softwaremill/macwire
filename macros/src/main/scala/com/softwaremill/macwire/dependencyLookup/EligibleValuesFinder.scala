@@ -78,8 +78,13 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
           doFind(tail, values.put(scope, Ident(name), body))
 
         case ValDefOrEmptyDefDef(name, tpt, rhs, symbol) if name.toString != "<init>" =>
-          // rhs might be empty for local def
-          doFind(tail, values.put(scope, Ident(name), treeToCheck(tree, rhs)))
+          // check if annotated type is different from actual
+          if(tpt.tpe == rhs.tpe) {
+            // rhs might be empty for local def
+            doFind(tail, values.put(scope, Ident(name), treeToCheck(tree, rhs)))
+          } else {
+            doFind(tail, values.put(scope, Ident(name), treeToCheck(tree, tpt)))
+          }
 
         case Import(expr, selectors) =>
           val newValues = if( expr.symbol.isPackage ) {
