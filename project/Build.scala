@@ -5,7 +5,7 @@ object BuildSettings {
 
   val commonSettings = Defaults.coreDefaultSettings ++ Seq (
     organization  := "com.softwaremill.macwire",
-    version       := "2.2.3",
+    version       := "2.2.4",
     scalaVersion  := "2.11.8",
     // Sonatype OSS deployment
     publishTo <<= version { (v: String) =>
@@ -46,7 +46,7 @@ object BuildSettings {
 
 object Dependencies {
   val tagging       = "com.softwaremill.common" %% "tagging" % "1.0.0"
-  val scalatest     = "org.scalatest" %% "scalatest"  % "2.2.6"
+  val scalatest     = "org.scalatest" %% "scalatest"  % "3.0.0"
   val javassist     = "org.javassist"  % "javassist"  % "3.20.0-GA"
 }
 
@@ -112,7 +112,7 @@ object MacwireBuild extends Build {
     val ScalatraVersion = "2.3.1"
     val scalatraCore = "org.scalatra" %% "scalatra" % ScalatraVersion
     val scalatraScalate = "org.scalatra" %% "scalatra-scalate" % ScalatraVersion
-    val logback = "ch.qos.logback" % "logback-classic" % "1.1.3"
+    val logback = "ch.qos.logback" % "logback-classic" % "1.1.7"
     val jetty = "org.eclipse.jetty" % "jetty-webapp" % "9.3.3.v20150827" % "compile"
     val servletApi = "org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "compile" artifacts (Artifact("javax.servlet", "jar", "jar"))
 

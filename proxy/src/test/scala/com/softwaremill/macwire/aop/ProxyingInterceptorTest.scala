@@ -1,9 +1,9 @@
 package com.softwaremill.macwire.aop
 
 import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.Matchers
 
-class ProxyingInterceptorTest extends FlatSpec with ShouldMatchers {
+class ProxyingInterceptorTest extends FlatSpec with Matchers {
 
   it should "proxy calls to the given object" in {
     // given
