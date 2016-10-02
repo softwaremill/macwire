@@ -79,12 +79,14 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
 
         case ValDefOrEmptyDefDef(name, tpt, rhs, symbol) if name.toString != "<init>" =>
           // check if annotated type is different from actual
-          if(tpt.tpe == rhs.tpe) {
+          val expr = Ident(name)
+          val (theTreeToCheck, lhsTpt) = if (tpt.tpe == rhs.tpe) {
             // rhs might be empty for local def
-            doFind(tail, values.put(scope, Ident(name), treeToCheck(tree, rhs)))
+            (treeToCheck(tree, rhs), Some(tpt))
           } else {
-            doFind(tail, values.put(scope, Ident(name), treeToCheck(tree, tpt)))
+            (treeToCheck(tree, tpt), None)
           }
+          doFind(tail, values.put(scope, expr, theTreeToCheck, lhsTpt))
 
         case Import(expr, selectors) =>
           val newValues = if( expr.symbol.isPackage ) {
@@ -112,7 +114,7 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
 
           doFind(tail, newValues)
 
-        case _ => 
+        case _ =>
           doFind(tail, values)
       }
     }
@@ -217,8 +219,11 @@ private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val 
     }
 
     /** Add `expr` to `scope` and possibly its members if it denotes a module */
-    def put(scope: Scope, expr: Tree, tree: Tree): EligibleValues = {
-      val tpe = typeCheckUtil.typeCheckIfNeeded(expr, tree)
+    def put(scope: Scope, expr: Tree, tree: Tree, lhsTpt: Option[Tree] = None): EligibleValues = {
+      val tpe = lhsTpt
+        .map(typeCheckUtil.typeCheckIfNeeded)
+        .filterNot(typeOf[Any] =:= _)
+        .getOrElse(typeCheckUtil.typeCheckIfNeeded(expr, tree))
       put(scope, tpe, expr)
     }
 

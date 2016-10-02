@@ -1,0 +1,12 @@
+class Test1(val s: Set[String])
+
+val set1: Set[String] = Set()
+val t1 = wire[Test1]
+
+require(t1.s eq Set[String]())
+
+class Test2(val list: List[String])
+val list2 = List[String]()
+val t2 = wire[Test2]
+
+require(t2.list eq List[String]())
