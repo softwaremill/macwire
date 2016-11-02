@@ -481,7 +481,7 @@ libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.2.5-SNAPSHOT"
 libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.2.5-SNAPSHOT"
 ````
 
-Currently 2.x supports only Scala 2.11. 
+Currently 2.x supports Scala 2.11 and 2.12.
 
 Older 1.x release for Scala 2.10 and 2.11:
 

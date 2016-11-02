@@ -7,6 +7,7 @@ object BuildSettings {
     organization  := "com.softwaremill.macwire",
     version       := "2.2.5",
     scalaVersion  := "2.11.8",
+    crossScalaVersions := Seq("2.12.0"),
     // Sonatype OSS deployment
     publishTo <<= version { (v: String) =>
       val nexus = "https://oss.sonatype.org/"
@@ -60,7 +61,7 @@ object MacwireBuild extends Build {
       name := "macwire",
       publishArtifact := false).
     aggregate(
-      util, macros, proxy, tests, tests2, testUtil, utilTests, examplesScalatra)
+      util, macros, proxy, tests, tests2, testUtil, utilTests)
 
   lazy val util = project.in(file("util")).
     settings(
