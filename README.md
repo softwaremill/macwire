@@ -457,11 +457,11 @@ The jars are deployed to [Sonatype's OSS repository](https://oss.sonatype.org/co
 To use MacWire in your project, add a dependency:
 
 ````scala
-libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.2.4" % "provided"
+libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.2.5" % "provided"
 
-libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.2.4"
+libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.2.5"
                   
-libraryDependencies += "com.softwaremill.macwire" %% "proxy" % "2.2.4"
+libraryDependencies += "com.softwaremill.macwire" %% "proxy" % "2.2.5"
 ````
 
 The `macros` subproject contains only code which is used at compile-time, hence the `provided` scope. 
