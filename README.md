@@ -569,8 +569,29 @@ In application.conf, add the reference to the ApplicationLoader.
 play.application.loader = "AppApplicationLoader"
 ````
 
+
 For more information and to see the sample project, go to [examples/play24](https://github.com/adamw/macwire/tree/master/examples/play24)
 
 Reference Play docs for more information:
 
 * [ScalaCompileTimeDependencyInjection](https://www.playframework.com/documentation/2.4.x/ScalaCompileTimeDependencyInjection)
+
+
+Play 2.5.x <a id="play25x"></a>
+--------
+
+For Play 2.5.x, you must do the same as for Play 2.4.x, except the `Logger` configuration.
+
+````scala
+import play.api.LoggerConfigurator
+class AppApplicationLoader extends ApplicationLoader {
+  def load(context: Context) = {
+    
+    LoggerConfigurator(context.environment.classLoader).foreach {
+      _.configure(context.environment)
+    }
+    // ... do the same as for Play 2.4.x
+  }
+}
+```
+
