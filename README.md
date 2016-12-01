@@ -586,6 +586,7 @@ class AppApplicationLoader extends ApplicationLoader {
     // ... do the same as for Play 2.4.x
   }
 }
+```
 
 For more information and to see the sample project, go to [examples/play24](https://github.com/adamw/macwire/tree/master/examples/play24)
 
