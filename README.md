@@ -570,6 +570,13 @@ play.application.loader = "AppApplicationLoader"
 ````
 
 
+For more information and to see the sample project, go to [examples/play24](https://github.com/adamw/macwire/tree/master/examples/play24)
+
+Reference Play docs for more information:
+
+* [ScalaCompileTimeDependencyInjection](https://www.playframework.com/documentation/2.4.x/ScalaCompileTimeDependencyInjection)
+
+
 Play 2.5.x <a id="play25x"></a>
 --------
 
@@ -588,8 +595,3 @@ class AppApplicationLoader extends ApplicationLoader {
 }
 ```
 
-For more information and to see the sample project, go to [examples/play24](https://github.com/adamw/macwire/tree/master/examples/play24)
-
-Reference Play docs for more information:
-
-* [ScalaCompileTimeDependencyInjection](https://www.playframework.com/documentation/2.4.x/ScalaCompileTimeDependencyInjection)
