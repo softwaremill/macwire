@@ -416,6 +416,35 @@ lazy val blackblueberry = wire[Berry].taggedWith[Black].andTaggedWith[Blue]
 
 The resulting value has type `Berry @ (Black with Blue)` and can be used both as a blackberry and as a blueberry.
 
+Multi Wiring (wireSet)
+----------
+
+MacWire allows you to wire set of multiple instances of the same type. This is done without constructing the set explicitly. All instances of the same type which are found by MacWire are used to construct the set. 
+
+Consider below example. Let's suppose that you want to create `RockBand(musicians: Set[Musician])` object. It's easy to do so using the `wireSet` facility:
+```scala
+trait Musician
+
+class RockBand(musicians: Set[Musician])
+
+trait RockBandModule {
+
+  lazy val singer    = new Musician {}
+  lazy val guitarist = new Musician {}
+  lazy val drummer   = new Musician {}
+  lazy val bassist   = new Musician {}
+
+  lazy val musicians = wireSet[Musician] //all above musicians will be wired together 
+
+  lazy val rockBand  = wire[RockBand]
+}
+```
+If you'd expand type of musicians it would look like this:
+
+```scala 
+lazy val musicians: Set[Musician] = wireSet[Musician]
+```
+
 Limitations
 -----------
 
