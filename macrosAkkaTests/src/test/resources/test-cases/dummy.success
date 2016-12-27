@@ -1,7 +1,0 @@
-#include commonSimpleClasses
-
-object Module {
-  val a = A()
-}
-
-require(Module.a eq Module.a)

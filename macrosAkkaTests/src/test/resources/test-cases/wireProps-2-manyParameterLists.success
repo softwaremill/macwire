@@ -1,0 +1,33 @@
+import akka.actor.{Actor, ActorSystem, Props}
+import com.softwaremill.macwire.macwireakka._
+
+/**
+  * In this example I am constructing simple actor with many parameter lists.
+  */
+
+trait A
+trait B
+trait C
+trait D
+
+class SomeActor(a: A)(b: B, c: C)(d: D)  extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+val a = new A {}
+val b = new B {}
+val c = new C {}
+val d = new D {}
+
+val system = ActorSystem("wireProps-2-manyParameterLists")
+
+val props: Props = wireProps[SomeActor]
+
+val someActor = system.actorOf(props, "someActor")
+
+try {
+  someActor ! "Hey someActor"
+} finally system.terminate()
+

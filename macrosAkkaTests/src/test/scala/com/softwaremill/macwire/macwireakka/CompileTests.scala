@@ -1,4 +1,4 @@
-package com.softwaremill.macwireakka
+package com.softwaremill.macwire.macwireakka
 
 import com.softwaremill.macwire.CompileTestsSupport
 
@@ -6,8 +6,8 @@ class CompileTests extends CompileTestsSupport {
 
   runTestsWith(
     expectedFailures = List(
-      "dummy" -> List(
-        "not found: value XXX")
+      "wireProps-3-missingDependency" -> List(
+        "Cannot find a value of type: [A]")
     ),
     expectedWarnings = List()
   )

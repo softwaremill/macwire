@@ -1,0 +1,21 @@
+import akka.actor.{Actor, ActorSystem, Props}
+import com.softwaremill.macwire.macwireakka._
+
+/**
+  * In this example I am constructing simple actor but I don't provide dependency for it.
+  * `wireProps` will not find it and then not compile.
+  */
+
+trait A
+
+class SomeActor(a: A) extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+//no dependency of type A in scope
+
+val props: Props = wireProps[SomeActor]
+
+
