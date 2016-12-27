@@ -3,38 +3,47 @@ package com.softwaremill.macwire.macwireakka
 import akka.actor.{Actor, ActorSystem, Props}
 
 object Demo extends App {
+  import java.util.concurrent.atomic.AtomicInteger
+
+  import akka.actor.{Actor, ActorSystem, Props}
+  import com.softwaremill.macwire.macwireakka._
+
+  /**
+    * In this example I am actor has 3 constructors but. `wireProps` will find dependencies for the constructor annotated
+    * with @Inject and provide it's arguments to Props factory method.
+    */
 
   trait A
   trait B
   trait C
   trait D
 
-  object D {
-    implicit val d = new D {}
-  }
+  class SomeActor(a: A) extends Actor {
 
-  class SomeActor(a: A)(b: B, c: C)(/* implicit doesn't work in actors  implicit */ d: D)  extends Actor {
+    def this(b: B) = {
+      this(new A{})
+      throw new UnsupportedOperationException()
+    }
+
+    @javax.inject.Inject
+    def this(c: C) = this(new A{})
+
     override def receive: Receive = {
       case m => //println(m)
     }
   }
 
-  val system = ActorSystem("Test")
-
-  val a = new A {}
-  val b = new B {}
+  lazy val a: A = throw new UnsupportedOperationException()
+  lazy val b: A = throw new UnsupportedOperationException()
   val c = new C {}
-  val d = implicitly[D]
 
+  val system = ActorSystem("wireProps-5-injectAnnotation")
 
-  val bProps: Props = wireProps[SomeActor]
-  val someActor = system.actorOf(bProps, "someActor")
-  someActor ! "Hey someActor"
+  val props: Props = wireProps[SomeActor]
 
+  val someActor = system.actorOf(props, "someActor")
+  try {
+    someActor ! "Hey someActor"
+  } finally system.terminate()
 
-  val someOtherActor = system.actorOf(Props(classOf[SomeActor], a, b, c, d), "someOtherActor")
-  someOtherActor ! "Hey someOtherActor"
-
-  Thread.sleep(100)
-  system.terminate()
 }
