@@ -1,4 +1,4 @@
-import akka.actor.{Actor, ActorSystem, Props}
+import akka.actor.{Actor, Props}
 import com.softwaremill.macwire.macwireakka._
 
 /**
