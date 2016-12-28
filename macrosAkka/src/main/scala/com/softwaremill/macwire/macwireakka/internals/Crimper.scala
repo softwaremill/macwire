@@ -1,6 +1,6 @@
 package com.softwaremill.macwire.macwireakka.internals
 
-import akka.actor.Props
+import akka.actor.{ActorRef, ActorRefFactory, Props}
 import com.softwaremill.macwire.Logger
 import com.softwaremill.macwire.dependencyLookup.DependencyResolver
 
@@ -32,10 +32,21 @@ class Crimper[C <: blackbox.Context, T: C#WeakTypeTag](val c: C, log: Logger) {
 
   lazy val args: List[Tree] = wiredConstructorParamLists getOrElse c.abort(c.enclosingPosition, s"Cannot find a public constructor for $targetType")
 
-  lazy val wireProps = log.withBlock(s"Trying to find arguments for constructor of: [$targetType] at ${c.enclosingPosition}") {
-    val tree = q"Props(classOf[${targetType}], ..${args})"
-    log("Generated code: " + showRaw(tree)) //TODO: showCode ?
-    c.Expr[Props](tree)
+  lazy val propsTree = q"akka.actor.Props(classOf[$targetType], ..$args)"
+
+  lazy val wireProps = log.withBlock(s"Constructing Props. Trying to find arguments for constructor of: [$targetType] at ${c.enclosingPosition}") {
+    log("Generated code: " + showRaw(propsTree)) //TODO: showCode ?
+    c.Expr[Props](propsTree)
   }
 
+  lazy val actorRefFactoryTree: Tree = log.withBlock("Looking for ActorRefFactory"){
+    val actorRefType: Type = typeOf[ActorRefFactory]
+    dependencyResolver.resolve(actorRefType.typeSymbol, actorRefType).get
+  }
+
+  lazy val wireAnonymousActor: c.Expr[ActorRef] = log.withBlock(s"Constructing ActorRef. Trying to find arguments for constructor of: [$targetType] at ${c.enclosingPosition}") {
+    val tree = q"$actorRefFactoryTree.actorOf($propsTree)"
+    log("Generated code: " + showRaw(tree)) //TODO: showCode ?
+    c.Expr[ActorRef](tree)
+  }
 }
