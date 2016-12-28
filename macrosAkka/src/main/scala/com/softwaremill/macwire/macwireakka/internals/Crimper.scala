@@ -34,7 +34,7 @@ class Crimper[C <: blackbox.Context, T: C#WeakTypeTag](val c: C, log: Logger) {
 
   lazy val propsTree = q"akka.actor.Props(classOf[$targetType], ..$args)"
 
-  lazy val wireProps = log.withBlock(s"Constructing Props. Trying to find arguments for constructor of: [$targetType] at ${c.enclosingPosition}") {
+  lazy val wireProps: c.Expr[Props] = log.withBlock(s"Constructing Props. Trying to find arguments for constructor of: [$targetType] at ${c.enclosingPosition}") {
     log("Generated code: " + showRaw(propsTree)) //TODO: showCode ?
     c.Expr[Props](propsTree)
   }
