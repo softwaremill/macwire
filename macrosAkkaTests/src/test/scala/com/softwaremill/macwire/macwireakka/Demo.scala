@@ -1,4 +1,5 @@
 package com.softwaremill.macwire.macwireakka
+import akka.actor.Actor.Receive
 import com.softwaremill.macwire._
 import akka.actor.{Actor, ActorRef, ActorSystem}
 
@@ -21,8 +22,13 @@ object Demo extends App {
     override def receive: Receive = {
       case m => println(m)
     }
+
+    val otherActor = wireActor[OtherActor]("otherguy")
   }
 
+  class OtherActor extends Actor {
+    override def receive: Receive = ???
+  }
 
 
   lazy val a: A = throw new UnsupportedOperationException()
@@ -31,9 +37,8 @@ object Demo extends App {
 
   val system = ActorSystem("wireProps-5-injectAnnotation")
 
-
 //  val props: Props = wireProps[SomeActor]
-  val someActor3: ActorRef = wireAnonymousActor[SomeActor]
+  val someActor3: ActorRef = wireActor[SomeActor]("bob")
 
 //  val someActor  = system.actorOf(props, "someActor")
 //

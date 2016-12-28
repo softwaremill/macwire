@@ -49,4 +49,10 @@ class Crimper[C <: blackbox.Context, T: C#WeakTypeTag](val c: C, log: Logger) {
     log("Generated code: " + showRaw(tree)) //TODO: showCode ?
     c.Expr[ActorRef](tree)
   }
+
+  def wireActor(name: c.Expr[String]): c.Expr[ActorRef] = log.withBlock(s"Constructing ActorRef. Trying to find arguments for constructor of: [$targetType] at ${c.enclosingPosition}") {
+    val tree = q"$actorRefFactoryTree.actorOf($propsTree, ${name.tree})"
+    log("Generated code: " + showRaw(tree)) //TODO: showCode ?
+    c.Expr[ActorRef](tree)
+  }
 }
