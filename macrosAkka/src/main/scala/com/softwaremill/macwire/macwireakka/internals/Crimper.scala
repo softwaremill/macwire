@@ -15,7 +15,8 @@ private[macwire] final class Crimper[C <: blackbox.Context, T: C#WeakTypeTag](va
     val publicConstructors = targetType.members.filter(m => m.isMethod && m.asMethod.isConstructor && m.isPublic)
     log.withBlock(s"There are ${publicConstructors.size} eligible constructors" ) { publicConstructors.foreach(c => log(showConstructor(c))) }
     val isInjectAnnotation = (a: Annotation) => a.toString == "javax.inject.Inject"
-    val injectConstructor = publicConstructors.find(_.annotations.exists(isInjectAnnotation)) //TODO: what if there are two constructors annotated with @Inject ?
+    val injectConstructors = publicConstructors.filter(_.annotations.exists(isInjectAnnotation))
+    val injectConstructor = if(injectConstructors.size > 1) c.abort(c.enclosingPosition, s"Ambiguous constructors annotated with @javax.inject.Inject for type [$targetType]") else injectConstructors.headOption
     lazy val primaryConstructor = publicConstructors.find(_.asMethod.isPrimaryConstructor)
     val ctor: Symbol = injectConstructor orElse primaryConstructor getOrElse c.abort(c.enclosingPosition, s"Cannot find a public constructor for $targetType")
     log(s"Found ${showConstructor(ctor)}")

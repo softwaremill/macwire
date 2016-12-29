@@ -1,0 +1,42 @@
+import akka.actor.{Actor, ActorSystem, Props}
+import com.softwaremill.macwire.macwireakka._
+
+/**
+  * There are to many constructors annotated with @Inject
+  */
+
+trait A
+trait B
+trait C
+trait D
+
+class SomeActor(a: A) extends Actor {
+
+  def this(b: B) = {
+    this(new A{})
+    throw new UnsupportedOperationException()
+  }
+
+  @javax.inject.Inject
+  def this(c: C) = this(new A{})
+
+  @javax.inject.Inject
+  def this(d: D) = this(new A{})
+
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+lazy val a: A = throw new UnsupportedOperationException()
+lazy val b: A = throw new UnsupportedOperationException()
+val c = new C {}
+val d = new D {}
+
+val system = ActorSystem("wireActor-11-toManyInjectAnnotations")
+
+val someActor = wireAnonymousActor[SomeActor]
+
+try {
+  someActor ! "Hey someActor"
+} finally system.terminate()
