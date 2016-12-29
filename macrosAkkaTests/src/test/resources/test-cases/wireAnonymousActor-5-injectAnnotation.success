@@ -1,0 +1,40 @@
+import akka.actor.{Actor, ActorSystem, Props}
+import com.softwaremill.macwire.macwireakka._
+
+/**
+  * In this example I am creating actor that has 3 constructors.
+  * However `wire*` will find dependencies for the constructor annotated
+  * with @Inject and provide it's arguments to Props factory method.
+  */
+
+trait A
+trait B
+trait C
+trait D
+
+class SomeActor(a: A) extends Actor {
+
+  def this(b: B) = {
+    this(new A{})
+    throw new UnsupportedOperationException()
+  }
+
+  @javax.inject.Inject
+  def this(c: C) = this(new A{})
+
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+lazy val a: A = throw new UnsupportedOperationException()
+lazy val b: A = throw new UnsupportedOperationException()
+val c = new C {}
+
+val system = ActorSystem("wireProps-5-injectAnnotation")
+
+val someActor = wireAnonymousActor[SomeActor]
+
+try {
+  someActor ! "Hey someActor"
+} finally system.terminate()
