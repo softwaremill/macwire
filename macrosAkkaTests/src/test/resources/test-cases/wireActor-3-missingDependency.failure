@@ -16,7 +16,7 @@ class SomeActor(a: A) extends Actor {
 
 //no dependency of type A in scope
 
-val system: ActorSystem = ActorSystem("wireAnonymousActor-3-missingDependency")
+val system: ActorSystem = ActorSystem("wireActor-3-missingDependency")
 
 //no dependency of type A in scope
 wireActor[SomeActor]("bob")

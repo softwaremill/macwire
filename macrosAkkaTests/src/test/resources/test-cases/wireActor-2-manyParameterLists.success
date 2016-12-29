@@ -21,7 +21,7 @@ val b = new B {}
 val c = new C {}
 val d = new D {}
 
-val system = ActorSystem("wireProps-2-manyParameterLists")
+val system = ActorSystem("wireActor-2-manyParameterLists")
 
 val someActor = wireActor[SomeActor]("bob")
 
