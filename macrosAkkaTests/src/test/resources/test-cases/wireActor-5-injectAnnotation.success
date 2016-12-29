@@ -1,4 +1,4 @@
-import akka.actor.{Actor, ActorSystem, Props}
+import akka.actor.{Actor, ActorSystem}
 import com.softwaremill.macwire.macwireakka._
 
 /**
@@ -31,7 +31,7 @@ lazy val a: A = throw new UnsupportedOperationException()
 lazy val b: A = throw new UnsupportedOperationException()
 val c = new C {}
 
-val system = ActorSystem("wireProps-5-injectAnnotation")
+val system = ActorSystem("wireActor-5-injectAnnotation")
 
 val someActor = wireActor[SomeActor]("bob")
 
