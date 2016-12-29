@@ -1,0 +1,25 @@
+import akka.actor.{Actor, ActorRef, ActorSystem, Props}
+import com.softwaremill.macwire.macwireakka._
+
+/**
+  * In this example I am constructing simple actor with 1 dependency.
+  * The dependency is by name (not by value as usually)
+  */
+
+trait A
+
+class SomeActor(a: => A) extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+val a = new A {}
+
+val system = ActorSystem("wireAnonymousActor-8-dependencyByName.success")
+
+val someActor = wireAnonymousActor[SomeActor]
+
+try {
+  someActor ! "Hey someActor"
+} finally system.terminate()
