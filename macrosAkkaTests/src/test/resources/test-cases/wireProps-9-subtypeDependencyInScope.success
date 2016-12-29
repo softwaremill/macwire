@@ -19,7 +19,7 @@ class SomeActor(a: A) extends Actor {
 
 val a: AA = new AA {}
 
-val system = ActorSystem("wireActor-1-simple")
+val system = ActorSystem("wireProps-9-subtypeDependencyInScope")
 
 val someActor = system.actorOf(wireProps[SomeActor], "someActor")
 
