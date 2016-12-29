@@ -1,4 +1,4 @@
-import akka.actor.{Actor, ActorSystem, Props}
+import akka.actor.{Actor, ActorSystem}
 import com.softwaremill.macwire.macwireakka._
 
 /**
@@ -14,8 +14,10 @@ class SomeActor(a: A) extends Actor {
   }
 }
 
-//no dependency of type A in scope
+val system: ActorSystem = ActorSystem("wireAnonymousActor-3-missingDependency")
 
-wireProps[SomeActor]
+//no dependency of type A in scope
+wireAnonymousActor[SomeActor]
+system.terminate()
 
 
