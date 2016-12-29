@@ -1,0 +1,39 @@
+import akka.actor.{Actor, ActorRef, ActorSystem}
+import com.softwaremill.macwire.macwireakka._
+
+/**
+  * In this example I am constructing actor within actor.
+  * SomeActor is created by system but Subordinates are created as children of SomeActor.
+  *
+  */
+
+trait A
+class B
+
+class Subordinate(a: A)(b: B) extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }}
+
+class SomeActor(a: A) extends Actor {
+
+  val b = new B {}
+  val subordinates: Seq[ActorRef] = (0 to 2).map(i =>
+    //subordinate depends on A and B which are in scope
+    context.actorOf(wireProps[Subordinate], s"sub$i")
+  )
+
+  override def receive: Receive = {
+    case m => subordinates.foreach(_ ! m)
+  }
+}
+
+val a = new A {}
+
+val system = ActorSystem("wireAnonymousActor-1-makeActorInActor")
+
+val someActor = wireActor[SomeActor]("bob")
+
+try {
+  someActor ! "Hey someActor"
+} finally system.terminate()
