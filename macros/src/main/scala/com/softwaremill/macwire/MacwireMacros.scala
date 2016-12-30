@@ -100,7 +100,7 @@ object MacwireMacros {
           case Some(targetConstructor) =>
             wireConstructor(targetType, targetConstructor)
         }
-        log(s"Generated code: ${showRaw(code)}")
+        log(s"Generated code: ${showCode(code)}")
         c.Expr(code)
       }
     }

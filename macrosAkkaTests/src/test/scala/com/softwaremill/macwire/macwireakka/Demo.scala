@@ -9,34 +9,16 @@ object Demo extends App {
   trait B
   trait C
 
-  class SomeActor(a: A) extends Actor {
-
-    def this(b: B) = {
-      this(new A{})
-      throw new UnsupportedOperationException()
-    }
-
-    @javax.inject.Inject
-    def this(c: C) = this(new A{})
-
+  class SomeActor (a: A) extends Actor {
     override def receive: Receive = {
-      case m => println(m)
+      case m => ???
     }
-
-    val otherActor = wireActor[OtherActor]("otherguy")
-  }
-
-  class OtherActor extends Actor {
-    override def receive: Receive = ???
   }
 
 
-  lazy val a: A = throw new UnsupportedOperationException()
-  lazy val b: A = throw new UnsupportedOperationException()
-  val c = new C {}
 
   val system = ActorSystem("wireProps-5-injectAnnotation")
-
+  val a = new A{}
 //  val props: Props = wireProps[SomeActor]
   val someActor3: ActorRef = wireActor[SomeActor]("bob")
 

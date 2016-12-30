@@ -19,7 +19,10 @@ class CompileTests extends CompileTestsSupport {
       "wireActor-7-notActor" -> List("type arguments [NotActor] do not conform to macro method wireActor's type parameter bounds [T <: akka.actor.Actor]"),
       "wireProps-11-toManyInjectAnnotations" -> List("Ambiguous constructors annotated with @javax.inject.Inject for type [SomeActor]"),
       "wireAnonymousActor-11-toManyInjectAnnotations" -> List("Ambiguous constructors annotated with @javax.inject.Inject for type [SomeActor]"),
-      "wireActor-11-toManyInjectAnnotations" -> List("Ambiguous constructors annotated with @javax.inject.Inject for type [SomeActor]")
+      "wireActor-11-toManyInjectAnnotations" -> List("Ambiguous constructors annotated with @javax.inject.Inject for type [SomeActor]"),
+      "wireProps-12-noPublicConstructor" -> List("Cannot find a public constructor for [SomeActor]"),
+      "wireAnonymousActor-12-noPublicConstructor" -> List("Cannot find a public constructor for [SomeActor]"),
+      "wireActor-12-noPublicConstructor" -> List("Cannot find a public constructor for [SomeActor]")
     ),
     expectedWarnings = List()
   )

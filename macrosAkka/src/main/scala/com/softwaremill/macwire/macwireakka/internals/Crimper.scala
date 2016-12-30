@@ -12,13 +12,15 @@ private[macwire] final class Crimper[C <: blackbox.Context, T: C#WeakTypeTag](va
   lazy val dependencyResolver = new DependencyResolver[c.type](c, log)
 
   lazy val targetConstructor: Symbol = log.withBlock(s"Looking for targetConstructor for $targetType"){
-    val publicConstructors = targetType.members.filter(m => m.isMethod && m.asMethod.isConstructor && m.isPublic)
+    val publicConstructors = targetType.members
+      .filter(m => m.isMethod && m.asMethod.isConstructor && m.isPublic)
+      .filterNot(isPhantomConstructor)
     log.withBlock(s"There are ${publicConstructors.size} eligible constructors" ) { publicConstructors.foreach(c => log(showConstructor(c))) }
     val isInjectAnnotation = (a: Annotation) => a.toString == "javax.inject.Inject"
     val injectConstructors = publicConstructors.filter(_.annotations.exists(isInjectAnnotation))
     val injectConstructor = if(injectConstructors.size > 1) c.abort(c.enclosingPosition, s"Ambiguous constructors annotated with @javax.inject.Inject for type [$targetType]") else injectConstructors.headOption
     lazy val primaryConstructor = publicConstructors.find(_.asMethod.isPrimaryConstructor)
-    val ctor: Symbol = injectConstructor orElse primaryConstructor getOrElse c.abort(c.enclosingPosition, s"Cannot find a public constructor for $targetType")
+    val ctor: Symbol = injectConstructor orElse primaryConstructor getOrElse c.abort(c.enclosingPosition, s"Cannot find a public constructor for [$targetType]")
     log(s"Found ${showConstructor(ctor)}")
     ctor
   }
@@ -61,4 +63,24 @@ private[macwire] final class Crimper[C <: blackbox.Context, T: C#WeakTypeTag](va
     log("Generated code: " + showRaw(tree))
     c.Expr[ActorRef](tree)
   }
+
+  /**
+    * In some cases there is one extra (phantom) constructor.
+    * This happens when extended trait has implicit param:
+    *
+    * {{{
+    *   trait A { implicit val a = ??? };
+    *   class X extends A
+    *   import scala.reflect.runtime.universe._
+    *   typeOf[X].members.filter(m => m.isMethod && m.asMethod.isConstructor && m.asMethod.isPrimaryConstructor).map(_.asMethod.fullName)
+    *
+    *  //res1: Iterable[String] = List(X.<init>, A.$init$)
+    *  }}}
+    *
+    *  The {{{A.$init$}}} is the phantom constructor and we don't want it.
+    *
+    *  In other words, if we don't filter such constructor using this function
+    *  'wireActor-12-noPublicConstructor.failure' will compile and throw exception during runtime but we want to fail it during compilation time.
+    */
+  private def isPhantomConstructor(constructor: Symbol): Boolean = constructor.asMethod.fullName.endsWith("$init$")
 }
