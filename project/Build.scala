@@ -113,13 +113,13 @@ object MacwireBuild extends Build {
   lazy val macrosAkka = project.in(file("macrosAkka")).
     settings(commonSettings).
     settings(
-      libraryDependencies ++= Seq(akkaActor, scalatest % "test", tagging % "test")).
+      libraryDependencies ++= Seq(akkaActor % "provided")).
     dependsOn(macros)
 
   lazy val macrosAkkaTests = project.in(file("macrosAkkaTests")).
     settings(testSettings).
-    settings(libraryDependencies += tagging).
-    dependsOn(macrosAkka % "provided", testUtil % "test")
+    settings(libraryDependencies ++= Seq(scalatest, tagging, akkaActor)).
+    dependsOn(macrosAkka, testUtil)
 
   lazy val examplesScalatra: Project = {
     val ScalatraVersion = "2.3.1"
