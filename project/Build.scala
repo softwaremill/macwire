@@ -118,6 +118,7 @@ object MacwireBuild extends Build {
 
   lazy val macrosAkkaTests = project.in(file("macrosAkkaTests")).
     settings(testSettings).
+    settings(libraryDependencies += tagging).
     dependsOn(macrosAkka % "provided", testUtil % "test")
 
   lazy val examplesScalatra: Project = {
