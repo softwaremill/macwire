@@ -35,6 +35,6 @@ val system = ActorSystem("wireActor-5-injectAnnotation")
 
 val someActor = wireActor[SomeActor]("bob")
 
-try {
-  someActor ! "Hey someActor"
-} finally system.terminate()
+someActor ! "Hey someActor"
+
+system.terminate()

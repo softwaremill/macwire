@@ -23,6 +23,6 @@ val system = ActorSystem("wireProps-9-subtypeDependencyInScope")
 
 val someActor = system.actorOf(wireProps[SomeActor], "someActor")
 
-try {
-  someActor ! "Hey someActor"
-} finally system.terminate()
+someActor ! "Hey someActor"
+
+system.terminate()

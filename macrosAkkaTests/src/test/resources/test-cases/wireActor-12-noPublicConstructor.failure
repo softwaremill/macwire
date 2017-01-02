@@ -36,6 +36,6 @@ val system = ActorSystem("wireActor-12-noPublicConstructor")
 
 val someActor = wireActor[SomeActor]("Bob")
 
-try {
-  someActor ! "Hey someActor"
-} finally system.terminate()
+someActor ! "Hey someActor"
+
+system.terminate()

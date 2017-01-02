@@ -17,7 +17,6 @@ val system = ActorSystem("wireActor-4-noDependenciesAtAll")
 
 val someActor = wireActor[SomeActor]("Bob")
 
-try {
-  someActor ! "Hey someActor"
-} finally system.terminate()
+someActor ! "Hey someActor"
 
+system.terminate()

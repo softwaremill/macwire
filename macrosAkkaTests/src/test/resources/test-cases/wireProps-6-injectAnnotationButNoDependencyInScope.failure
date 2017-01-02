@@ -36,6 +36,7 @@ val system = ActorSystem("wireProps-6-injectAnnotationButNoDependencyInScope")
 val props: Props = wireProps[SomeActor]
 
 val someActor = system.actorOf(props, "someActor")
-try {
-  someActor ! "Hey someActor"
-} finally system.terminate()
+
+someActor ! "Hey someActor"
+
+system.terminate()

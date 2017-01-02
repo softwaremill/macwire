@@ -25,7 +25,7 @@ val system = ActorSystem("wireActor-2-manyParameterLists")
 
 val someActor = wireActor[SomeActor]("bob")
 
-try {
-  someActor ! "Hey someActor"
-} finally system.terminate()
+someActor ! "Hey someActor"
+
+system.terminate()
 
