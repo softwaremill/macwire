@@ -2,7 +2,8 @@ import akka.actor.{Actor, ActorSystem, Props}
 import com.softwaremill.macwire.akkasupport._
 
 /**
-  * There are to many constructors annotated with @Inject
+  * In this example SomeActor has no public constructors.
+  * Thus wireProps will not find suitable one and fail compilation.
   */
 
 trait A
