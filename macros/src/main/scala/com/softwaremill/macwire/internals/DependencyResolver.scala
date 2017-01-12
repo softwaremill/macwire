@@ -1,7 +1,6 @@
-package com.softwaremill.macwire.dependencyLookup
+package com.softwaremill.macwire.internals
 
-import com.softwaremill.macwire.Logger
-import com.softwaremill.macwire.dependencyLookup.EligibleValuesFinder.Scope.LocalForward
+import com.softwaremill.macwire.internals.EligibleValuesFinder.Scope.LocalForward
 
 import scala.reflect.macros.blackbox
 

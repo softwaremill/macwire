@@ -2,6 +2,7 @@ package com.softwaremill.macwire
 package akkasupport
 
 import akka.actor.{ActorRef, Props}
+import com.softwaremill.macwire.internals.Logger
 
 import scala.reflect.macros.blackbox
 

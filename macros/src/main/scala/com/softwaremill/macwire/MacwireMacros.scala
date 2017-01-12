@@ -1,6 +1,6 @@
 package com.softwaremill.macwire
 
-import com.softwaremill.macwire.dependencyLookup._
+import com.softwaremill.macwire.internals.{DependencyResolver, Logger, TypeCheckUtil}
 
 import scala.reflect.macros.blackbox
 

@@ -1,8 +1,7 @@
 package com.softwaremill.macwire.akkasupport.internals
 
 import akka.actor.{ActorRef, ActorRefFactory, Props}
-import com.softwaremill.macwire.Logger
-import com.softwaremill.macwire.dependencyLookup.DependencyResolver
+import com.softwaremill.macwire.internals.{DependencyResolver, Logger}
 
 import scala.reflect.macros.blackbox
 

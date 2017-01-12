@@ -1,4 +1,4 @@
-package com.softwaremill.macwire
+package com.softwaremill.macwire.internals
 
 private[macwire] final class Logger {
   var ident = 0

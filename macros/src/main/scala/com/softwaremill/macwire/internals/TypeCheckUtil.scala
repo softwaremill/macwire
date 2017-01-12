@@ -1,4 +1,4 @@
-package com.softwaremill.macwire
+package com.softwaremill.macwire.internals
 
 import scala.reflect.macros.blackbox
 
