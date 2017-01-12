@@ -26,10 +26,7 @@ private[macwire] final class Crimper[C <: blackbox.Context, T: C#WeakTypeTag](va
 
   def showConstructor(c: Symbol): String = c.asMethod.typeSignature.toString
 
-  def wireConstructorParams(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.foldLeft(List[List[Tree]]()) { case (acc, pList) =>
-    val resolvedArgs: List[Tree] = pList.map(param => dependencyResolver.resolve(param, param.typeSignature).get)
-    resolvedArgs :: acc
-  }.reverse
+  def wireConstructorParams(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.map(_.map(p => dependencyResolver.resolve(p, p.typeSignature).get))
 
   lazy val targetConstructorParamLists: List[List[Symbol]] = targetConstructor.asMethod.paramLists.filterNot(_.headOption.exists(_.isImplicit))
 
