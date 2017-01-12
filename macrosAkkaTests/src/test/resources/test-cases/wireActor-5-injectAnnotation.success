@@ -32,9 +32,9 @@ lazy val b: A = throw new UnsupportedOperationException()
 val c = new C {}
 
 val system = ActorSystem("wireActor-5-injectAnnotation")
+AfterAllTerminate(system)
 
 val someActor = wireActor[SomeActor]("bob")
 
 someActor ! "Hey someActor"
 
-system.terminate()

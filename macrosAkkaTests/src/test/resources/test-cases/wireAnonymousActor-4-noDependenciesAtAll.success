@@ -12,12 +12,8 @@ class SomeActor extends Actor {
 }
 
 val system = ActorSystem("wireAnonymousActor-4-noDependenciesAtAll")
-
-
+AfterAllTerminate(system)
 
 val someActor = wireAnonymousActor[SomeActor]
 
 someActor ! "Hey someActor"
-
-system.terminate()
-

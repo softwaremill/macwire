@@ -32,9 +32,8 @@ lazy val b: B = throw new UnsupportedOperationException()
 //val c = new C {}
 
 val system = ActorSystem("wireAnonymous-6-injectAnnotationButNoDependencyInScope")
+AfterAllTerminate(system)
 
 val someActor = wireAnonymousActor[SomeActor]
 
 someActor ! "Hey someActor"
-
-system.terminate()

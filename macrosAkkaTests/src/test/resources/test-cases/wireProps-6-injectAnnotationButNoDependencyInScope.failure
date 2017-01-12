@@ -32,11 +32,10 @@ lazy val b: B = throw new UnsupportedOperationException()
 //val c = new C {}
 
 val system = ActorSystem("wireProps-6-injectAnnotationButNoDependencyInScope")
+AfterAllTerminate(system)
 
 val props: Props = wireProps[SomeActor]
 
 val someActor = system.actorOf(props, "someActor")
 
 someActor ! "Hey someActor"
-
-system.terminate()

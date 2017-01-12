@@ -15,9 +15,9 @@ class SomeActor(a: A) extends Actor {
 }
 
 val system: ActorSystem = ActorSystem("wireAnonymousActor-3-missingDependency")
+AfterAllTerminate(system)
 
 //no dependency of type A in scope
 wireAnonymousActor[SomeActor]
-system.terminate()
 
 

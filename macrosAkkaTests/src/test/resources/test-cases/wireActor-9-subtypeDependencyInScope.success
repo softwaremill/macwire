@@ -20,9 +20,7 @@ class SomeActor(a: A) extends Actor {
 val a: AA = new AA {}
 
 val system = ActorSystem("wireActor-9-subtypeDependencyInScope")
-
+AfterAllTerminate(system)
 val someActor = wireActor[SomeActor]("bob")
 
 someActor ! "Hey someActor"
-
-system.terminate()

@@ -34,11 +34,10 @@ val c = new C {}
 val d = new D {}
 
 val system = ActorSystem("wireProps-11-toManyInjectAnnotations")
+AfterAllTerminate(system)
 
 val props: Props = wireProps[SomeActor]
 
 val someActor = system.actorOf(props, "someActor")
 
 someActor ! "Hey someActor"
-
-system.terminate()

@@ -34,9 +34,9 @@ val c = new C {}
 val d = new D {}
 
 val system = ActorSystem("wireActor-12-noPublicConstructor")
+AfterAllTerminate(system)
 
 val someActor = wireActor[SomeActor]("Bob")
 
 someActor ! "Hey someActor"
 
-system.terminate()

@@ -22,9 +22,9 @@ val c = new C {}
 val d = new D {}
 
 val system = ActorSystem("wireAnonymousActor-2-manyParameterLists")
+AfterAllTerminate(system)
 
 val someActor = wireAnonymousActor[SomeActor]
 
 someActor ! "Hey someActor"
 
-system.terminate()

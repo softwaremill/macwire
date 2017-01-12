@@ -22,10 +22,8 @@ val c = new C {}
 val d = new D {}
 
 val system = ActorSystem("wireActor-2-manyParameterLists")
+AfterAllTerminate(system)
 
 val someActor = wireActor[SomeActor]("bob")
 
 someActor ! "Hey someActor"
-
-system.terminate()
-

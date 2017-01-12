@@ -34,9 +34,8 @@ val c = new C {}
 val d = new D {}
 
 val system = ActorSystem("wireActor-11-toManyInjectAnnotations")
+AfterAllTerminate(system)
 
 val someActor = wireAnonymousActor[SomeActor]
 
 someActor ! "Hey someActor"
-
-system.terminate()
