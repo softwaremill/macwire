@@ -117,6 +117,12 @@ object MacwireBuild extends Build {
     dependsOn(macros)
 
   lazy val macrosAkkaTests = project.in(file("macrosAkkaTests")).
+    settings(
+      // Needed to avoid cryptic EOFException crashes in forked tests in Travis
+      // example failure: https://travis-ci.org/adamw/macwire/builds/191382122
+      // see: https://github.com/travis-ci/travis-ci/issues/3775
+      javaOptions += "-Xmx1G"
+    ).
     settings(testSettings).
     settings(libraryDependencies ++= Seq(scalatest, tagging, akkaActor)).
     dependsOn(macrosAkka, testUtil)
