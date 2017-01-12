@@ -1,5 +1,5 @@
 import akka.actor.Props
-import com.softwaremill.macwire.macwireakka._
+import com.softwaremill.macwire.akkasupport._
 
 /**
   * In this example I am trying to make props of T which is not subtype of Actor class.

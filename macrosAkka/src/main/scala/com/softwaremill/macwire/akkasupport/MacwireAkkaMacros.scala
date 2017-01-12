@@ -1,5 +1,5 @@
 package com.softwaremill.macwire
-package macwireakka
+package akkasupport
 
 import akka.actor.{ActorRef, Props}
 

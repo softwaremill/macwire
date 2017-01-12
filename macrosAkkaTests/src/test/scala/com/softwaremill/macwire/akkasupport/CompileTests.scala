@@ -1,4 +1,4 @@
-package com.softwaremill.macwire.macwireakka
+package com.softwaremill.macwire.akkasupport
 
 import com.softwaremill.macwire.CompileTestsSupport
 

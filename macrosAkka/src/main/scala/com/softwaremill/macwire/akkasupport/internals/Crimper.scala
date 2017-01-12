@@ -1,4 +1,4 @@
-package com.softwaremill.macwire.macwireakka.internals
+package com.softwaremill.macwire.akkasupport.internals
 
 import akka.actor.{ActorRef, ActorRefFactory, Props}
 import com.softwaremill.macwire.Logger

@@ -1,5 +1,5 @@
 import akka.actor.{Actor, ActorSystem, Props}
-import com.softwaremill.macwire.macwireakka._
+import com.softwaremill.macwire.akkasupport._
 
 /**
   * In this example I am constructing simple actor with many parameter lists.

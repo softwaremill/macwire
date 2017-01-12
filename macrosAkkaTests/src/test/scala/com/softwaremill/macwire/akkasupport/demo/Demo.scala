@@ -1,9 +1,9 @@
-package com.softwaremill.macwire.macwireakka.demo
+package com.softwaremill.macwire.akkasupport.demo
 
 import akka.actor.{Actor, ActorRef, ActorSystem}
 import akka.routing.RoundRobinPool
 import com.softwaremill.macwire._
-import com.softwaremill.macwire.macwireakka._
+import com.softwaremill.macwire.akkasupport._
 import com.softwaremill.tagging._
 
 object Demo extends App {
