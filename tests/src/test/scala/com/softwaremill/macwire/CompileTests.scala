@@ -5,7 +5,7 @@ class CompileTests extends CompileTestsSupport {
   runTestsWith(
     expectedFailures = List(
       "companionFactoryAmbiguous" -> List("No public primary constructor found for", "Test.PrivConstructor",
-                                          "and multiple matching apply method in its companion object were found."),
+                                          "and multiple matching apply methods in its companion object were found."),
       "explicitDepsNotWiredWithImplicitVals" -> List(valueNotFound("A")),
       "explicitDepsWiredWithImplicitValsFromMethodScope" -> List(ambiguousResMsg("A"), "dependency", "implicitDependencyA"),
       "importAmbiguous" -> List(ambiguousResMsg("A"), "myA", "theA"),

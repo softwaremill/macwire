@@ -2,7 +2,7 @@ package com.softwaremill.macwire.internals
 
 import scala.reflect.macros.blackbox
 
-private[macwire] final class ConstructorCrimper[C <: blackbox.Context, T: C#WeakTypeTag](val c: C, log: Logger) {
+private[macwire] class ConstructorCrimper[C <: blackbox.Context, T: C#WeakTypeTag](val c: C, log: Logger) {
   import c.universe._
 
   lazy val dependencyResolver = new DependencyResolver[c.type](c, log)
@@ -36,21 +36,21 @@ private[macwire] final class ConstructorCrimper[C <: blackbox.Context, T: C#Weak
 
   lazy val injectConstructor: Option[Symbol] = if(injectConstructors.size > 1) abort(s"Ambiguous constructors annotated with @javax.inject.Inject for type [$targetType]") else injectConstructors.headOption
 
-  lazy val targetConstructor: Option[Symbol] = log.withBlock(s"Looking for targetConstructor for $targetType"){
+  lazy val constructor: Option[Symbol] = log.withBlock(s"Looking for constructor for $targetType"){
     val ctor = injectConstructor orElse primaryConstructor
     ctor.foreach(ctor => log(s"Found ${showConstructor(ctor)}"))
     ctor
   }
 
-  lazy val targetConstructorParamLists: Option[List[List[Symbol]]] = targetConstructor.map(_.asMethod.paramLists.filterNot(_.headOption.exists(_.isImplicit)))
+  lazy val constructorParamLists: Option[List[List[Symbol]]] = constructor.map(_.asMethod.paramLists.filterNot(_.headOption.exists(_.isImplicit)))
 
-  lazy val targetConstructorArgs: Option[List[List[Tree]]] = log.withBlock("Looking for targetConstructor arguments") {
-    targetConstructorParamLists.map(wireConstructorParams)
+  lazy val constructorArgs: Option[List[List[Tree]]] = log.withBlock("Looking for targetConstructor arguments") {
+    constructorParamLists.map(wireConstructorParams)
   }
 
-  lazy val targetConstructorTree: Option[Tree] = {
+  lazy val constructorTree: Option[Tree] =  log.withBlock(s"Creating Constructor Tree for $targetType"){
     val constructionMethodTree: Tree = Select(New(Ident(targetTypeD.typeSymbol)), termNames.CONSTRUCTOR)
-    targetConstructorArgs.map(_.foldLeft(constructionMethodTree)((acc: Tree, args: List[Tree]) => Apply(acc, args)))
+    constructorArgs.map(_.foldLeft(constructionMethodTree)((acc: Tree, args: List[Tree]) => Apply(acc, args)))
   }
 
   def wireConstructorParams(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.map(_.map(p => dependencyResolver.resolve(p, /*SI-4751*/paramType(p)).get))
