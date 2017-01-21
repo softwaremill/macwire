@@ -39,8 +39,7 @@ object MacwireMacros {
 
     val Block(Nil, Function(params, Apply(fun, _))) = factory
     val values = params.map {
-      case vd @ ValDef(_, name, tpt, rhs) =>
-        dependencyResolver.resolve(vd.symbol, typeCheckIfNeeded(tpt)).getOrElse(reify(null).tree)
+      case vd @ ValDef(_, name, tpt, rhs) => dependencyResolver.resolve(vd.symbol, typeCheckIfNeeded(tpt))
     }
     val code = q"$fun(..$values)"
 

@@ -26,7 +26,7 @@ private[macwire] final class Crimper[C <: blackbox.Context, T: C#WeakTypeTag](va
 
   def showConstructor(c: Symbol): String = c.asMethod.typeSignature.toString
 
-  def wireConstructorParams(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.map(_.map(p => dependencyResolver.resolve(p, p.typeSignature).get))
+  def wireConstructorParams(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.map(_.map(p => dependencyResolver.resolve(p, p.typeSignature)))
 
   lazy val targetConstructorParamLists: List[List[Symbol]] = targetConstructor.asMethod.paramLists.filterNot(_.headOption.exists(_.isImplicit))
 
@@ -43,7 +43,7 @@ private[macwire] final class Crimper[C <: blackbox.Context, T: C#WeakTypeTag](va
 
   lazy val actorRefFactoryTree: Tree = log.withBlock("Looking for ActorRefFactory"){
     val actorRefType = typeOf[ActorRefFactory]
-    val tree = dependencyResolver.resolve(actorRefType.typeSymbol, actorRefType).get
+    val tree = dependencyResolver.resolve(actorRefType.typeSymbol, actorRefType)
     log(s"Found ${showCode(tree)}")
     tree
   }

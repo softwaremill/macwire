@@ -32,7 +32,7 @@ private[macwire] class CompanionCrimper [C <: blackbox.Context, T: C#WeakTypeTag
 
   lazy val applyParamLists: Option[List[List[Symbol]]] = apply.map(_.asMethod.paramLists)
 
-  def wireParams(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.map(_.map(p => dependencyResolver.resolve(p, p.typeSignature).get))
+  def wireParams(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.map(_.map(p => dependencyResolver.resolve(p, p.typeSignature)))
 
   lazy val applyArgs: Option[List[List[Tree]]] = applyParamLists.map(wireParams)
 
