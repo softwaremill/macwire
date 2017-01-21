@@ -29,7 +29,7 @@ class SomeActor(a: A) extends Actor {
 }
 
 lazy val a: A = throw new UnsupportedOperationException()
-lazy val b: A = throw new UnsupportedOperationException()
+lazy val b: B = throw new UnsupportedOperationException()
 val c = new C {}
 val d = new D {}
 
