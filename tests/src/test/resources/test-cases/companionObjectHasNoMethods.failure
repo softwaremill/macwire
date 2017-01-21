@@ -1,0 +1,12 @@
+trait A
+
+object Test {
+
+  class Target private(val a : A) {}
+  object Target
+
+  val a: A = new A{}
+  wire[Target]
+}
+
+Test
