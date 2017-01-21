@@ -46,10 +46,12 @@ object BuildSettings {
 }
 
 object Dependencies {
-  val tagging       = "com.softwaremill.common" %% "tagging" % "1.0.0"
-  val scalatest     = "org.scalatest" %% "scalatest"  % "3.0.0"
-  val javassist     = "org.javassist"  % "javassist"  % "3.20.0-GA"
-  val akkaActor     = "com.typesafe.akka" %% "akka-actor" % "2.4.16"
+  val tagging                   = "com.softwaremill.common" %% "tagging" % "1.0.0"
+  val scalatest                 = "org.scalatest" %% "scalatest"  % "3.0.0"
+  val javassist                 = "org.javassist"  % "javassist"  % "3.20.0-GA"
+  val akkaActor                 = "com.typesafe.akka" %% "akka-actor" % "2.4.16"
+  val javaxInject               = "javax.inject" % "javax.inject" % "1"
+  def scalaCompiler(v: String)  = "org.scala-lang" % "scala-compiler" % v
 }
 
 object MacwireBuild extends Build {
@@ -86,7 +88,8 @@ object MacwireBuild extends Build {
     settings(
       libraryDependencies ++= Seq(
         scalatest,
-        "org.scala-lang" % "scala-compiler" % scalaVersion.value))
+        scalaCompiler(scalaVersion.value),
+        javaxInject))
 
   lazy val tests = project.in(file("tests")).
     settings(testSettings).
