@@ -15,7 +15,7 @@ class CompileTests extends CompileTestsSupport {
       "simpleValsMissingValue" -> List(valueNotFound("B")),
       "simpleValsDuplicateValue" -> List(ambiguousResMsg("B"), "theB1", "theB2"),
       "secondaryConstructorNotAnnotated" -> List(valueNotFound("String")),
-      "fantomConstructor" -> List("Cannot find a public constructor nor a companion object for [Target]"),
+      "phantomConstructor" -> List("Cannot find a public constructor nor a companion object for [Target]"),
       "companionObjectHasNoMethods" -> List("Companion object for",  "Target] has no apply methods constructing target type.")
     ),
     expectedWarnings = List(
