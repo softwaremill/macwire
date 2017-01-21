@@ -23,8 +23,7 @@ private[macwire] class CompanionCrimper [C <: blackbox.Context, T: C#WeakTypeTag
     as
   }
 
-  lazy val apply: Option[Symbol] = //TODO: companionCtors.headOption
-    applies.flatMap( _ match {
+  lazy val apply: Option[Symbol] = applies.flatMap( _ match {
     case applyMethod :: Nil => Some(applyMethod)
     case _ => None
   })
