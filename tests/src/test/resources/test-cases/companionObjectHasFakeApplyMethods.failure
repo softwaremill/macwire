@@ -1,0 +1,14 @@
+trait A
+
+object Test {
+
+  class Target private(val a : A) {}
+  object Target {
+    def apply(a: A): String = "This is not the construction method"
+  }
+
+  val a: A = new A{}
+  wire[Target]
+}
+
+Test
