@@ -1,0 +1,33 @@
+/**
+  * In this case all constructors are private. However class has implicit member thus it will have 'phntom constructor'.
+  * See ConstructorCrimper#isPhantomConstructor for more details.
+  */
+
+trait A
+trait B
+trait C
+trait D
+
+class Target private (a: A) {
+
+  implicit val d: D = new D {}
+
+  private def this(b: B) = {
+    this(new A{})
+    throw new UnsupportedOperationException()
+  }
+
+  private def this(c: C) = this(new A{})
+
+  @javax.inject.Inject
+  private def this(d: D) = this(new A{})
+}
+
+lazy val a: A = throw new UnsupportedOperationException()
+lazy val b: B = throw new UnsupportedOperationException()
+lazy val c: C = throw new UnsupportedOperationException()
+lazy val d: D = throw new UnsupportedOperationException()
+
+wire[Target]
+
+

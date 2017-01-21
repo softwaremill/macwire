@@ -16,7 +16,7 @@ object MacwireMacros {
     lazy val targetType = companionCrimper.targetType.toString
     lazy val whatWasWrong: String = {
       if(constructorCrimper.constructor.isEmpty && companionCrimper.companionType.isEmpty)
-        s"Cannot find a public constructor nor a companion object for $targetType"
+        s"Cannot find a public constructor nor a companion object for [$targetType]"
       else if(companionCrimper.applies.isDefined && companionCrimper.applies.get.isEmpty)
         s"Companion object for $targetType has no constructor methods" //TODO this is new err message, check if it's tested
       else if(companionCrimper.applies.isDefined && companionCrimper.applies.get.size > 1)

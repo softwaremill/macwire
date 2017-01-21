@@ -14,8 +14,11 @@ class CompileTests extends CompileTestsSupport {
       "multipleMethodParameters" -> List(ambiguousResMsg("A"), "a1", "a2"),
       "simpleValsMissingValue" -> List(valueNotFound("B")),
       "simpleValsDuplicateValue" -> List(ambiguousResMsg("B"), "theB1", "theB2"),
-      "secondaryConstructorNotAnnotated" -> List(valueNotFound("String"))),
+      "secondaryConstructorNotAnnotated" -> List(valueNotFound("String")),
+      "fantomConstructor" -> List("Cannot find a public constructor nor a companion object for [Target]")
+    ),
     expectedWarnings = List(
-      "forwardReferenceInBlock" -> List("Found [a] for parameter [a], but a forward reference [forwardA] was also eligible"))
+      "forwardReferenceInBlock" -> List("Found [a] for parameter [a], but a forward reference [forwardA] was also eligible")
+    )
   )
 }
