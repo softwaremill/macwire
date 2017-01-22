@@ -31,6 +31,11 @@ object BuildSettings {
             <name>Adam Warski</name>
             <url>http://www.warski.org</url>
           </developer>
+          <developer>
+            <id>pawel.panasewicz</id>
+            <name>Paweł Panasewicz</name>
+            <url>http://panasoft.pl</url>
+          </developer>
         </developers>,
     licenses      := ("Apache2", new java.net.URL("http://www.apache.org/licenses/LICENSE-2.0.txt")) :: Nil,
     homepage      := Some(new java.net.URL("http://www.softwaremill.com"))
