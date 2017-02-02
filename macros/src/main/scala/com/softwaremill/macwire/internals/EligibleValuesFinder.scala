@@ -1,11 +1,9 @@
-package com.softwaremill.macwire.dependencyLookup
-
-import com.softwaremill.macwire.{TypeCheckUtil, Logger}
+package com.softwaremill.macwire.internals
 
 import scala.annotation.tailrec
 import scala.reflect.macros.blackbox
 
-private[dependencyLookup] class EligibleValuesFinder[C <: blackbox.Context](val c: C, log: Logger) {
+private[macwire] class EligibleValuesFinder[C <: blackbox.Context](val c: C, log: Logger) {
 
   import c.universe.{Scope => RScope, _}
   import EligibleValuesFinder._

@@ -1,0 +1,26 @@
+
+trait A
+trait B
+trait C
+trait D
+
+class Target(a: A) {
+
+  def this(b: B) = {
+    this(new A{})
+    throw new UnsupportedOperationException()
+  }
+
+  @javax.inject.Inject
+  def this(c: C) = this(new A{})
+
+  @javax.inject.Inject
+  def this(d: D) = this(new A{})
+}
+
+lazy val a: A = throw new UnsupportedOperationException()
+lazy val b: B = throw new UnsupportedOperationException()
+lazy val c: C = throw new UnsupportedOperationException()
+lazy val d: D = throw new UnsupportedOperationException()
+
+wire[Target]

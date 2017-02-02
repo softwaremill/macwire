@@ -1,0 +1,27 @@
+import akka.actor.{Actor, ActorSystem}
+import com.softwaremill.macwire.akkasupport._
+
+/**
+  * In this example I am constructing simple actor with 1 dependency.
+  * There is AA object which is subtype of A in scope.
+  */
+
+trait A
+trait AA extends A
+
+//TODO include cases for classes, extends A with B, objects extends trait etc
+
+class SomeActor(a: A) extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+val a: AA = new AA {}
+
+val system = ActorSystem("wireActor-1-simple")
+AfterAllTerminate(system)
+
+val someActor = wireAnonymousActor[SomeActor]
+
+someActor ! "Hey someActor"

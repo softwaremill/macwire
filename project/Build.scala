@@ -25,13 +25,18 @@ object BuildSettings {
         <url>git@github.com:adamw/macwire.git</url>
         <connection>scm:git:git@github.com:adamw/macwire.git</connection>
       </scm>
-      <developers>
-        <developer>
-          <id>adamw</id>
-          <name>Adam Warski</name>
-          <url>http://www.warski.org</url>
-        </developer>
-      </developers>,
+        <developers>
+          <developer>
+            <id>adamw</id>
+            <name>Adam Warski</name>
+            <url>http://www.warski.org</url>
+          </developer>
+          <developer>
+            <id>pawel.panasewicz</id>
+            <name>Paweł Panasewicz</name>
+            <url>http://panasoft.pl</url>
+          </developer>
+        </developers>,
     licenses      := ("Apache2", new java.net.URL("http://www.apache.org/licenses/LICENSE-2.0.txt")) :: Nil,
     homepage      := Some(new java.net.URL("http://www.softwaremill.com"))
   )
@@ -46,9 +51,12 @@ object BuildSettings {
 }
 
 object Dependencies {
-  val tagging       = "com.softwaremill.common" %% "tagging" % "1.0.0"
-  val scalatest     = "org.scalatest" %% "scalatest"  % "3.0.0"
-  val javassist     = "org.javassist"  % "javassist"  % "3.20.0-GA"
+  val tagging                   = "com.softwaremill.common" %% "tagging" % "1.0.0"
+  val scalatest                 = "org.scalatest" %% "scalatest"  % "3.0.0"
+  val javassist                 = "org.javassist"  % "javassist"  % "3.20.0-GA"
+  val akkaActor                 = "com.typesafe.akka" %% "akka-actor" % "2.4.16"
+  val javaxInject               = "javax.inject" % "javax.inject" % "1"
+  def scalaCompiler(v: String)  = "org.scala-lang" % "scala-compiler" % v
 }
 
 object MacwireBuild extends Build {
@@ -61,7 +69,7 @@ object MacwireBuild extends Build {
       name := "macwire",
       publishArtifact := false).
     aggregate(
-      util, macros, proxy, tests, tests2, testUtil, utilTests)
+      util, macros, proxy, tests, tests2, testUtil, utilTests, macrosAkka, macrosAkkaTests)
 
   lazy val util = project.in(file("util")).
     settings(
@@ -85,7 +93,8 @@ object MacwireBuild extends Build {
     settings(
       libraryDependencies ++= Seq(
         scalatest,
-        "org.scala-lang" % "scala-compiler" % scalaVersion.value))
+        scalaCompiler(scalaVersion.value),
+        javaxInject))
 
   lazy val tests = project.in(file("tests")).
     settings(testSettings).
@@ -108,6 +117,23 @@ object MacwireBuild extends Build {
       libraryDependencies += scalatest % "test").
     dependsOn(
       util, macros % "provided", proxy)
+
+  lazy val macrosAkka = project.in(file("macrosAkka")).
+    settings(commonSettings).
+    settings(
+      libraryDependencies ++= Seq(akkaActor % "provided")).
+    dependsOn(macros)
+
+  lazy val macrosAkkaTests = project.in(file("macrosAkkaTests")).
+    settings(
+      // Needed to avoid cryptic EOFException crashes in forked tests in Travis
+      // example failure: https://travis-ci.org/adamw/macwire/builds/191382122
+      // see: https://github.com/travis-ci/travis-ci/issues/3775
+      javaOptions += "-Xmx1G"
+    ).
+    settings(testSettings).
+    settings(libraryDependencies ++= Seq(scalatest, tagging, akkaActor)).
+    dependsOn(macrosAkka, testUtil)
 
   lazy val examplesScalatra: Project = {
     val ScalatraVersion = "2.3.1"

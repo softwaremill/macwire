@@ -1,0 +1,23 @@
+import akka.actor.{Actor, ActorSystem}
+import com.softwaremill.macwire.akkasupport._
+
+/**
+  * In this example I am constructing simple actor but I don't provide dependency for it.
+  * `wire*` will not find it and then not compile.
+  */
+
+trait A
+
+class SomeActor(a: A) extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+val system: ActorSystem = ActorSystem("wireAnonymousActor-3-missingDependency")
+AfterAllTerminate(system)
+
+//no dependency of type A in scope
+wireAnonymousActor[SomeActor]
+
+

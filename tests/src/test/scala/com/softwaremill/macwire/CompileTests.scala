@@ -5,7 +5,7 @@ class CompileTests extends CompileTestsSupport {
   runTestsWith(
     expectedFailures = List(
       "companionFactoryAmbiguous" -> List("No public primary constructor found for", "Test.PrivConstructor",
-                                          "and multiple matching apply method in its companion object were found."),
+                                          "and multiple matching apply methods in its companion object were found."),
       "explicitDepsNotWiredWithImplicitVals" -> List(valueNotFound("A")),
       "explicitDepsWiredWithImplicitValsFromMethodScope" -> List(ambiguousResMsg("A"), "dependency", "implicitDependencyA"),
       "importAmbiguous" -> List(ambiguousResMsg("A"), "myA", "theA"),
@@ -14,8 +14,15 @@ class CompileTests extends CompileTestsSupport {
       "multipleMethodParameters" -> List(ambiguousResMsg("A"), "a1", "a2"),
       "simpleValsMissingValue" -> List(valueNotFound("B")),
       "simpleValsDuplicateValue" -> List(ambiguousResMsg("B"), "theB1", "theB2"),
-      "secondaryConstructorNotAnnotated" -> List(valueNotFound("String"))),
+      "secondaryConstructorNotAnnotated" -> List(valueNotFound("String")),
+      "phantomConstructor" -> List("Cannot find a public constructor nor a companion object for [Target]"),
+      "companionObjectHasNoMethods" -> List("Companion object for",  "Target] has no apply methods constructing target type."),
+      "companionObjectHasFakeApplyMethods" -> List("Companion object for",  "Target] has no apply methods constructing target type."),
+      "toManyInjectAnnotations" -> List("Ambiguous constructors annotated with @javax.inject.Inject for type [Target]")
+
+    ),
     expectedWarnings = List(
-      "forwardReferenceInBlock" -> List("Found [a] for parameter [a], but a forward reference [forwardA] was also eligible"))
+      "forwardReferenceInBlock" -> List("Found [a] for parameter [a], but a forward reference [forwardA] was also eligible")
+    )
   )
 }

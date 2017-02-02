@@ -1,0 +1,25 @@
+import akka.actor.{Actor, ActorSystem, Props}
+import com.softwaremill.macwire.akkasupport._
+
+/**
+  * In this example I am constructing simple actor with 1 dependency.
+  */
+
+trait A
+
+class SomeActor(a: A) extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+val a = new A {}
+
+val system = ActorSystem("wireProps-1-simple")
+AfterAllTerminate(system)
+
+val props: Props = wireProps[SomeActor]
+
+val someActor = system.actorOf(props, "someActor")
+
+someActor ! "Hey someActor"

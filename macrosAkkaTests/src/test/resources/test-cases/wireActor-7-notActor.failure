@@ -1,0 +1,9 @@
+import com.softwaremill.macwire.akkasupport._
+
+/**
+  * In this example I am trying to make props of T which is not subtype of Actor class.
+  * This will not compile.
+  */
+
+class NotActor {}
+wireActor[NotActor]
