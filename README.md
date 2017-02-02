@@ -543,9 +543,9 @@ To use the snapshot version:
 ````scala
 resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
-libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.2.5-SNAPSHOT" % "provided"
+libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.3.0-SNAPSHOT" % "provided"
 
-libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.2.5-SNAPSHOT"
+libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.3.0-SNAPSHOT"
 ````
 
 Currently 2.x supports Scala 2.11 and 2.12.
