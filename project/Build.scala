@@ -7,7 +7,7 @@ object BuildSettings {
     organization  := "com.softwaremill.macwire",
     version       := "2.3.0",
     scalaVersion  := "2.11.8",
-    crossScalaVersions := Seq("2.12.1"),
+    crossScalaVersions := Seq("2.12.1", scalaVersion.value),
     // Sonatype OSS deployment
     publishTo <<= version { (v: String) =>
       val nexus = "https://oss.sonatype.org/"
