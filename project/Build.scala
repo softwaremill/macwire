@@ -5,7 +5,7 @@ object BuildSettings {
 
   val commonSettings = Defaults.coreDefaultSettings ++ Seq (
     organization  := "com.softwaremill.macwire",
-    version       := "2.2.5",
+    version       := "2.3.0",
     scalaVersion  := "2.11.8",
     crossScalaVersions := Seq("2.12.1"),
     // Sonatype OSS deployment

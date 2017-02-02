@@ -14,6 +14,7 @@ Table of Contents
 * [Qualifiers](#qualifiers)  
 * [Multi Wiring (wireSet)](#multi-wiring-wireset)
 * [Limitations](#limitations)
+* [Akka integration](#akka-integration)
 * [Installation, using with SBT](#installation-using-with-sbt)
 * [Debugging](#debugging)
 * [Scala.js](#scalajs)
@@ -476,6 +477,44 @@ super traits/classes.
 Note that the type ascription may be a subtype of the wired type. This can be useful if you want to expose e.g. a trait
 that the wired class extends, instead of the full implementation.
 
+Akka integration
+----------------
+
+Macwire provides wiring for Akka actors through the `macrosAkka` module. [Here](https://github.com/adamw/macwire/blob/master/macrosAkkaTests/src/test/scala/com/softwaremill/macwire/akkasupport/demo/Demo.scala)
+you can find example code. The module adds three macros `wireAnonymousActor`, `wireActor` and `wireProps`. These macros
+require an `ActorSystem` to be in scope as a dependency. This actor system is used to create the actors.
+
+Here's how the macros are expanded during compilation:
+
+````scala
+class A
+class MyActor(a: A) extends Actor { /* ... */ }
+
+object Example1 {
+  val a = wire[A] // compiles to: val a = new A
+  val actorSystem = ActorSystem()
+  val myActor1: ActorRef = wireAnonymousActor[MyActor]
+  // this compiles to:
+  // val myActor1: ActorRef = system.actorOf(Props(new MyActor(a))) 
+}
+
+object Example2 {
+  val a = wire[A]
+  val actorSystem = ActorSystem()
+  val myActor1: ActorRef = wireActor[MyActor]("myActorsName")
+  // this compiles to:
+  // val myActor1: ActorRef = system.actorOf(Props(new MyActor(a)), "myActorsName") 
+}
+
+object Example3 {
+  val a = wire[A]
+  val actorSystem = ActorSystem()
+  val myActor1: ActorRef = system.actorOf(wireProps[MyActor])  
+  // this compiles to:
+  // val myActor1: ActorRef = system.actorOf(Props(new MyActor(a))) 
+}
+````
+
 Installation, using with SBT
 ----------------------------
 
@@ -483,11 +522,13 @@ The jars are deployed to [Sonatype's OSS repository](https://oss.sonatype.org/co
 To use MacWire in your project, add a dependency:
 
 ````scala
-libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.2.5" % "provided"
+libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.3.0" % "provided"
 
-libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.2.5"
+libraryDependencies += "com.softwaremill.macwire" %% "macrosAkka" % "2.3.0" % "provided"
+
+libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.3.0"
                   
-libraryDependencies += "com.softwaremill.macwire" %% "proxy" % "2.2.5"
+libraryDependencies += "com.softwaremill.macwire" %% "proxy" % "2.3.0"
 ````
 
 The `macros` subproject contains only code which is used at compile-time, hence the `provided` scope. 
