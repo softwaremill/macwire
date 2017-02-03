@@ -480,40 +480,155 @@ that the wired class extends, instead of the full implementation.
 Akka integration
 ----------------
 
-Macwire provides wiring for Akka actors through the `macrosAkka` module. [Here](https://github.com/adamw/macwire/blob/master/macrosAkkaTests/src/test/scala/com/softwaremill/macwire/akkasupport/demo/Demo.scala)
-you can find example code. The module adds three macros `wireAnonymousActor`, `wireActor` and `wireProps`. These macros
-require an `ActorSystem` to be in scope as a dependency. This actor system is used to create the actors.
+Macwire provides wiring suport for [akka](http://akka.io) through the `macrosAkka` module. 
+[Here](https://github.com/adamw/macwire/blob/master/macrosAkkaTests/src/test/scala/com/softwaremill/macwire/akkasupport/demo/Demo.scala)
+you can find example code. The module adds three macros `wireAnonymousActor[A]`, `wireActor[A]` and `wireProps[A]`
+ which help create instances of `akka.actor.ActorRef` and `akka.actor.Props`. 
 
-Here's how the macros are expanded during compilation:
+These macros require an `ActoRefFactory` (`ActorSystem` or `Actor.context`) to be in scope as a dependency. 
+If actor's primary constructor has dependencies - they are required to be in scope as well.
+ 
+Example usage:
+ 
+```scala
+import akka.actor.{Actor, ActorRef, ActorSystem}
 
-````scala
-class A
-class MyActor(a: A) extends Actor { /* ... */ }
-
-object Example1 {
-  val a = wire[A] // compiles to: val a = new A
-  val actorSystem = ActorSystem()
-  val myActor1: ActorRef = wireAnonymousActor[MyActor]
-  // this compiles to:
-  // val myActor1: ActorRef = system.actorOf(Props(new MyActor(a))) 
+class DatabaseAccess()
+class SecurityFilter()
+class UserFinderActor(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter) extends Actor {
+  override def receive: Receive = {
+    case m => // ...
+  }
 }
 
-object Example2 {
-  val a = wire[A]
-  val actorSystem = ActorSystem()
-  val myActor1: ActorRef = wireActor[MyActor]("myActorsName")
-  // this compiles to:
-  // val myActor1: ActorRef = system.actorOf(Props(new MyActor(a)), "myActorsName") 
-}
+import com.softwaremill.macwire._
+import com.softwaremill.macwire.akkasupport._
+  
+val theDatabaseAccess = wire[DatabaseAccess] //1st dependency for UserFinderActor
+                                             //it compiles to: val theDatabaseAccess = new DatabaseAccess
+					     
+val theSecurityFilter = wire[SecurityFilter] //2nd dependency for UserFinderActor 
+                                             //it compiles to: val theSecurityFilter = new SecurityFilter
+					     
+val system = ActorSystem("actor-system") //there must be instance of ActoRefFactory in scope
 
-object Example3 {
-  val a = wire[A]
-  val actorSystem = ActorSystem()
-  val myActor1: ActorRef = system.actorOf(wireProps[MyActor])  
-  // this compiles to:
-  // val myActor1: ActorRef = system.actorOf(Props(new MyActor(a))) 
+val theUserFinder = wireActor[UserFinderActor]("userFinder")  
+//this compiles to:
+//lazy val theUserFinder = system.actorOf(Props(classOf[UserFinderActor], theDatabaseAccess, theSecurityFilter), "userFinder")
+``` 
+
+Note how easy is to create actorRef:
+
+```scala
+wireActor[UserFinderActor]("userFinder")
+```
+ 
+compared to:
+ 
+```scala
+system.actorOf(Props(classOf[UserFinderActor], theDatabaseAccess, theSecurityFilter), "userFinder")
+```
+
+In order to make it working all dependencies created `Actor`'s (`UserFinderActor`'s) primary constructor and 
+instance of the `akka.actor.ActorRefFactory` must be in scope. In above example this is all true. Dependencies
+of the `UserFinderActor` are `DatabaseAccess` and `SecurityFilter` and they are in scope. 
+The `ActorRefFactory` is in scope as well because `ActorSystem` which is subtype of it is there.
+
+
+Using Macwire for wiring Actors can be attractive not only because it safes from to much typing. 
+It is as well type safer because possible errors will be reported by scala compiler. In standard way 
+of creating actors if parameters passed to the `Props` are mistaken  
+error happens during runtime. However relying on `wireActor` here compilation error is raised. 
+
+Although this code is wrong it will compile and throw exception during runtime:
+```scala
+system.actorOf(
+  Props(classOf[UserFinderActor], theDatabaseAccess),  //no theSecurityFilter 
+  "userFinder"
+)
+```
+
+However below snipped won't compile:
+
+```scala
+lazy val theDatabaseAccess = wire[DatabaseAccess]
+//no theSecurityFilter
+val system = ActorSystem("actor-system") 
+lazy val theUserFinder = wireActor[UserFinder]("userFinder") 
+//Error: Cannot find a value of type: [com.softwaremill.macwire.akkasupport.Demo.SecurityFilter]
+//val theUserFinder = wireActor[UserFinderActor]("userFinder")
+```  
+
+Creating actor within another actor is even simpler than in first example because we don't need to have `ActorSystem` in scope. 
+The `ActorRefFactory` is here because `Actor.context` is subtype of it. Let's see this in action:
+
+```scala
+class UserStatusReaderActor(theDatabaseAccess: DatabaseAccess) extends Actor {
+  val theSecurityFilter = wire[SecurityFilter]
+  
+  val userFinder = wireActor[UserFinderActor]("userFinder")
+  //this compiles to:
+  //val userFinder = context.actorOf(Props(classOf[UserFinderActor], theDatabaseAccess, theSecurityFilter), "userFinder")
+  
+  override def receive = ...
 }
-````
+```
+
+The difference is that previously macro expanded into `system.actorOf(...)` 
+and when inside another actor it expanded into `context.actoOf(...)`.
+  
+    
+It's possible to create anonymous actors. `wireAnonymousActor` is for it:
+
+```scala
+val userFinder = wireAnonymousActor[UserFinderActor]
+//this compiles to:
+//val userFinder = context.actorOf(Props(classOf[UserFinderActor], theDatabaseAccess, theSecurityFilter))
+```
+
+How about creating `akka.actor.Props`? It's there and can be achived by calling `wireProps[A]`.
+Wiring only `Props` can be handy when it's required to setup the `Props` before passing them to the `actorOf(...)` method. 
+
+Let's say we want to create some actor with router. It can be done as below:
+```scala
+val userFinderProps = wireProps[UserFinderActor] //create Props. This compiles to: Props(classOf[UserFinderActor], theDatabaseAccess, theSecurityFilter)
+  .withRouter(RoundRobinPool(4)) //change it according requirements
+val userFinderActor = system.actorOf(userFinderProps, "userFinder")  //create the actor
+```
+
+How about creating actors which depends on `ActorRef`s? The simplest way is to 
+pass them as arguments to the constructor. But how distinguish two `actorRef`s representing two different actors?
+They have the same type though.
+ 
+```scala
+class DatabaseAccessActor extends Actor { ... }
+class SecurityFilterActor extends Actor { ... }
+val db: ActorRef = wireActor[DatabaseAccessActor]("db")
+val filter: ActorRef = wireActor[SecurityFilterActor]("filter")
+class UserFinderActor(databaseAccess: ActorRef, securityFilter: ActorRef) extends Actor {...}
+//val userFinder = wireActor[UserFinderActor] wont work here
+``` 
+
+We can't just call `wireActor[UserFinderActor]` because it's not obvious which instance of ActorRef 
+is for `databaseAccess` and which are for `securityFilter`. They are both of the same type - `ActorRef`. 
+
+The solution for it is to use earlier described [qualifiers](#qualifiers). 
+In above example solution for wiring may look like this:
+
+```scala
+seled trait DatabaseAccess //marker type
+class DatabaseAccessActor extends Actor { ... }
+seled trait SecurityFilter //marker type
+class SecurityFilterActor extends Actor { ... }
+
+val db: ActorRef @@ DatabaseAccess = wireActor[DatabaseAccessActor]("db").taggedWith[DatabaseAccess]
+val filter: ActorRef @@ SecurityFilter = wireActor[SecurityFilterActor]("filter").taggedWith[SecurityFilter]
+
+class UserFinderActor(databaseAccess: ActorRef @@ DatabaseAccess, securityFilter: ActorRef @@ SecurityFilter) extends Actor {...}
+
+val userFinder = wireActor[UserFinderActor]
+``` 
+
 
 Installation, using with SBT
 ----------------------------
