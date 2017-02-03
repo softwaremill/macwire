@@ -537,8 +537,8 @@ The `ActorRefFactory` is in scope as well because `ActorSystem` which is subtype
 
 Using Macwire for wiring Actors can be attractive not only because it safes from to much typing. 
 It is as well type safer because possible errors will be reported by scala compiler. In standard way 
-of creating actors if parameters passed to the `Props` are mistaken  
-error happens during runtime. However relying on `wireActor` here compilation error is raised. 
+of creating actors if parameters passed to the `Props` are mistaken
+error happens during runtime. However relying on `wireActor[A]` here compilation error is raised. 
 
 Although this code is wrong it will compile and throw exception during runtime:
 ```scala
@@ -591,13 +591,14 @@ Wiring only `Props` can be handy when it's required to setup the `Props` before 
 
 Let's say we want to create some actor with router. It can be done as below:
 ```scala
-val userFinderProps = wireProps[UserFinderActor] //create Props. This compiles to: Props(classOf[UserFinderActor], theDatabaseAccess, theSecurityFilter)
+val userFinderProps = wireProps[UserFinderActor] //create Props
+  //This compiles to: Props(classOf[UserFinderActor], theDatabaseAccess, theSecurityFilter)
   .withRouter(RoundRobinPool(4)) //change it according requirements
 val userFinderActor = system.actorOf(userFinderProps, "userFinder")  //create the actor
 ```
 
 How about creating actors which depends on `ActorRef`s? The simplest way is to 
-pass them as arguments to the constructor. But how distinguish two `actorRef`s representing two different actors?
+pass them as arguments to the constructor. But how to distinguish two `actorRef`s representing two different actors?
 They have the same type though.
  
 ```scala
