@@ -524,7 +524,7 @@ To use MacWire in your project, add a dependency:
 ````scala
 libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.3.0" % "provided"
 
-libraryDependencies += "com.softwaremill.macwire" %% "macrosAkka" % "2.3.0" % "provided"
+libraryDependencies += "com.softwaremill.macwire" %% "macrosakka" % "2.3.0" % "provided"
 
 libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.3.0"
                   
