@@ -517,47 +517,10 @@ val theUserFinder = wireActor[UserFinderActor]("userFinder")
 //lazy val theUserFinder = system.actorOf(Props(classOf[UserFinderActor], theDatabaseAccess, theSecurityFilter), "userFinder")
 ``` 
 
-Note how easy is to create actorRef:
-
-```scala
-wireActor[UserFinderActor]("userFinder")
-```
- 
-compared to:
- 
-```scala
-system.actorOf(Props(classOf[UserFinderActor], theDatabaseAccess, theSecurityFilter), "userFinder")
-```
-
 In order to make it working all dependencies created `Actor`'s (`UserFinderActor`'s) primary constructor and 
 instance of the `akka.actor.ActorRefFactory` must be in scope. In above example this is all true. Dependencies
 of the `UserFinderActor` are `DatabaseAccess` and `SecurityFilter` and they are in scope. 
 The `ActorRefFactory` is in scope as well because `ActorSystem` which is subtype of it is there.
-
-
-Using Macwire for wiring Actors can be attractive not only because it safes from to much typing. 
-It is as well type safer because possible errors will be reported by scala compiler. In standard way 
-of creating actors if parameters passed to the `Props` are mistaken
-error happens during runtime. However relying on `wireActor[A]` here compilation error is raised. 
-
-Although this code is wrong it will compile and throw exception during runtime:
-```scala
-system.actorOf(
-  Props(classOf[UserFinderActor], theDatabaseAccess),  //no theSecurityFilter 
-  "userFinder"
-)
-```
-
-However below snipped won't compile:
-
-```scala
-lazy val theDatabaseAccess = wire[DatabaseAccess]
-//no theSecurityFilter
-val system = ActorSystem("actor-system") 
-lazy val theUserFinder = wireActor[UserFinder]("userFinder") 
-//Error: Cannot find a value of type: [com.softwaremill.macwire.akkasupport.Demo.SecurityFilter]
-//val theUserFinder = wireActor[UserFinderActor]("userFinder")
-```  
 
 Creating actor within another actor is even simpler than in first example because we don't need to have `ActorSystem` in scope. 
 The `ActorRefFactory` is here because `Actor.context` is subtype of it. Let's see this in action:
@@ -586,7 +549,7 @@ val userFinder = wireAnonymousActor[UserFinderActor]
 //val userFinder = context.actorOf(Props(classOf[UserFinderActor], theDatabaseAccess, theSecurityFilter))
 ```
 
-How about creating `akka.actor.Props`? It's there and can be achived by calling `wireProps[A]`.
+How about creating `akka.actor.Props`? It's there and can be achieved by calling `wireProps[A]`.
 Wiring only `Props` can be handy when it's required to setup the `Props` before passing them to the `actorOf(...)` method. 
 
 Let's say we want to create some actor with router. It can be done as below:
