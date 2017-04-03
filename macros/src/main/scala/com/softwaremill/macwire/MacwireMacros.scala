@@ -3,6 +3,7 @@ package com.softwaremill.macwire
 import com.softwaremill.macwire.internals._
 
 import scala.reflect.macros.blackbox
+import scala.reflect.macros.whitebox
 
 object MacwireMacros {
   private val log = new Logger()
@@ -58,6 +59,22 @@ object MacwireMacros {
     // The lack of hygiene can be seen here as a feature, the choice of Set implementation
     // is left to the user - you want a `mutable.Set`, just import `mutable.Set` before the `wireSet[T]` call
     val code = q"Set(..$instances)"
+
+    log("Generated code: " + show(code))
+    code
+  }
+
+  def wireHList_impl[T: c.WeakTypeTag](c: whitebox.Context): c.Tree = {
+    import c.universe._
+
+    val targetType = implicitly[c.WeakTypeTag[T]]
+
+    val dependencyResolver = new DependencyResolver[c.type](c, log)
+
+    val instances = dependencyResolver.resolveAll(targetType.tpe)
+
+    val l = instances.foldRight(q"HNil": Tree)((a, b) => q"$a::$b")
+    val code = q"import shapeless._; HListWrapper[${targetType.tpe}]($l)"
 
     log("Generated code: " + show(code))
     code
