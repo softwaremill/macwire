@@ -61,7 +61,7 @@ object BuildSettings {
 }
 
 object Dependencies {
-  val tagging                   = "com.softwaremill.common" %% "tagging" % "2.1.0"
+  val tagging                   = "com.softwaremill.common" %% "tagging" % "2.2.0"
   val scalatest                 = "org.scalatest" %% "scalatest"  % "3.0.3"
   val javassist                 = "org.javassist"  % "javassist"  % "3.20.0-GA"
   val akkaActor                 = "com.typesafe.akka" %% "akka-actor" % "2.4.16"
