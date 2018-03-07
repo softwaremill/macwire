@@ -1,0 +1,30 @@
+import akka.actor.{Actor, ActorSystem, Props}
+import com.softwaremill.macwire.akkasupport._
+
+/**
+  * In this example I am constructing simple actor with many parameter lists and an implicit parameter list.
+  */
+
+trait A
+trait B
+trait C
+trait D
+
+class SomeActor(a: A)(b: B, c: C)(implicit d: D)  extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+val a = new A {}
+val b = new B {}
+val c = new C {}
+val d = new D {}
+
+val system = ActorSystem("wireActor-13-missingImplicitDependency")
+AfterAllTerminate(system)
+
+val someActor = wireActor[SomeActor]("bob")
+
+someActor ! "Hey someActor"
+

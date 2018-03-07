@@ -55,7 +55,7 @@ private[macwire] class ConstructorCrimper[C <: blackbox.Context, T: C#WeakTypeTa
 
   def wireConstructorParams(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.map(_.map(p => dependencyResolver.resolve(p, /*SI-4751*/paramType(p))))
 
-  private def paramType(param: Symbol): Type = {
+  private[macwire] def paramType(param: Symbol): Type = {
     val (sym: Symbol, tpeArgs: List[Type]) = targetTypeD match {
       case TypeRef(_, sym, tpeArgs) => (sym, tpeArgs)
       case t => abort(s"Target type not supported for wiring: $t. Please file a bug report with your use-case.")
