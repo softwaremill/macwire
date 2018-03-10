@@ -12,14 +12,9 @@ private[macwire] final class Crimper[C <: blackbox.Context, T: C#WeakTypeTag](va
 
   lazy val targetType: Type = cc.targetType
 
-  lazy val args: List[Tree] = cc.constructor.map(_.asMethod.paramLists).map(wireConstructorParams)
+  lazy val args: List[Tree] = cc.constructorArgsWithImplicitLookups
     .getOrElse(c.abort(c.enclosingPosition, s"Cannot find a public constructor for [$targetType]"))
     .flatten
-
-  def wireConstructorParams(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.map(_.map {
-    case i if i.isImplicit => q"implicitly[${cc.paramType(i)}]"
-    case p => cc.dependencyResolver.resolve(p, /*SI-4751*/cc.paramType(p))
-  })
 
   lazy val propsTree = q"akka.actor.Props(classOf[$targetType], ..$args)"
 
