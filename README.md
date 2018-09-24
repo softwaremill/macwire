@@ -1,28 +1,28 @@
 Table of Contents
 =================
 
-* [Introduction](#macwire)
-* [Guide to DI in Scala](http://di-in-scala.github.io/) (external link)
-* [How wiring works](#how-wiring-works)
-* [Factories](#factories)
-* [Factory methods](#factory-methods)
-* [`lazy val` vs. `val`](#lazy-val-vs-val)
-* [Composing modules](#composing-modules)
-* [Scopes](#scopes)
-* [Accessing wired instances dynamically](#accessing-wired-instances-dynamically)
-* [Interceptors](#interceptors)
-* [Qualifiers](#qualifiers)  
-* [Multi Wiring (wireSet)](#multi-wiring-wireset)
-* [Limitations](#limitations)
-* [Akka integration](#akka-integration)
-* [Installation, using with SBT](#installation-using-with-sbt)
-* [Debugging](#debugging)
-* [Scala.js](#scalajs)
-* [Future development - vote!](#future-development---vote)
-* [Activators](#activators)
-* [Migrating from 1.x](#migrating)
-* [Play 2.4.x](#play24x)
-* [Play 2.5.x](#play25x)
+- [Table of Contents](#table-of-contents)
+- [MacWire](#macwire)
+	- [How wiring works](#how-wiring-works)
+	- [Factories](#factories)
+	- [Factory methods](#factory-methods)
+	- [`lazy val` vs. `val`](#lazy-val-vs-val)
+	- [Composing modules](#composing-modules)
+	- [Scopes](#scopes)
+	- [Accessing wired instances dynamically](#accessing-wired-instances-dynamically)
+	- [Interceptors](#interceptors)
+	- [Qualifiers](#qualifiers)
+	- [Multi Wiring (wireSet)](#multi-wiring-wireset)
+	- [Limitations](#limitations)
+	- [Akka integration](#akka-integration)
+	- [Installation, using with SBT](#installation-using-with-sbt)
+	- [Debugging](#debugging)
+	- [Scala.js](#scalajs)
+	- [Future development - vote!](#future-development---vote)
+	- [Activators](#activators)
+	- [Migrating from 1.x <a id="migrating"></a>](#migrating-from-1x-a-id%22migrating%22a)
+	- [Play 2.4.x <a id="play24x"></a>](#play-24x-a-id%22play24x%22a)
+	- [Play 2.5.x <a id="play25x"></a>](#play-25x-a-id%22play25x%22a)
 
 MacWire
 =======
@@ -30,7 +30,7 @@ MacWire
 [![Build Status](https://travis-ci.org/adamw/macwire.svg?branch=master)](https://travis-ci.org/adamw/macwire)
 [![Join the chat at https://gitter.im/adamw/macwire](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/adamw/macwire?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.softwaremill.macwire/macros_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.softwaremill.macwire/macros_2.11)
-[![Dependencies](https://app.updateimpact.com/badge/634276070333485056/macwire.svg?config=compile)](https://app.updateimpact.com/latest/634276070333485056/macwire)                           
+[![Dependencies](https://app.updateimpact.com/badge/634276070333485056/macwire.svg?config=compile)](https://app.updateimpact.com/latest/634276070333485056/macwire)
 
 MacWire generates `new` instance creation code of given classes, using values in the enclosing type for constructor
 parameters, with the help of [Scala Macros](http://scalamacros.org/).
@@ -43,7 +43,7 @@ class-wiring code by hand. Instead, it is enough to declare which classes should
 should be accessed (see Scopes).
 
 Classes to be wired should be organized in "modules", which can be Scala `trait`s, `class`es or `object`s.
-Multiple modules can be combined using inheritance or composition; values from the inherited/nested modules are also 
+Multiple modules can be combined using inheritance or composition; values from the inherited/nested modules are also
 used for wiring.
 
 MacWire can be in many cases a replacement for DI containers, offering greater control on when and how classes are
@@ -109,11 +109,11 @@ How wiring works
 For each constructor parameter of the given class, MacWire tries to find a value [conforming](http://www.scala-lang.org/files/archive/spec/2.11/03-types.html#conformance) to the parameter's
 type in the enclosing method and trait/class/object:
 
-* first it tries to find a unique value declared as a value in the current block, argument of enclosing methods 
+* first it tries to find a unique value declared as a value in the current block, argument of enclosing methods
 and anonymous functions.
 * then it tries to find a unique value declared or imported in the enclosing type
 * then it tries to find a unique value in parent types (traits/classes)
-* if the parameter is marked as implicit, it is ignored by MacWire and handled by the normal implicit resolution mechanism 
+* if the parameter is marked as implicit, it is ignored by MacWire and handled by the normal implicit resolution mechanism
 
 Here value means either a `val` or a no-parameter `def`, as long as the return type matches.
 
@@ -162,7 +162,7 @@ trait TaxModule {
 Factory methods
 ---------------
 
-You can also wire an object using a factory method, instead of a constructor. For that, use `wireWith` instead of 
+You can also wire an object using a factory method, instead of a constructor. For that, use `wireWith` instead of
 `wire`. For example:
 
 ````scala
@@ -195,16 +195,16 @@ you need to tell MacWire that it should look inside the nested modules.
 To do that, you can use imports:
 
 ````scala
-class FacebookAccess(userFind: UserFinder) 
+class FacebookAccess(userFind: UserFinder)
 
-class UserModule { 
-  lazy val userFinder = ... // as before 
-} 
+class UserModule {
+  lazy val userFinder = ... // as before
+}
 
 class SocialModule(userModule: UserModule) {
   import userModule._
-  
-  lazy val facebookAccess = wire[FacebookAccess] 
+
+  lazy val facebookAccess = wire[FacebookAccess]
 }
 ````
 
@@ -212,13 +212,13 @@ Or, if you are using that pattern a lot, you can annotate your modules using `@M
 searching for values automatically:
 
 ````scala
-class FacebookAccess(userFind: UserFinder) 
+class FacebookAccess(userFind: UserFinder)
 
 @Module
 class UserModule { ... } // as before
 
 class SocialModule(userModule: UserModule) {
-  lazy val facebookAccess = wire[FacebookAccess] 
+  lazy val facebookAccess = wire[FacebookAccess]
 }
 ````
 
@@ -279,7 +279,7 @@ MacWire contains a utility class in the `util` subproject, `Wired`, to support s
 
 An instance of `Wired` can be obtained using the `wiredInModule` macro, given an instance of a module containing the
 wired object graph. Any `vals`, `lazy val`s and parameter-less `def`s (factories) from the module which are references
-will be available in the `Wired` instance. 
+will be available in the `Wired` instance.
 
 The object graph in the module can be hand-wired, wired using `wire`, or a result of any computation.
 
@@ -305,7 +305,7 @@ val wired = wiredInModule(new MyApp)
 // 3. Dynamic lookup of instances
 wired.lookup(classOf[SecurityFilter])
 
-// Returns the mysql database connector, even though its type is MysqlDatabaseConnector, which is 
+// Returns the mysql database connector, even though its type is MysqlDatabaseConnector, which is
 // assignable to DatabaseConnector.
 wired.lookup(classOf[DatabaseConnector])
 
@@ -379,7 +379,7 @@ Sometimes you have multiple objects of the same type that you want to use during
 way of telling the instances apart. As with other things, the answer is: types! Even when not using `wire`, it may
 be useful to give the instances distinct types, to get compile-time checking.
 
-For that purpose Macwire includes support for tagging via [scala-common](https://github.com/softwaremill/scala-common), 
+For that purpose Macwire includes support for tagging via [scala-common](https://github.com/softwaremill/scala-common),
 which lets you attach tags to instances to qualify them. This
 is a compile-time only operation, and doesn't affect the runtime. The tags are derived from
 [Miles Sabin's gist](https://gist.github.com/milessabin/89c9b47a91017973a35f).
@@ -421,7 +421,7 @@ The resulting value has type `Berry @ (Black with Blue)` and can be used both as
 Multi Wiring (wireSet)
 ----------
 
-Using `wireSet` you can obtain a set of multiple instances of the same type. This is done without constructing the set explicitly. All instances of the same type which are found by MacWire are used to construct the set. 
+Using `wireSet` you can obtain a set of multiple instances of the same type. This is done without constructing the set explicitly. All instances of the same type which are found by MacWire are used to construct the set.
 
 Consider the below example. Let's suppose that you want to create a `RockBand(musicians: Set[Musician])` object. It's easy to do so using the `wireSet` functionality:
 
@@ -435,9 +435,9 @@ trait RockBandModule {
   lazy val drummer   = new Musician {}
   lazy val bassist   = new Musician {}
 
-  lazy val musicians = wireSet[Musician] // all above musicians will be wired together 
-                                         // musicians has type Set[Musician] 
-             
+  lazy val musicians = wireSet[Musician] // all above musicians will be wired together
+                                         // musicians has type Set[Musician]
+
   lazy val rockBand  = wire[RockBand]
 }
 ```
@@ -480,16 +480,16 @@ that the wired class extends, instead of the full implementation.
 Akka integration
 ----------------
 
-Macwire provides wiring suport for [akka](http://akka.io) through the `macrosAkka` module. 
+Macwire provides wiring suport for [akka](http://akka.io) through the `macrosAkka` module.
 [Here](https://github.com/adamw/macwire/blob/master/macrosAkkaTests/src/test/scala/com/softwaremill/macwire/akkasupport/demo/Demo.scala)
 you can find example code. The module adds three macros `wireAnonymousActor[A]`, `wireActor[A]` and `wireProps[A]`
- which help create instances of `akka.actor.ActorRef` and `akka.actor.Props`. 
+ which help create instances of `akka.actor.ActorRef` and `akka.actor.Props`.
 
-These macros require an `ActoRefFactory` (`ActorSystem` or `Actor.context`) to be in scope as a dependency. 
+These macros require an `ActoRefFactory` (`ActorSystem` or `Actor.context`) to be in scope as a dependency.
 If actor's primary constructor has dependencies - they are required to be in scope as well.
- 
+
 Example usage:
- 
+
 ```scala
 import akka.actor.{Actor, ActorRef, ActorSystem}
 
@@ -503,44 +503,44 @@ class UserFinderActor(databaseAccess: DatabaseAccess, securityFilter: SecurityFi
 
 import com.softwaremill.macwire._
 import com.softwaremill.macwire.akkasupport._
-  
+
 val theDatabaseAccess = wire[DatabaseAccess] //1st dependency for UserFinderActor
                                              //it compiles to: val theDatabaseAccess = new DatabaseAccess
-					     
-val theSecurityFilter = wire[SecurityFilter] //2nd dependency for UserFinderActor 
+
+val theSecurityFilter = wire[SecurityFilter] //2nd dependency for UserFinderActor
                                              //it compiles to: val theSecurityFilter = new SecurityFilter
-					     
+
 val system = ActorSystem("actor-system") //there must be instance of ActoRefFactory in scope
 
-val theUserFinder = wireActor[UserFinderActor]("userFinder")  
+val theUserFinder = wireActor[UserFinderActor]("userFinder")
 //this compiles to:
 //lazy val theUserFinder = system.actorOf(Props(classOf[UserFinderActor], theDatabaseAccess, theSecurityFilter), "userFinder")
-``` 
+```
 
-In order to make it working all dependencies created `Actor`'s (`UserFinderActor`'s) primary constructor and 
+In order to make it working all dependencies created `Actor`'s (`UserFinderActor`'s) primary constructor and
 instance of the `akka.actor.ActorRefFactory` must be in scope. In above example this is all true. Dependencies
-of the `UserFinderActor` are `DatabaseAccess` and `SecurityFilter` and they are in scope. 
+of the `UserFinderActor` are `DatabaseAccess` and `SecurityFilter` and they are in scope.
 The `ActorRefFactory` is in scope as well because `ActorSystem` which is subtype of it is there.
 
-Creating actor within another actor is even simpler than in first example because we don't need to have `ActorSystem` in scope. 
+Creating actor within another actor is even simpler than in first example because we don't need to have `ActorSystem` in scope.
 The `ActorRefFactory` is here because `Actor.context` is subtype of it. Let's see this in action:
 
 ```scala
 class UserStatusReaderActor(theDatabaseAccess: DatabaseAccess) extends Actor {
   val theSecurityFilter = wire[SecurityFilter]
-  
+
   val userFinder = wireActor[UserFinderActor]("userFinder")
   //this compiles to:
   //val userFinder = context.actorOf(Props(classOf[UserFinderActor], theDatabaseAccess, theSecurityFilter), "userFinder")
-  
+
   override def receive = ...
 }
 ```
 
-The difference is that previously macro expanded into `system.actorOf(...)` 
+The difference is that previously macro expanded into `system.actorOf(...)`
 and when inside another actor it expanded into `context.actoOf(...)`.
-  
-    
+
+
 It's possible to create anonymous actors. `wireAnonymousActor` is for it:
 
 ```scala
@@ -550,7 +550,7 @@ val userFinder = wireAnonymousActor[UserFinderActor]
 ```
 
 How about creating `akka.actor.Props`? It's there and can be achieved by calling `wireProps[A]`.
-Wiring only `Props` can be handy when it's required to setup the `Props` before passing them to the `actorOf(...)` method. 
+Wiring only `Props` can be handy when it's required to setup the `Props` before passing them to the `actorOf(...)` method.
 
 Let's say we want to create some actor with router. It can be done as below:
 ```scala
@@ -560,10 +560,10 @@ val userFinderProps = wireProps[UserFinderActor] //create Props
 val userFinderActor = system.actorOf(userFinderProps, "userFinder")  //create the actor
 ```
 
-How about creating actors which depends on `ActorRef`s? The simplest way is to 
+How about creating actors which depends on `ActorRef`s? The simplest way is to
 pass them as arguments to the constructor. But how to distinguish two `actorRef`s representing two different actors?
 They have the same type though.
- 
+
 ```scala
 class DatabaseAccessActor extends Actor { ... }
 class SecurityFilterActor extends Actor { ... }
@@ -571,12 +571,12 @@ val db: ActorRef = wireActor[DatabaseAccessActor]("db")
 val filter: ActorRef = wireActor[SecurityFilterActor]("filter")
 class UserFinderActor(databaseAccess: ActorRef, securityFilter: ActorRef) extends Actor {...}
 //val userFinder = wireActor[UserFinderActor] wont work here
-``` 
+```
 
-We can't just call `wireActor[UserFinderActor]` because it's not obvious which instance of ActorRef 
-is for `databaseAccess` and which are for `securityFilter`. They are both of the same type - `ActorRef`. 
+We can't just call `wireActor[UserFinderActor]` because it's not obvious which instance of ActorRef
+is for `databaseAccess` and which are for `securityFilter`. They are both of the same type - `ActorRef`.
 
-The solution for it is to use earlier described [qualifiers](#qualifiers). 
+The solution for it is to use earlier described [qualifiers](#qualifiers).
 In above example solution for wiring may look like this:
 
 ```scala
@@ -591,7 +591,7 @@ val filter: ActorRef @@ SecurityFilter = wireActor[SecurityFilterActor]("filter"
 class UserFinderActor(databaseAccess: ActorRef @@ DatabaseAccess, securityFilter: ActorRef @@ SecurityFilter) extends Actor {...}
 
 val userFinder = wireActor[UserFinderActor]
-``` 
+```
 
 
 Installation, using with SBT
@@ -601,16 +601,16 @@ The jars are deployed to [Sonatype's OSS repository](https://oss.sonatype.org/co
 To use MacWire in your project, add a dependency:
 
 ````scala
-libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.3.0" % "provided"
+libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.3.1" % "provided"
 
-libraryDependencies += "com.softwaremill.macwire" %% "macrosakka" % "2.3.0" % "provided"
+libraryDependencies += "com.softwaremill.macwire" %% "macrosakka" % "2.3.1" % "provided"
 
-libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.3.0"
-                  
-libraryDependencies += "com.softwaremill.macwire" %% "proxy" % "2.3.0"
+libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.3.1"
+
+libraryDependencies += "com.softwaremill.macwire" %% "proxy" % "2.3.1"
 ````
 
-The `macros` subproject contains only code which is used at compile-time, hence the `provided` scope. 
+The `macros` subproject contains only code which is used at compile-time, hence the `provided` scope.
 
 The `util` subproject contains tagging, `Wired` and the `@Module` annotation; if you don't use these features, you don't
 need to include this dependency.
@@ -622,9 +622,9 @@ To use the snapshot version:
 ````scala
 resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
-libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.3.0-SNAPSHOT" % "provided"
+libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.3.1-SNAPSHOT" % "provided"
 
-libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.3.0-SNAPSHOT"
+libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.3.1-SNAPSHOT"
 ````
 
 Currently 2.x supports Scala 2.11 and 2.12.
@@ -647,7 +647,7 @@ build file.
 Scala.js
 --------
 
-Macwire also works with [Scala.js](http://www.scala-js.org/). For an example, see here: 
+Macwire also works with [Scala.js](http://www.scala-js.org/). For an example, see here:
 [Macwire+Scala.js example](https://github.com/adamw/macwire/tree/master/examples/scalajs).
 
 Future development - vote!
@@ -667,7 +667,7 @@ There are two Typesafe Activators which can help you to get started with Scala, 
 Migrating from 1.x <a id="migrating"></a>
 ------------------
 
-* changed how code is split across modules. You'll need to depend on `util` to get tagging & `Wired`, and `proxy` 
+* changed how code is split across modules. You'll need to depend on `util` to get tagging & `Wired`, and `proxy`
 to get interceptors and scopes
 * tagging moved to a separate package. If you use tagging, you'll need to import `com.softwaremill.tagging._`
 * removed `wireImplicit`
@@ -677,7 +677,7 @@ parameters + implicit lookup)
 Play 2.4.x <a id="play24x"></a>
 --------
 
-In Play 2.4.x, you can no longer use getControllerInstance in GlobalSettings for injection. Play has a new pattern for injecting controllers. You must extend ApplicationLoader, from there you can mix in your modules. 
+In Play 2.4.x, you can no longer use getControllerInstance in GlobalSettings for injection. Play has a new pattern for injecting controllers. You must extend ApplicationLoader, from there you can mix in your modules.
 
 ````scala
 import controllers.{Application, Assets}
@@ -689,7 +689,7 @@ import com.softwaremill.macwire._
 
 class AppApplicationLoader extends ApplicationLoader {
   def load(context: Context) = {
-    
+
     // make sure logging is configured
     Logger.configure(context.environment)
 
@@ -732,7 +732,7 @@ For Play 2.5.x, you must do the same as for Play 2.4.x, except the `Logger` conf
 import play.api.LoggerConfigurator
 class AppApplicationLoader extends ApplicationLoader {
   def load(context: Context) = {
-    
+
     LoggerConfigurator(context.environment.classLoader).foreach {
       _.configure(context.environment)
     }
