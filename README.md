@@ -580,9 +580,9 @@ The solution for it is to use earlier described [qualifiers](#qualifiers).
 In above example solution for wiring may look like this:
 
 ```scala
-seled trait DatabaseAccess //marker type
+sealed trait DatabaseAccess //marker type
 class DatabaseAccessActor extends Actor { ... }
-seled trait SecurityFilter //marker type
+sealed trait SecurityFilter //marker type
 class SecurityFilterActor extends Actor { ... }
 
 val db: ActorRef @@ DatabaseAccess = wireActor[DatabaseAccessActor]("db").taggedWith[DatabaseAccess]
