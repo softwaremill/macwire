@@ -20,5 +20,6 @@ val t = new Test {}
 require(t.basket.blueberry != null)
 require(t.basket.blackberry != null)
 
-require(t.basket.blueberry eq t.blueblackberry)
-require(t.basket.blackberry eq t.blueblackberry)
+// the compiler emits false warnings without the typecasts
+require((t.basket.blueberry: Berry) == (t.blueblackberry: Berry))
+require((t.basket.blackberry: Berry) == (t.blueblackberry: Berry))

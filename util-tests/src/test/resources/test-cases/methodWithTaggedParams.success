@@ -11,4 +11,5 @@ val blueberry = wire[Berry].taggedWith[Blue]
 val blackberry = wire[Berry].taggedWith[Black]
 val blueberryBasket = Module.create(blueberry)(blackberry)
 
-require(blueberryBasket.blueberry eq blueberry)
+// the compiler emits false warnings without the typecasts
+require((blueberryBasket.blueberry: Berry) == (blueberry: Berry))
