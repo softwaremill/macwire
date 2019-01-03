@@ -136,25 +136,6 @@ lazy val macrosAkkaTests = project.in(file("macrosAkkaTests")).
   settings(libraryDependencies ++= Seq(scalatest, tagging, akkaActor)).
   dependsOn(macrosAkka, testUtil)
 
-lazy val examplesScalatra: Project = {
-  val ScalatraVersion = "2.3.1"
-  val scalatraCore = "org.scalatra" %% "scalatra" % ScalatraVersion
-  val scalatraScalate = "org.scalatra" %% "scalatra-scalate" % ScalatraVersion
-  val logback = "ch.qos.logback" % "logback-classic" % "1.1.7"
-  val jetty = "org.eclipse.jetty" % "jetty-webapp" % "9.3.3.v20150827" % "compile"
-  val servletApi = "org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "compile" artifacts (Artifact("javax.servlet", "jar", "jar"))
-
-  Project(
-    "examples-scalatra",
-    file("examples/scalatra"),
-
-  ).settings(commonSettings ++ Seq(
-    publishArtifact := false,
-    classpathTypes ~= (_ + "orbit"),
-    libraryDependencies ++= Seq(scalatraCore, scalatraScalate, jetty, servletApi, logback)
-  )).dependsOn(util, macros % "provided", proxy)
-}
-
 compile in Compile := {
   // Enabling debug project-wide. Can't find a better way to pass options to scalac.
   System.setProperty("macwire.debug", "")
