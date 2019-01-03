@@ -3,7 +3,7 @@ language: scala
 jdk:
   - oraclejdk8
 scala:
-   - 2.11.8
+   - 2.12.8
 script:
    - sbt ++$TRAVIS_SCALA_VERSION test
    - '[ "${TRAVIS_PULL_REQUEST}" = "false" ] && sbt updateImpactSubmit || true'
