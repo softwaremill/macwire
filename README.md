@@ -738,6 +738,6 @@ class AppApplicationLoader extends ApplicationLoader {
     // ... do the same as for Play 2.4.x
   }
 }
-```
+````
 
 There's also a [G8 template available](https://github.com/lloydmeta/ctdi-play.g8) which can be used with `sbt new`.
