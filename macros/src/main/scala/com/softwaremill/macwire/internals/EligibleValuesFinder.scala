@@ -150,10 +150,19 @@ private[macwire] class EligibleValuesFinder[C <: blackbox.Context](val c: C, log
         newValues
       } else {
         log.withBlock(s"Inspecting parent $tpe members") {
-          typeCheckIfNeeded(tpe).members.
+
+          val root = typeCheckIfNeeded(tpe)
+
+          root.members.
             filter(filterMember).
             foldLeft(newValues) { case (newValues, symbol) =>
-            newValues.put(Scope.ParentOrModule, symbol.typeSignature,
+
+            // Get a view of this symbol as seen from the enclosing class
+            // This ensures that type parameters are resolved correctly in parent traits.
+            // See - https://github.com/adamw/macwire/issues/126
+            val found = symbol.typeSignature.asSeenFrom(root, tpe.symbol)
+
+            newValues.put(Scope.ParentOrModule, found,
               Ident(TermName(symbol.name.decodedName.toString.trim()))) // q"$symbol" crashes the compiler...
           }
         }
