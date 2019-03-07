@@ -3,7 +3,7 @@ import sbt.Keys._
 
 val commonSettings = Defaults.coreDefaultSettings ++ Seq(
   organization := "com.softwaremill.macwire",
-  version := "2.3.1",
+  version := "2.3.2",
   scalaVersion := "2.12.8",
   crossScalaVersions := Seq("2.11.12", scalaVersion.value),
   // Sonatype OSS deployment
