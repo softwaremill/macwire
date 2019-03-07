@@ -1,0 +1,51 @@
+#include commonHKTClasses
+
+trait AProvider[APF[_]] {
+    def a : A[APF]
+}
+
+trait BProvider[BPF[_]] {
+    def b : B[BPF]
+}
+
+trait ModuleSimple[MSF[_]] { this : AProvider[MSF] =>
+    lazy val b = wire[B[MSF]]
+    lazy val c = wire[C[MSF]]
+}
+
+trait ModuleMultiple[MMF[_]] { this : AProvider[MMF] with BProvider[MMF] =>
+    lazy val c = wire[C[MMF]]
+}
+
+trait AProviderImpl[AIF[_]] extends AProvider[AIF] {
+    lazy val a = wire[A[AIF]]
+}
+
+trait ABProviderImpl[ABIF[_]] extends AProvider[ABIF] with BProvider[ABIF] {
+    lazy val a = wire[A[ABIF]]
+    lazy val b = wire[B[ABIF]]
+}
+
+object TestSimple extends ModuleSimple[IO] with AProviderImpl[IO]
+
+require(TestSimple.c.a == TestSimple.a)
+require(TestSimple.c.b == TestSimple.b)
+
+
+object TestMultiple extends ModuleMultiple[IO] with ABProviderImpl[IO]
+
+require(TestMultiple.c.a == TestMultiple.a)
+require(TestMultiple.c.b == TestMultiple.b)
+
+
+object ProviderAliasing {
+  type AAndB[AABF[_]] = AProvider[AABF] with BProvider[AABF]
+}
+
+trait AliasedMultiModule[AMMF[_]] { this: ProviderAliasing.AAndB[AMMF] =>
+  lazy val c = wire[C[AMMF]]
+}
+
+object TestAliasedMultiple extends AliasedMultiModule[IO] with ABProviderImpl[IO]
+require(TestAliasedMultiple.c.a == TestAliasedMultiple.a)
+require(TestAliasedMultiple.c.b == TestAliasedMultiple.b)

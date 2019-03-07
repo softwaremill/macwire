@@ -1,0 +1,8 @@
+import scala.language.higherKinds
+
+case class A[FA[_]]()
+case class B[FB[_]]( a:A[FB] )
+case class C[FC[_]]( a:A[FC], b:B[FC] )
+
+trait IO[T]
+trait OptionT[F[_], T]
