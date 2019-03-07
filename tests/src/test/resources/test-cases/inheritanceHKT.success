@@ -1,0 +1,19 @@
+#include commonHKTClasses
+
+trait Base1[F[_]] {
+  lazy val a = wire[A[F]]
+}
+
+trait Child1[F[_]] extends Base1[F] {
+  lazy val b = wire[B[F]]
+}
+
+trait Child2[F[_]] extends Base1[F] with Child1[F] {
+  lazy val c = wire[C[F]]
+}
+
+object ChildIO extends Child2[IO]
+
+require(ChildIO.b.a == ChildIO.a)
+require(ChildIO.c.a == ChildIO.a)
+require(ChildIO.c.b == ChildIO.b)
