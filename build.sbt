@@ -5,7 +5,7 @@ val commonSettings = Defaults.coreDefaultSettings ++ Seq(
   organization := "com.softwaremill.macwire",
   version := "2.3.2",
   scalaVersion := "2.12.8",
-  crossScalaVersions := Seq("2.11.12", scalaVersion.value),
+  crossScalaVersions := Seq("2.11.12", scalaVersion.value, "2.13.0"),
   // Sonatype OSS deployment
   publishTo := {
     val nexus = "https://oss.sonatype.org/"
@@ -57,10 +57,10 @@ val testSettings = commonSettings ++ Seq(
   fork in Test := true
 )
 
-val tagging = "com.softwaremill.common" %% "tagging" % "2.2.0"
-val scalatest = "org.scalatest" %% "scalatest" % "3.0.3"
+val tagging = "com.softwaremill.common" %% "tagging" % "2.2.1"
+val scalatest = "org.scalatest" %% "scalatest" % "3.0.8"
 val javassist = "org.javassist" % "javassist" % "3.20.0-GA"
-val akkaActor = "com.typesafe.akka" %% "akka-actor" % "2.4.16"
+val akkaActor = "com.typesafe.akka" %% "akka-actor" % "2.5.23"
 val javaxInject = "javax.inject" % "javax.inject" % "1"
 def scalaCompiler(v: String) = "org.scala-lang" % "scala-compiler" % v
 
