@@ -15,11 +15,11 @@ object MacwireMacros {
 
     lazy val targetType = companionCrimper.targetType.toString
     lazy val whatWasWrong: String = {
-      if(constructorCrimper.constructor.isEmpty && companionCrimper.companionType.isEmpty)
+      if (constructorCrimper.constructor.isEmpty && companionCrimper.companionType.isEmpty)
         s"Cannot find a public constructor nor a companion object for [$targetType]"
-      else if(companionCrimper.applies.isDefined && companionCrimper.applies.get.isEmpty)
+      else if (companionCrimper.applies.isDefined && companionCrimper.applies.get.isEmpty)
         s"Companion object for [$targetType] has no apply methods constructing target type."
-      else if(companionCrimper.applies.isDefined && companionCrimper.applies.get.size > 1)
+      else if (companionCrimper.applies.isDefined && companionCrimper.applies.get.size > 1)
         s"No public primary constructor found for $targetType and multiple matching apply methods in its companion object were found."
       else s"Target type not supported for wiring: $targetType. Please file a bug report with your use-case."
     }
@@ -37,9 +37,13 @@ object MacwireMacros {
     val dependencyResolver = new DependencyResolver[c.type](c, log)
     import typeCheckUtil.typeCheckIfNeeded
 
-    val Block(Nil, Function(params, Apply(fun, _))) = factory
+    val (params, fun) = factory match {
+      case Block(Nil, Function(p, Apply(f, _))) => (p, f)
+      case Function(p, Apply(f, _)) => (p, f)
+    }
+
     val values = params.map {
-      case vd @ ValDef(_, name, tpt, rhs) => dependencyResolver.resolve(vd.symbol, typeCheckIfNeeded(tpt))
+      case vd@ValDef(_, name, tpt, rhs) => dependencyResolver.resolve(vd.symbol, typeCheckIfNeeded(tpt))
     }
     val code = q"$fun(..$values)"
 
@@ -104,7 +108,8 @@ object MacwireMacros {
     log.withBlock(s"Generating wired-in-module for ${in.tree}") {
       val pairs = instanceFactoriesByClassInTree(in.tree)
 
-      val code = q"""
+      val code =
+        q"""
           val $capturedIn = $in
           com.softwaremill.macwire.Wired(scala.collection.immutable.Map(..$pairs))
        """
