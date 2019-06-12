@@ -25,7 +25,7 @@ object AfterAllTerminate {
       contextClassLoader = Some(Thread.currentThread().getContextClassLoader)).newThread(new Runnable {
       override def run(): Unit = {
         val terminate = system.terminate()
-        Await.result(terminate, 10 seconds)
+        Await.result(terminate, 10.seconds)
       }
     })
   )
