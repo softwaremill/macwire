@@ -600,13 +600,13 @@ The jars are deployed to [Sonatype's OSS repository](https://oss.sonatype.org/co
 To use MacWire in your project, add a dependency:
 
 ````scala
-libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.3.2" % "provided"
+libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.3.3" % "provided"
 
-libraryDependencies += "com.softwaremill.macwire" %% "macrosakka" % "2.3.2" % "provided"
+libraryDependencies += "com.softwaremill.macwire" %% "macrosakka" % "2.3.3" % "provided"
 
-libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.3.2"
+libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.3.3"
 
-libraryDependencies += "com.softwaremill.macwire" %% "proxy" % "2.3.2"
+libraryDependencies += "com.softwaremill.macwire" %% "proxy" % "2.3.3"
 ````
 
 The `macros` subproject contains only code which is used at compile-time, hence the `provided` scope.
@@ -621,9 +621,9 @@ To use the snapshot version:
 ````scala
 resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
-libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.3.2-SNAPSHOT" % "provided"
+libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.3.3-SNAPSHOT" % "provided"
 
-libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.3.2-SNAPSHOT"
+libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.3.3-SNAPSHOT"
 ````
 
 Currently 2.x supports Scala 2.11 and 2.12.
