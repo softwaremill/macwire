@@ -1,3 +1,5 @@
+![MacWire](https://github.com/softwaremill/macwire/raw/master/banner.png)
+
 Table of Contents
 =================
 
@@ -741,3 +743,12 @@ class AppApplicationLoader extends ApplicationLoader {
 ````
 
 There's also a [G8 template available](https://github.com/lloydmeta/ctdi-play.g8) which can be used with `sbt new`.
+
+## Commercial Support
+
+We offer commercial support for MacWire and related technologies, as well as development services. [Contact us](https://softwaremill.com) to learn more about our offer!
+
+## Copyright
+
+Copyright (C) 2013-2019 SoftwareMill [https://softwaremill.com](https://softwaremill.com).
+
