@@ -38,7 +38,11 @@ object MacwireMacros {
     import typeCheckUtil.typeCheckIfNeeded
 
     val (params, fun) = factory match {
+      // Function with two parameter lists (implicit parameters) (<2.13)
+      case Block(Nil, Function(p, Apply(Apply(f, _), _))) => (p, f)
       case Block(Nil, Function(p, Apply(f, _))) => (p, f)
+      // Function with two parameter lists (implicit parameters) (>=2.13)
+      case Function(p, Apply(Apply(f, _), _)) => (p, f)
       case Function(p, Apply(f, _)) => (p, f)
     }
 

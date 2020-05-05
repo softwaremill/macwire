@@ -1,0 +1,10 @@
+case class A(n: Int, s: String)
+object A {
+    def make(n: Int)(implicit s: String): A =
+        A(n, s)
+}
+
+lazy val n = 0
+implicit lazy val s: String = "s"
+
+wireWith(A.make _)
