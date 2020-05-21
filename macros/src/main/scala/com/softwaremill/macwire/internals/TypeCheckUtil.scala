@@ -43,7 +43,6 @@ private[macwire] class TypeCheckUtil[C <: blackbox.Context](val c: C, log: Logge
   def checkCandidate(target: Type, tpt: Type): Boolean = {
     val typesToCheck = tpt :: (tpt match {
       case NullaryMethodType(resultType) => List(resultType)
-      case MethodType(_, resultType) => List(resultType)
       case _ => Nil
     })
 

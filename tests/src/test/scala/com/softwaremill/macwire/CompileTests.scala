@@ -18,8 +18,8 @@ class CompileTests extends CompileTestsSupport {
       "phantomConstructor" -> List("Cannot find a public constructor nor a companion object for [Target]"),
       "companionObjectHasNoMethods" -> List("Companion object for",  "Target] has no apply methods constructing target type."),
       "companionObjectHasFakeApplyMethods" -> List("Companion object for",  "Target] has no apply methods constructing target type."),
-      "toManyInjectAnnotations" -> List("Ambiguous constructors annotated with @javax.inject.Inject for type [Target]")
-
+      "toManyInjectAnnotations" -> List("Ambiguous constructors annotated with @javax.inject.Inject for type [Target]"),
+      "nullaryMethodUsedAsCandidate" -> List("Found multiple values of type [A]: [List(foo, a)]")
     ),
     expectedWarnings = List(
       "forwardReferenceInBlock" -> List("Found [a] for parameter [a], but a forward reference [forwardA] was also eligible")

@@ -1,0 +1,16 @@
+class A()
+class B(val a: A)
+class C()
+
+object Module {
+  def foo(c: C): A = new A()
+}
+
+object Test {
+  import Module._
+
+  val a: A = new A()
+  val b: B = wire[B]
+}
+
+require(Test.b.a eq Test.a)
