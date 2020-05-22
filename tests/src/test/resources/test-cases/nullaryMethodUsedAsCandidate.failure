@@ -1,0 +1,13 @@
+class A()
+class B(val a: A)
+
+object Module {
+  def foo(): A = new A()
+}
+
+object Test {
+  import Module._
+
+  val a: A = new A()
+  val b: B = wire[B]
+}
