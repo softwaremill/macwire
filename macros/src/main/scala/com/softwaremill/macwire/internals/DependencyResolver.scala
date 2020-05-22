@@ -19,6 +19,11 @@ private[macwire] class DependencyResolver[C <: blackbox.Context](val c: C, debug
   def resolve(param: Symbol, t: Type): Tree = {
 
     eligibleValues.findInFirstScope(t).toList match {
+      case Nil if isOption(t) =>
+        getOptionArg(t).flatMap(u => eligibleValues.findInFirstScope(u).toList.headOption) match { //FIXME: handle multiple values (tests, tests...)
+          case Some(argTree) => q"Some($argTree)"
+          case None => q"None"
+        }
       case Nil => c.abort(c.enclosingPosition, s"Cannot find a value of type: [$t]")
       case value :: Nil =>
         val forwardValues = eligibleValues.findInScope(t, LocalForward)
@@ -30,6 +35,15 @@ private[macwire] class DependencyResolver[C <: blackbox.Context](val c: C, debug
       case values => c.abort(c.enclosingPosition, s"Found multiple values of type [$t]: [$values]")
     }
   }
+
+  private def isOption(t: Type): Boolean = getOptionArg(t).nonEmpty
+
+  private def getOptionArg(t: Type): Option[Type] = t.baseType(typeOf[Option[_]].typeSymbol) match {
+    case TypeRef(_, _, arg :: Nil) => Some(arg)
+    case NoType => None
+  }
+
+  
 
   /** @return all the instances of type `t` that are accessible.
     */
