@@ -1,0 +1,20 @@
+class A()
+class B(val oa: Option[Option[A]])
+
+object TestSome {
+    val a = Some(new A())
+    val b = wire[B]
+}
+
+object TestNestedSome {
+    val a = new A()
+    val b = wire[B]
+}
+
+object TestNone {
+    val b = wire[B]
+}
+
+require(TestSome.b.oa.contains(TestSome.a))
+require(TestNestedSome.b.oa.get.contains(TestNestedSome.a))
+require(TestNone.b.oa.isEmpty)
