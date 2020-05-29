@@ -1,0 +1,36 @@
+import akka.actor.{Actor, ActorSystem, IndirectActorProducer, Props}
+import com.softwaremill.macwire.akkasupport._
+
+/**
+  * In this example I am constructing simple actor with many parameter lists.
+  */
+
+trait A
+trait B
+trait C
+trait D
+
+class SomeActor(a: A)(b: B, c: C)(d: D)  extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+class SomeActorFactory(a: A)(c: C)(d: D) extends IndirectActorProducer {
+  override def produce(): Actor = new SomeActor(a)(new B{}, c)(d)
+  override def actorClass: Class[_ <: Actor] = classOf[SomeActor]
+}
+
+val a = new A {}
+lazy val b: B = throw new UnsupportedOperationException()
+val c = new C {}
+val d = new D {}
+
+val system = ActorSystem("wirePropsWithProducer-2-manyParameterLists")
+AfterAllTerminate(system)
+
+val props: Props = wirePropsWith[SomeActorFactory]
+
+val someActor = system.actorOf(props, "someActor")
+
+someActor ! "Hey someActor"

@@ -1,0 +1,46 @@
+import akka.actor.{Actor, ActorSystem, IndirectActorProducer, Props}
+import com.softwaremill.macwire.akkasupport._
+
+/**
+  * In this example I am creating actor that has 3 constructors.
+  * `wirePropsWithProducer` will look for dependencies for the constructor annotated
+  * with @Inject. Here it's missing so code will not compile.
+  */
+
+trait A
+trait B
+trait C
+trait D
+
+class SomeActor(a: A, b: B) extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+class SomeActorFactory(a: A) extends IndirectActorProducer {
+
+  def this(b: B) = {
+    this(new A{})
+    throw new UnsupportedOperationException()
+  }
+
+  @javax.inject.Inject
+  def this(c: C) = this(new A{})
+
+  override def produce(): Actor = new SomeActor(a, new B{})
+  override def actorClass: Class[_ <: Actor] = classOf[SomeActor]
+}
+
+lazy val a: A = throw new UnsupportedOperationException()
+lazy val b: B = throw new UnsupportedOperationException()
+//val c = new C {}
+
+val system = ActorSystem("wirePropsWithProducer-6-injectAnnotationButNoDependencyInScope")
+AfterAllTerminate(system)
+
+val props: Props = wirePropsWith[SomeActorFactory]
+
+val someActor = system.actorOf(props, "someActor")
+
+someActor ! "Hey someActor"

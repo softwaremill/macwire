@@ -1,6 +1,6 @@
 package com.softwaremill.macwire.akkasupport.internals
 
-import akka.actor.{ActorRef, ActorRefFactory, Props}
+import akka.actor.{ActorRef, ActorRefFactory, IndirectActorProducer, Props}
 import com.softwaremill.macwire.internals.{ConstructorCrimper, Logger}
 
 import scala.reflect.macros.blackbox
@@ -17,6 +17,8 @@ private[macwire] final class Crimper[C <: blackbox.Context, T: C#WeakTypeTag](va
     .flatten
 
   lazy val propsTree = q"akka.actor.Props(classOf[$targetType], ..$args)"
+
+  lazy val propsWithProducerTree = q"akka.actor.Props.create(classOf[$targetType], ..$args)"
 
   lazy val wireProps: c.Expr[Props] = log.withBlock(s"wireProps[$targetType]: at ${c.enclosingPosition}") {
     log("Generated code: " + showRaw(propsTree))
@@ -40,5 +42,37 @@ private[macwire] final class Crimper[C <: blackbox.Context, T: C#WeakTypeTag](va
     val tree = q"$actorRefFactoryTree.actorOf($propsTree, ${name.tree})"
     log("Generated code: " + showRaw(tree))
     c.Expr[ActorRef](tree)
+  }
+
+  lazy val wirePropsWithProducer: c.Expr[Props] = log.withBlock(s"wirePropsWithProducer[$targetType]: at ${c.enclosingPosition}") {
+    log("Generated code: " + showRaw(propsWithProducerTree))
+    c.Expr[Props](propsWithProducerTree)
+  }
+
+  lazy val wirePropsWith: c.Expr[Props] = weakTypeOf[T] match {
+    case t if t <:< typeOf[IndirectActorProducer] => wirePropsWithProducer
+    case _ => c.abort(c.enclosingPosition, s"wirePropsWith does not support the type: [$targetType]")
+  }
+
+  lazy val wireAnonymousActorWithProducer: c.Expr[ActorRef] = log.withBlock(s"Constructing ActorRef. Trying to find arguments for constructor of: [$targetType] at ${c.enclosingPosition}") {
+    val tree = q"$actorRefFactoryTree.actorOf($propsWithProducerTree)"
+    log("Generated code: " + showRaw(tree))
+    c.Expr[ActorRef](tree)
+  }
+
+  lazy val wireAnonymousActorWith: c.Expr[ActorRef] = weakTypeOf[T] match {
+    case t if t <:< typeOf[IndirectActorProducer] => wireAnonymousActorWithProducer
+    case _ => c.abort(c.enclosingPosition, s"wireAnonymousActorWith does not support the type: [$targetType]")
+  }
+
+  def wireActorWithProducer(name: c.Expr[String]): c.Expr[ActorRef] = log.withBlock(s"wireActorWithProducer[$targetType]: at ${c.enclosingPosition}") {
+    val tree = q"$actorRefFactoryTree.actorOf($propsWithProducerTree, ${name.tree})"
+    log("Generated code: " + showRaw(tree))
+    c.Expr[ActorRef](tree)
+  }
+
+  def wireActorWith(name: c.Expr[String]): c.Expr[ActorRef] = weakTypeOf[T] match {
+    case t if t <:< typeOf[IndirectActorProducer] => wireActorWithProducer(name)
+    case _ => c.abort(c.enclosingPosition, s"wireActorWith does not support the type: [$targetType]")
   }
 }

@@ -31,7 +31,7 @@ class SomeActor(a: A) extends Actor {
 
 val a = new A {}
 
-val system = ActorSystem("wireActor-1-makeActorInActor")
+val system = ActorSystem("wireActor-10-makeActorInActor")
 AfterAllTerminate(system)
 
 val someActor = wireActor[SomeActor]("bob")
