@@ -41,11 +41,9 @@ object MacwireMacros {
       // Function with two parameter lists (implicit parameters) (<2.13)
       case Block(Nil, Function(p, Apply(Apply(f, _), _))) => (p, f)
       case Block(Nil, Function(p, Apply(f, _))) => (p, f)
-      case Block(Nil, Function(p, f)) if p.isEmpty => (p, f)
       // Function with two parameter lists (implicit parameters) (>=2.13)
       case Function(p, Apply(Apply(f, _), _)) => (p, f)
       case Function(p, Apply(f, _)) => (p, f)
-      case Function(p, f) if p.isEmpty => (p, f)
       // Other types not supported
       case _ => c.abort(c.enclosingPosition, s"Not supported factory type: [$factory]")
     }
