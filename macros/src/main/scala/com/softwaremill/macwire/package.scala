@@ -7,6 +7,7 @@ package object macwire {
 
   def wireSet[T]: Set[T] = macro MacwireMacros.wireSet_impl[T]
 
+  def wireWith[RES](factory: () => RES): RES = macro MacwireMacros.wireWith_impl[RES]
   def wireWith[A,RES](factory: (A) => RES): RES = macro MacwireMacros.wireWith_impl[RES]
   def wireWith[A,B,RES](factory: (A,B) => RES): RES = macro MacwireMacros.wireWith_impl[RES]
   def wireWith[A,B,C,RES](factory: (A,B,C) => RES): RES = macro MacwireMacros.wireWith_impl[RES]

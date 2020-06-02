@@ -37,19 +37,27 @@ object MacwireMacros {
     val dependencyResolver = new DependencyResolver[c.type](c, log)
     import typeCheckUtil.typeCheckIfNeeded
 
-    val (params, fun) = factory match {
-      // Function with two parameter lists (implicit parameters) (<2.13)
-      case Block(Nil, Function(p, Apply(Apply(f, _), _))) => (p, f)
-      case Block(Nil, Function(p, Apply(f, _))) => (p, f)
-      // Function with two parameter lists (implicit parameters) (>=2.13)
-      case Function(p, Apply(Apply(f, _), _)) => (p, f)
-      case Function(p, Apply(f, _)) => (p, f)
+    def functionCode(params: List[c.universe.ValDef], fun: c.universe.Tree) = {
+      val values = params.map {
+        case vd@ValDef(_, name, tpt, rhs) => dependencyResolver.resolve(vd.symbol, typeCheckIfNeeded(tpt))
+      }
+      q"$fun(..$values)"
     }
 
-    val values = params.map {
-      case vd@ValDef(_, name, tpt, rhs) => dependencyResolver.resolve(vd.symbol, typeCheckIfNeeded(tpt))
+    def functionWithoutParamsCode(fun: c.universe.Tree) = q"$fun"
+
+    val code = factory match {
+      // Function with two parameter lists (implicit parameters) (<2.13)
+      case Block(Nil, Function(p, Apply(Apply(f, _), _))) => functionCode(p, f)
+      case Block(Nil, Function(p, Apply(f, _))) => functionCode(p, f)
+      case Block(Nil, Function(p, f)) if p.isEmpty => functionWithoutParamsCode(f)
+      // Function with two parameter lists (implicit parameters) (>=2.13)
+      case Function(p, Apply(Apply(f, _), _)) => functionCode(p, f)
+      case Function(p, Apply(f, _)) => functionCode(p, f)
+      case Function(p, f) if p.isEmpty => functionWithoutParamsCode(f)
+      // Other types not supported
+      case _ => c.abort(c.enclosingPosition, s"Not supported factory type: [$factory]")
     }
-    val code = q"$fun(..$values)"
 
     log("Generated code: " + showCode(code))
     code
