@@ -1,0 +1,46 @@
+import akka.actor.{Actor, ActorSystem, IndirectActorProducer}
+import com.softwaremill.macwire.akkasupport._
+
+/**
+  * In this example SomeActorFactory has no public constructors.
+  * Thus wireProps will not find suitable one and fail compilation.
+  */
+
+trait A
+trait B
+trait C
+trait D
+
+class SomeActor(a: A, b: B) extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+class SomeActorFactory private (a: A) extends IndirectActorProducer {
+
+  private def this(b: B) = {
+    this(new A{})
+    throw new UnsupportedOperationException()
+  }
+
+  private def this(c: C) = this(new A{})
+
+  @javax.inject.Inject
+  private def this(d: D) = this(new A{})
+
+  override def produce(): Actor = new SomeActor(a, new B{})
+  override def actorClass: Class[_ <: Actor] = classOf[SomeActor]
+}
+
+lazy val a: A = throw new UnsupportedOperationException()
+lazy val b: B = throw new UnsupportedOperationException()
+val c = new C {}
+val d = new D {}
+
+val system = ActorSystem("wireAnonymousActorWithProducer-12-noPublicConstructor")
+AfterAllTerminate(system)
+
+val someActor = wireAnonymousActorWith[SomeActorFactory]
+
+someActor ! "Hey someActor"

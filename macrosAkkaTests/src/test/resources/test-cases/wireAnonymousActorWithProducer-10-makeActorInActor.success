@@ -1,4 +1,4 @@
-import akka.actor.{Actor, ActorRef, ActorSystem}
+import akka.actor.{Actor, ActorRef, ActorSystem, IndirectActorProducer}
 import com.softwaremill.macwire.akkasupport._
 
 /**
@@ -9,20 +9,28 @@ import com.softwaremill.macwire.akkasupport._
 
 trait A
 class B
+trait C
 
-class Subordinate(a: A)(b: B) extends Actor {
+class Subordinate(a: A)(b: B, c: C) extends Actor {
   override def receive: Receive = {
     case m => //println(m)
   }
 }
 
+class SubordinateFactory(a: A)(b: B) extends IndirectActorProducer {
+  override def produce(): Actor = new Subordinate(a)(b, new C{})
+  override def actorClass: Class[_ <: Actor] = classOf[SomeActor]
+}
+
 class SomeActor(a: A) extends Actor {
 
   val b = new B {}
-  val subordinates: Seq[ActorRef] = (0 to 2).map(i =>
+  lazy val c: C = throw new UnsupportedOperationException()
+
+  val subordinates: Seq[ActorRef] = (0 to 2).map { i =>
     //subordinate depends on A and B which are in scope
-    context.actorOf(wireProps[Subordinate], s"sub$i")
-  )
+    wireAnonymousActorWith[SubordinateFactory]
+  }
 
   override def receive: Receive = {
     case m => subordinates.foreach(_ ! m)
@@ -31,7 +39,7 @@ class SomeActor(a: A) extends Actor {
 
 val a = new A {}
 
-val system = ActorSystem("wireProps-10-makeActorInActor")
+val system = ActorSystem("wireAnonymousActorWithProducer-10-makeActorInActor")
 AfterAllTerminate(system)
 
 val someActor = wireActor[SomeActor]("bob")

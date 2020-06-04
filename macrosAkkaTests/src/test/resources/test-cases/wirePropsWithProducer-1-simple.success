@@ -1,0 +1,32 @@
+import akka.actor.{Actor, ActorSystem, IndirectActorProducer, Props}
+import com.softwaremill.macwire.akkasupport._
+
+/**
+  * In this example I am constructing simple actor with 1 dependency.
+  */
+
+trait A
+trait B
+
+class SomeActor(a: A, b: B) extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+class SomeActorFactory(a: A) extends IndirectActorProducer {
+  override def produce(): Actor = new SomeActor(a, new B{})
+  override def actorClass: Class[_ <: Actor] = classOf[SomeActor]
+}
+
+val a = new A {}
+lazy val b: B = throw new UnsupportedOperationException()
+
+val system = ActorSystem("wirePropsWithProducer-1-simple")
+AfterAllTerminate(system)
+
+val props: Props = wirePropsWith[SomeActorFactory]
+
+val someActor = system.actorOf(props, "someActor")
+
+someActor ! "Hey someActor"
