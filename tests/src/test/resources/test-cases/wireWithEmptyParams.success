@@ -1,0 +1,15 @@
+object Test {
+
+    case class C(s: String)
+
+    object C {
+        def factory(): C = {
+            val s = "hey!"
+            wire[C]
+        }
+    }
+
+    lazy val c: C = wireWith(C.factory _)
+}
+
+require(Test.c.s == "hey!")

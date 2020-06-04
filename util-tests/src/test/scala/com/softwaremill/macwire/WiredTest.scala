@@ -44,7 +44,7 @@ class WiredTest extends FlatSpec with Matchers {
     testLookup(implsMap4, classOf[Y], 0)
   }
 
-  def testLookup(map: InstanceFactoryMap, cls: Class[_], expectedCount: Int) {
+  def testLookup(map: InstanceFactoryMap, cls: Class[_], expectedCount: Int): Unit = {
     val result = new Wired(map).lookup(cls)
     result should have size (expectedCount)
     result.foreach(r => cls.isAssignableFrom(r.getClass) should be (true))

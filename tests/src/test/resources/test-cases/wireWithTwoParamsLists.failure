@@ -1,0 +1,21 @@
+case class A()
+case class B()
+
+trait BProvider {
+    lazy val b: B = wire[B]
+}
+
+object Test extends BProvider {
+
+    case class C(a: A, b: B, s: String)
+
+    object C {
+        def factory(a: A)(b: B): C = {
+            val s = "hey!"
+            wire[C]
+        }
+    }
+
+    lazy val a: A = wire[A]
+    lazy val c: C = wireWith(C.factory _)
+}

@@ -44,6 +44,8 @@ object MacwireMacros {
       // Function with two parameter lists (implicit parameters) (>=2.13)
       case Function(p, Apply(Apply(f, _), _)) => (p, f)
       case Function(p, Apply(f, _)) => (p, f)
+      // Other types not supported
+      case _ => c.abort(c.enclosingPosition, s"Not supported factory type: [$factory]")
     }
 
     val values = params.map {
