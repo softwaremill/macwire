@@ -1,0 +1,29 @@
+import akka.actor.{Actor, ActorSystem, Props}
+import com.softwaremill.macwire.akkasupport._
+
+/**
+  * In this example I am constructing simple actor without dependencies.
+  */
+
+trait A
+
+class SomeActor(a: A) extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+object SomeActor {
+  def get() = new SomeActor(new A{})
+}
+
+lazy val a: A = throw new UnsupportedOperationException()
+
+val system = ActorSystem("wirePropsWithFunction-4-noDependenciesAtAll")
+AfterAllTerminate(system)
+
+val props: Props = wirePropsWith(SomeActor.get _)
+
+val someActor = system.actorOf(props, "someActor")
+
+someActor ! "Hey someActor"
