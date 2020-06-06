@@ -27,7 +27,7 @@ class SomeActor(a: A) extends Actor {
 
   val subordinates: Seq[ActorRef] = (0 to 2).map { i =>
     //subordinate factory depends on A and B which are in scope
-    wireAnonymousActorWith(Subordinate.get _)
+    wireActorWith(Subordinate.get _)(s"sub$i")
   }
 
   override def receive: Receive = {
@@ -35,7 +35,7 @@ class SomeActor(a: A) extends Actor {
   }
 }
 
-val system = ActorSystem("wireAnonymousActorWithFactory-10-makeActorInActor")
+val system = ActorSystem("wireActorWithFactory-10-makeActorInActor")
 AfterAllTerminate(system)
 
 val a = new A {}

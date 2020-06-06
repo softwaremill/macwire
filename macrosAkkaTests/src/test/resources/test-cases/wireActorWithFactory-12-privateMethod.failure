@@ -1,0 +1,26 @@
+import akka.actor.{Actor, ActorSystem, Props}
+import com.softwaremill.macwire.akkasupport._
+
+/**
+  * In this example SomeActor factory is a private method.
+  * Thus wireProps will not find it suitable and fail compilation.
+  */
+
+trait A
+
+class SomeActor(a: A) extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+object SomeActor {
+  private def get(a: A) = new SomeActor(a)
+}
+
+val system = ActorSystem("wireActorWithFactory-12-privateMethod")
+AfterAllTerminate(system)
+
+val a = new A{}
+
+val someActor = wireActorWith(SomeActor.get _)("bob")

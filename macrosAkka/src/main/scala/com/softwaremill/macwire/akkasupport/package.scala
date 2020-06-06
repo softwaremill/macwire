@@ -17,5 +17,10 @@ package object akkasupport {
   def wireAnonymousActorWith[A, B, T](factory: (A, B) => T): ActorRef = macro MacwireAkkaMacros.wireAnonymousActorWithFactory_Impl[T]
   def wireAnonymousActorWith[A, B, C, T](factory: (A, B, C) => T): ActorRef = macro MacwireAkkaMacros.wireAnonymousActorWithFactory_Impl[T]
   //FIXME: more function types
+
+  def wireActorWith[T](factory: () => T)(name: String): ActorRef = macro MacwireAkkaMacros.wireActorWithFactory_Impl[T]
+  def wireActorWith[A, T](factory: (A) => T)(name: String): ActorRef = macro MacwireAkkaMacros.wireActorWithFactory_Impl[T]
+  def wireActorWith[A, B, T](factory: (A, B) => T)(name: String): ActorRef = macro MacwireAkkaMacros.wireActorWithFactory_Impl[T]
+  def wireActorWith[A, B, C, T](factory: (A, B, C) => T)(name: String): ActorRef = macro MacwireAkkaMacros.wireActorWithFactory_Impl[T]
 }
 

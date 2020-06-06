@@ -2,7 +2,8 @@ import akka.actor.{Actor, ActorSystem, Props}
 import com.softwaremill.macwire.akkasupport._
 
 /**
-  * In this example I am constructing simple actor with 2 dependencies.
+  * In this example I am constructing simple actor but I don't provide dependency for it.
+  * `wireActorWithProducer` will not find it and then not compile.
   */
 
 trait A
@@ -18,12 +19,9 @@ object SomeActor {
   def get(a: A) = new SomeActor(a, new B{})
 }
 
-val a = new A {}
-lazy val b: B = throw new UnsupportedOperationException()
+//no dependency of type A in scope
 
-val system = ActorSystem("wireAnonymousActorWithFunction-1-simple")
+val system = ActorSystem("wireActorWithFactory-3-missingDependency")
 AfterAllTerminate(system)
 
-val someActor = wireAnonymousActorWith(SomeActor.get _)
-
-someActor ! "Hey someActor"
+wireActorWith(SomeActor.get _)("bob")
