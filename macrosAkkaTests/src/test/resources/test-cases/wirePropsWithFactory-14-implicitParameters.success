@@ -19,11 +19,11 @@ object SomeActor {
   def get(a: A)(implicit c: C) = new SomeActor(a, new B{})
 }
 
-val system = ActorSystem("wirePropsWithFactory-14-implicitParameters")
-AfterAllTerminate(system)
-
 val a = new A {}
 implicit val c = new C {}
+
+val system = ActorSystem("wirePropsWithFactory-14-implicitParameters")
+AfterAllTerminate(system)
 
 val props: Props = wirePropsWith(SomeActor.get _)
 

@@ -12,6 +12,6 @@ object NotActor {
   def get() = new NotActor
 }
 
-val system = ActorSystem("wireAnonymousActorWithFunction-7-notActorFactory")
+val system = ActorSystem("wireAnonymousActorWithFactory-7-notActorFactory")
 
 wireAnonymousActorWith(NotActor.get _)

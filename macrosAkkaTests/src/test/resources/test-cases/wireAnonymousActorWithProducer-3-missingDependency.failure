@@ -15,7 +15,7 @@ class SomeActor(a: A, b: B) extends Actor {
   }
 }
 
-class SomeActorFactory(a: A) extends IndirectActorProducer {
+class SomeActorProducer(a: A) extends IndirectActorProducer {
   override def produce(): Actor = new SomeActor(a, new B{})
   override def actorClass: Class[_ <: Actor] = classOf[SomeActor]
 }
@@ -25,4 +25,4 @@ class SomeActorFactory(a: A) extends IndirectActorProducer {
 val system = ActorSystem("wireAnonymousActorWithProducer-3-missingDependency")
 AfterAllTerminate(system)
 
-wireAnonymousActorWith[SomeActorFactory]
+wireAnonymousActorWith[SomeActorProducer]

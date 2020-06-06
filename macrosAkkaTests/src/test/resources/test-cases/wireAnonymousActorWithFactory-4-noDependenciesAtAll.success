@@ -19,7 +19,7 @@ object SomeActor {
 
 lazy val a: A = throw new UnsupportedOperationException()
 
-val system = ActorSystem("wireAnonymousActorWithFunction-4-noDependenciesAtAll")
+val system = ActorSystem("wireAnonymousActorWithFactory-4-noDependenciesAtAll")
 AfterAllTerminate(system)
 
 val someActor = wireAnonymousActorWith(SomeActor.get _)

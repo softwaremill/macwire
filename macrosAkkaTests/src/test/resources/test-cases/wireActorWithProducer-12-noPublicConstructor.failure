@@ -2,7 +2,7 @@ import akka.actor.{Actor, ActorSystem, IndirectActorProducer}
 import com.softwaremill.macwire.akkasupport._
 
 /**
-  * In this example SomeActorFactory has no public constructors.
+  * In this example SomeActorProducer has no public constructors.
   * Thus wireProps will not find suitable one and fail compilation.
   */
 
@@ -17,7 +17,7 @@ class SomeActor(a: A, b: B) extends Actor {
   }
 }
 
-class SomeActorFactory private (a: A) extends IndirectActorProducer {
+class SomeActorProducer private (a: A) extends IndirectActorProducer {
 
   private def this(b: B) = {
     this(new A{})
@@ -41,6 +41,6 @@ val d = new D {}
 val system = ActorSystem("wireActorWithProducer-12-noPublicConstructor")
 AfterAllTerminate(system)
 
-val someActor = wireActorWith[SomeActorFactory]("bob")
+val someActor = wireActorWith[SomeActorProducer]("bob")
 
 someActor ! "Hey someActor"

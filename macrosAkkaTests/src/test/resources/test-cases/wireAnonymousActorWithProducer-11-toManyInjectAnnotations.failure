@@ -16,7 +16,7 @@ class SomeActor(a: A, b: B) extends Actor {
   }
 }
 
-class SomeActorFactory(a: A) extends IndirectActorProducer {
+class SomeActorProducer(a: A) extends IndirectActorProducer {
 
   def this(b: B) = {
     this(new A{})
@@ -41,6 +41,6 @@ val d = new D {}
 val system = ActorSystem("wireAnonymousActorWithProducer-11-toManyInjectAnnotations")
 AfterAllTerminate(system)
 
-val someActor = wireAnonymousActorWith[SomeActorFactory]
+val someActor = wireAnonymousActorWith[SomeActorProducer]
 
 someActor ! "Hey someActor"

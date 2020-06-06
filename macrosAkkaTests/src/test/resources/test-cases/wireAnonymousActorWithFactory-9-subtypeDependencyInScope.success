@@ -22,7 +22,7 @@ object SomeActor {
   def get(a: A) = new SomeActor(a, new B{})
 }
 
-val system = ActorSystem("wireAnonymousActorWithProducer-9-subtypeDependencyInScope")
+val system = ActorSystem("wireAnonymousActorWithFactory-9-subtypeDependencyInScope")
 AfterAllTerminate(system)
 
 val a: AA = new AA {}

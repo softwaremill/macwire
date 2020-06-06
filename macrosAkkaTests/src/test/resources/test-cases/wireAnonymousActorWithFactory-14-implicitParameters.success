@@ -19,11 +19,11 @@ object SomeActor {
   def get(a: A)(implicit c: C) = new SomeActor(a, new B{})
 }
 
-val system = ActorSystem("wireAnonymousActorWithFunction-14-implicitParameters")
-AfterAllTerminate(system)
-
 val a = new A {}
 implicit val c = new C {}
+
+val system = ActorSystem("wireAnonymousActorWithFactory-14-implicitParameters")
+AfterAllTerminate(system)
 
 val someActor = wireAnonymousActorWith(SomeActor.get _)
 

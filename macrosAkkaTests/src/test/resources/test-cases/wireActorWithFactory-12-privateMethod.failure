@@ -18,9 +18,9 @@ object SomeActor {
   private def get(a: A) = new SomeActor(a)
 }
 
+val a = new A{}
+
 val system = ActorSystem("wireActorWithFactory-12-privateMethod")
 AfterAllTerminate(system)
-
-val a = new A{}
 
 val someActor = wireActorWith(SomeActor.get _)("bob")

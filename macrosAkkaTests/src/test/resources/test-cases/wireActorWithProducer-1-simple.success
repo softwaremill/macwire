@@ -2,7 +2,7 @@ import akka.actor.{Actor, ActorSystem, IndirectActorProducer}
 import com.softwaremill.macwire.akkasupport._
 
 /**
-  * In this example I am constructing simple actor with 1 dependency.
+  * In this example I am constructing simple actor with 2 dependencies.
   */
 
 trait A
@@ -14,7 +14,7 @@ class SomeActor(a: A, b: B) extends Actor {
   }
 }
 
-class SomeActorFactory(a: A) extends IndirectActorProducer {
+class SomeActorProducer(a: A) extends IndirectActorProducer {
   override def produce(): Actor = new SomeActor(a, new B{})
   override def actorClass: Class[_ <: Actor] = classOf[SomeActor]
 }
@@ -25,6 +25,6 @@ lazy val b: B = throw new UnsupportedOperationException()
 val system = ActorSystem("wireActorWithProducer-1-simple")
 AfterAllTerminate(system)
 
-val someActor = wireActorWith[SomeActorFactory]("bob")
+val someActor = wireActorWith[SomeActorProducer]("bob")
 
 someActor ! "Hey someActor"

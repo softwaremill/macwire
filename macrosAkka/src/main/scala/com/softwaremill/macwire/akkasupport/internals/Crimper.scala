@@ -38,13 +38,23 @@ private[macwire] final class Crimper[C <: blackbox.Context, T: C#WeakTypeTag](va
 
   def wireActor(name: c.Expr[String]): c.Expr[ActorRef] = log.withBlock(s"wireActor[$targetType]: at ${c.enclosingPosition}") {
     val tree = q"$actorRefFactoryTree.actorOf($propsTree, ${name.tree})"
-    log("Generated code: " + showCode(tree))
+    log("Generated code: " + showRaw(tree))
     c.Expr[ActorRef](tree)
   }
 
   lazy val wirePropsWithProducer: c.Expr[Props] = weakTypeOf[T] match {
     case t if t <:< typeOf[IndirectActorProducer] => wireProps
     case _ => c.abort(c.enclosingPosition, s"wirePropsWith does not support the type: [$targetType]")
+  }
+
+  lazy val wireAnonymousActorWithProducer: c.Expr[ActorRef] = weakTypeOf[T] match {
+    case t if t <:< typeOf[IndirectActorProducer] => wireAnonymousActor
+    case _ => c.abort(c.enclosingPosition, s"wireAnonymousActorWith does not support the type: [$targetType]")
+  }
+
+  def wireActorWithProducer(name: c.Expr[String]): c.Expr[ActorRef] = weakTypeOf[T] match {
+    case t if t <:< typeOf[IndirectActorProducer] => wireActor(name)
+    case _ => c.abort(c.enclosingPosition, s"wireActorWith does not support the type: [$targetType]")
   }
 
   def wirePropsWithFactory(factory: c.Tree): c.Expr[Props] = log.withBlock(s"wireProps[$targetType]: at ${c.enclosingPosition}") {
@@ -56,24 +66,14 @@ private[macwire] final class Crimper[C <: blackbox.Context, T: C#WeakTypeTag](va
     c.Expr[Props](propsTree)
   }
 
-  lazy val wireAnonymousActorWithProducer: c.Expr[ActorRef] = weakTypeOf[T] match {
-    case t if t <:< typeOf[IndirectActorProducer] => wireAnonymousActor
-    case _ => c.abort(c.enclosingPosition, s"wireAnonymousActorWith does not support the type: [$targetType]")
-  }
-
   def wireAnonymousActorWithFactory(factory: c.Tree): c.Expr[ActorRef] = log.withBlock(s"Constructing ActorRef. Trying to find arguments for constructor of: [$targetType] at ${c.enclosingPosition}") {
     import com.softwaremill.macwire.MacwireMacros._
 
     val funTree = wireWith_impl(c)(factory)
     val propsTree = q"akka.actor.Props($funTree)"
     val tree = q"$actorRefFactoryTree.actorOf($propsTree)"
-    log("Generated code: " + showCode(tree))
+    log("Generated code: " + showRaw(tree))
     c.Expr[ActorRef](tree)
-  }
-
-  def wireActorWithProducer(name: c.Expr[String]): c.Expr[ActorRef] = weakTypeOf[T] match {
-    case t if t <:< typeOf[IndirectActorProducer] => wireActor(name)
-    case _ => c.abort(c.enclosingPosition, s"wireActorWith does not support the type: [$targetType]")
   }
 
   def wireActorWithFactory(factory: c.Tree)(name: c.Expr[String]): c.Expr[ActorRef] = log.withBlock(s"wireActorWithProducer[$targetType]: at ${c.enclosingPosition}") {

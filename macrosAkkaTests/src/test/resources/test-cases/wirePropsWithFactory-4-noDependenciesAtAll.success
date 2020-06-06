@@ -19,7 +19,7 @@ object SomeActor {
 
 lazy val a: A = throw new UnsupportedOperationException()
 
-val system = ActorSystem("wirePropsWithFunction-4-noDependenciesAtAll")
+val system = ActorSystem("wirePropsWithFactory-4-noDependenciesAtAll")
 AfterAllTerminate(system)
 
 val props: Props = wirePropsWith(SomeActor.get _)

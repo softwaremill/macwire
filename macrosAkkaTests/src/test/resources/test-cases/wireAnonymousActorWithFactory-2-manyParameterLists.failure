@@ -19,12 +19,12 @@ object SomeActor {
   def get(a: A)(c: C) = new SomeActor(a)(new B{}, c)
 }
 
-val system = ActorSystem("wireAnonymousActorWithProducer-2-manyParameterLists")
-AfterAllTerminate(system)
-
 val a = new A {}
 lazy val b: B = throw new UnsupportedOperationException()
 val c = new C {}
+
+val system = ActorSystem("wireAnonymousActorWithFactory-2-manyParameterLists")
+AfterAllTerminate(system)
 
 val someActor = wireAnonymousActorWith(SomeActor.get _)
 

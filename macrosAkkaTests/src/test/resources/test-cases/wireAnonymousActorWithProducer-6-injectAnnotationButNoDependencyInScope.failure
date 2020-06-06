@@ -18,7 +18,7 @@ class SomeActor(a: A, b: B) extends Actor {
   }
 }
 
-class SomeActorFactory(a: A) extends IndirectActorProducer {
+class SomeActorProducer(a: A) extends IndirectActorProducer {
 
   def this(b: B) = {
     this(new A{})
@@ -39,6 +39,6 @@ lazy val b: B = throw new UnsupportedOperationException()
 val system = ActorSystem("wireAnonymousActorWithProducer-6-injectAnnotationButNoDependencyInScope")
 AfterAllTerminate(system)
 
-val someActor = wireAnonymousActorWith[SomeActorFactory]
+val someActor = wireAnonymousActorWith[SomeActorProducer]
 
 someActor ! "Hey someActor"
