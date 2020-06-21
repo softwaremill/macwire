@@ -539,7 +539,7 @@ class UserStatusReaderActor(theDatabaseAccess: DatabaseAccess) extends Actor {
 ```
 
 The difference is that previously macro expanded into `system.actorOf(...)`
-and when inside another actor it expanded into `context.actoOf(...)`.
+and when inside another actor it expanded into `context.actorOf(...)`.
 
 
 It's possible to create anonymous actors. `wireAnonymousActor` is for it:
@@ -593,6 +593,21 @@ class UserFinderActor(databaseAccess: ActorRef @@ DatabaseAccess, securityFilter
 
 val userFinder = wireActor[UserFinderActor]
 ```
+
+It is also possible to wire an actor using a factory function.
+For that, the module provides three additional macros `wireAnonymousActorWith`, `wireActorWith` and `wirePropsWith`.
+Their usage is similar to `wireWith` (see [Factory methods](#factory-methods)).
+For example:
+
+````scala
+class UserFinderActor(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter) extends Actor { ... }
+
+object UserFinderActor {
+  def get(databaseAccess: DatabaseAccess) = new UserFinderActor(databaseAccess, new SimpleSecurityFilter())
+}
+
+val theUserFinder = wireActorWith(UserFinderActor.get _)("userFinder")
+````
 
 
 Installation, using with SBT
