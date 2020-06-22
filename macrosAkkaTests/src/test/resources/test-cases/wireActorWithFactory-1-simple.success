@@ -1,0 +1,29 @@
+import akka.actor.{Actor, ActorSystem, Props}
+import com.softwaremill.macwire.akkasupport._
+
+/**
+  * In this example I am constructing simple actor with 2 dependencies.
+  */
+
+trait A
+trait B
+
+class SomeActor(a: A, b: B) extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+object SomeActor {
+  def get(a: A) = new SomeActor(a, new B{})
+}
+
+val a = new A {}
+lazy val b: B = throw new UnsupportedOperationException()
+
+val system = ActorSystem("wireActorWithFactory-1-simple")
+AfterAllTerminate(system)
+
+val someActor = wireActorWith(SomeActor.get _)("bob")
+
+someActor ! "Hey someActor"

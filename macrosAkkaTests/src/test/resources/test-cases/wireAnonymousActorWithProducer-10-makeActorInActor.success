@@ -17,7 +17,7 @@ class Subordinate(a: A)(b: B, c: C) extends Actor {
   }
 }
 
-class SubordinateFactory(a: A)(b: B) extends IndirectActorProducer {
+class SubordinateProducer(a: A)(b: B) extends IndirectActorProducer {
   override def produce(): Actor = new Subordinate(a)(b, new C{})
   override def actorClass: Class[_ <: Actor] = classOf[SomeActor]
 }
@@ -29,7 +29,7 @@ class SomeActor(a: A) extends Actor {
 
   val subordinates: Seq[ActorRef] = (0 to 2).map { i =>
     //subordinate depends on A and B which are in scope
-    wireAnonymousActorWith[SubordinateFactory]
+    wireAnonymousActorWith[SubordinateProducer]
   }
 
   override def receive: Receive = {

@@ -18,8 +18,6 @@ private[macwire] final class Crimper[C <: blackbox.Context, T: C#WeakTypeTag](va
 
   lazy val propsTree = q"akka.actor.Props(classOf[$targetType], ..$args)"
 
-  lazy val propsWithProducerTree = q"akka.actor.Props.create(classOf[$targetType], ..$args)"
-
   lazy val wireProps: c.Expr[Props] = log.withBlock(s"wireProps[$targetType]: at ${c.enclosingPosition}") {
     log("Generated code: " + showRaw(propsTree))
     c.Expr[Props](propsTree)
@@ -44,35 +42,47 @@ private[macwire] final class Crimper[C <: blackbox.Context, T: C#WeakTypeTag](va
     c.Expr[ActorRef](tree)
   }
 
-  lazy val wirePropsWithProducer: c.Expr[Props] = log.withBlock(s"wirePropsWithProducer[$targetType]: at ${c.enclosingPosition}") {
-    log("Generated code: " + showRaw(propsWithProducerTree))
-    c.Expr[Props](propsWithProducerTree)
-  }
-
-  lazy val wirePropsWith: c.Expr[Props] = weakTypeOf[T] match {
-    case t if t <:< typeOf[IndirectActorProducer] => wirePropsWithProducer
+  lazy val wirePropsWithProducer: c.Expr[Props] = weakTypeOf[T] match {
+    case t if t <:< typeOf[IndirectActorProducer] => wireProps
     case _ => c.abort(c.enclosingPosition, s"wirePropsWith does not support the type: [$targetType]")
   }
 
-  lazy val wireAnonymousActorWithProducer: c.Expr[ActorRef] = log.withBlock(s"Constructing ActorRef. Trying to find arguments for constructor of: [$targetType] at ${c.enclosingPosition}") {
-    val tree = q"$actorRefFactoryTree.actorOf($propsWithProducerTree)"
-    log("Generated code: " + showRaw(tree))
-    c.Expr[ActorRef](tree)
-  }
-
-  lazy val wireAnonymousActorWith: c.Expr[ActorRef] = weakTypeOf[T] match {
-    case t if t <:< typeOf[IndirectActorProducer] => wireAnonymousActorWithProducer
+  lazy val wireAnonymousActorWithProducer: c.Expr[ActorRef] = weakTypeOf[T] match {
+    case t if t <:< typeOf[IndirectActorProducer] => wireAnonymousActor
     case _ => c.abort(c.enclosingPosition, s"wireAnonymousActorWith does not support the type: [$targetType]")
   }
 
-  def wireActorWithProducer(name: c.Expr[String]): c.Expr[ActorRef] = log.withBlock(s"wireActorWithProducer[$targetType]: at ${c.enclosingPosition}") {
-    val tree = q"$actorRefFactoryTree.actorOf($propsWithProducerTree, ${name.tree})"
+  def wireActorWithProducer(name: c.Expr[String]): c.Expr[ActorRef] = weakTypeOf[T] match {
+    case t if t <:< typeOf[IndirectActorProducer] => wireActor(name)
+    case _ => c.abort(c.enclosingPosition, s"wireActorWith does not support the type: [$targetType]")
+  }
+
+  def wirePropsWithFactory(factory: c.Tree): c.Expr[Props] = log.withBlock(s"wireProps[$targetType]: at ${c.enclosingPosition}") {
+    import com.softwaremill.macwire.MacwireMacros._
+
+    val funTree = wireWith_impl(c)(factory)
+    val propsTree = q"akka.actor.Props($funTree)"
+    log("Generated code: " + showRaw(propsTree))
+    c.Expr[Props](propsTree)
+  }
+
+  def wireAnonymousActorWithFactory(factory: c.Tree): c.Expr[ActorRef] = log.withBlock(s"Constructing ActorRef. Trying to find arguments for constructor of: [$targetType] at ${c.enclosingPosition}") {
+    import com.softwaremill.macwire.MacwireMacros._
+
+    val funTree = wireWith_impl(c)(factory)
+    val propsTree = q"akka.actor.Props($funTree)"
+    val tree = q"$actorRefFactoryTree.actorOf($propsTree)"
     log("Generated code: " + showRaw(tree))
     c.Expr[ActorRef](tree)
   }
 
-  def wireActorWith(name: c.Expr[String]): c.Expr[ActorRef] = weakTypeOf[T] match {
-    case t if t <:< typeOf[IndirectActorProducer] => wireActorWithProducer(name)
-    case _ => c.abort(c.enclosingPosition, s"wireActorWith does not support the type: [$targetType]")
+  def wireActorWithFactory(factory: c.Tree)(name: c.Expr[String]): c.Expr[ActorRef] = log.withBlock(s"wireActorWithProducer[$targetType]: at ${c.enclosingPosition}") {
+    import com.softwaremill.macwire.MacwireMacros._
+
+    val funTree = wireWith_impl(c)(factory)
+    val propsTree = q"akka.actor.Props($funTree)"
+    val tree = q"$actorRefFactoryTree.actorOf($propsTree, ${name.tree})"
+    log("Generated code: " + showRaw(tree))
+    c.Expr[ActorRef](tree)
   }
 }

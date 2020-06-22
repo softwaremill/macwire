@@ -32,7 +32,7 @@ lazy val b: B = throw new UnsupportedOperationException()
 val c = new C {}
 implicit val d = new D {}
 
-val system = ActorSystem("wireActor-15-injectAnnotation")
+val system = ActorSystem("wireAnonymousActor-15-injectAnnotation")
 AfterAllTerminate(system)
 
 val someActor = wireAnonymousActor[SomeActor]

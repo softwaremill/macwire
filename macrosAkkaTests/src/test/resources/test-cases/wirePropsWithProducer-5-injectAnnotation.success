@@ -18,7 +18,7 @@ class SomeActor(a: A, b: B) extends Actor {
   }
 }
 
-class SomeActorFactory(a: A) extends IndirectActorProducer {
+class SomeActorProducer(a: A) extends IndirectActorProducer {
 
   def this(b: B) = {
     this(new A{})
@@ -39,7 +39,7 @@ val c = new C {}
 val system = ActorSystem("wirePropsWithProducer-5-injectAnnotation")
 AfterAllTerminate(system)
 
-val props: Props = wirePropsWith[SomeActorFactory]
+val props: Props = wirePropsWith[SomeActorProducer]
 
 val someActor = system.actorOf(props, "someActor")
 

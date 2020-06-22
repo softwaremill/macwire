@@ -18,7 +18,7 @@ class SomeActor(a: A, b: B) extends Actor {
   }
 }
 
-class SomeActorFactory(a: A) extends IndirectActorProducer {
+class SomeActorProducer(a: A) extends IndirectActorProducer {
   override def produce(): Actor = new SomeActor(a, new B{})
   override def actorClass: Class[_ <: Actor] = classOf[SomeActor]
 }
@@ -29,6 +29,6 @@ lazy val b: B = throw new UnsupportedOperationException()
 val system = ActorSystem("wireActorWithProducer-9-subtypeDependencyInScope")
 AfterAllTerminate(system)
 
-val someActor = wireActorWith[SomeActorFactory]("bob")
+val someActor = wireActorWith[SomeActorProducer]("bob")
 
 someActor ! "Hey someActor"
