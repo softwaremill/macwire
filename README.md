@@ -26,10 +26,7 @@ Table of Contents
 	- [Play 2.4.x <a id="play24x"></a>](#play-24x-a-id%22play24x%22a)
 	- [Play 2.5.x <a id="play25x"></a>](#play-25x-a-id%22play25x%22a)
 
-Scala3
-======
-
-**Important: MacWire won't be available for Scala3**, as the new macros implementation does not allow to inspect the macro callsite to find the necessary dependencies.
+**Scala3 support?** See [this issue](https://github.com/softwaremill/macwire/issues/159)
 
 MacWire
 =======
