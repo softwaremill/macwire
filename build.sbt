@@ -1,11 +1,48 @@
+import com.softwaremill.UpdateVersionInDocs
+
 import sbt._
 import sbt.Keys._
 
-val commonSettings = Defaults.coreDefaultSettings ++ Seq(
+val scala2 = Seq("2.11.12", "2.12.11", "2.13.2")
+val scala3 = "3.0.1-RC1"
+val scala2And3Versions = scala2 :+ scala3
+
+def compilerLibrary(scalaVersion: String) = {
+  if (scalaVersion == scala3) {
+    Seq("org.scala-lang" %% "scala3-compiler" % scalaVersion)
+  } else {
+    Seq("org.scala-lang" % "scala-compiler" % scalaVersion)
+  }
+}
+
+def reflectLibrary(scalaVersion: String) = {
+  if (scalaVersion == scala3) {
+    Seq.empty
+  } else {
+    Seq("org.scala-lang" % "scala-reflect" % scalaVersion)
+  }
+}
+
+val versionSpecificScalaSources = {
+  Compile / unmanagedSourceDirectories := {
+    val current = (Compile / unmanagedSourceDirectories).value
+    val sv = (Compile / scalaVersion).value
+    val baseDirectory = (Compile / scalaSource).value
+    val suffixes = CrossVersion.partialVersion(sv) match {
+      case Some((2, 13)) => List("2", "2.13+")
+      case Some((2, _))  => List("2", "2.13-")
+      case Some((3, _))  => List("3")
+      case _             => Nil
+    }
+    val versionSpecificSources = suffixes.map(s => new File(baseDirectory.getAbsolutePath + "-" + s))
+    versionSpecificSources ++ current
+  }
+}
+
+val commonSettings = commonSmlBuildSettings ++ ossPublishSettings ++ Seq(
   organization := "com.softwaremill.macwire",
-  version := "2.3.7",
-  scalaVersion := "2.12.11",
-  crossScalaVersions := Seq("2.11.12", scalaVersion.value, "2.13.2"),
+  version := "2.3.8",
+  // crossScalaVersions := Seq("2.11.12", scalaVersion.value, "2.13.2"),
   // Sonatype OSS deployment
   publishTo := {
     val nexus = "https://oss.sonatype.org/"
@@ -62,18 +99,18 @@ val testSettings = commonSettings ++ Seq(
   fork in Test := true
 )
 
-val tagging = "com.softwaremill.common" %% "tagging" % "2.2.1"
-val scalatest = "org.scalatest" %% "scalatest" % "3.0.8"
+val tagging = "com.softwaremill.common" %% "tagging" % "2.3.1"
+val scalatest = "org.scalatest" %% "scalatest" % "3.2.9"
 val javassist = "org.javassist" % "javassist" % "3.20.0-GA"
 val akkaActor = "com.typesafe.akka" %% "akka-actor" % "2.5.23"
 val javaxInject = "javax.inject" % "javax.inject" % "1"
-def scalaCompiler(v: String) = "org.scala-lang" % "scala-compiler" % v
 
 lazy val root = project
   .in(file("."))
   .settings(commonSettings)
   .settings(name := "macwire", publishArtifact := false)
   .aggregate(
+    List(
     util,
     macros,
     proxy,
@@ -83,62 +120,90 @@ lazy val root = project
     utilTests,
     macrosAkka,
     macrosAkkaTests
+    ).flatMap(_.projectRefs): _*
   )
 
-lazy val util = project
+lazy val util = projectMatrix
   .in(file("util"))
   .settings(libraryDependencies += tagging)
   .settings(commonSettings)
+  .jvmPlatform(
+    scalaVersions = scala2And3Versions
+  )
 
-lazy val macros = project
+lazy val macros = projectMatrix
   .in(file("macros"))
   .settings(commonSettings)
   .settings(
-    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
+    libraryDependencies ++= reflectLibrary(scalaVersion.value),
+    versionSpecificScalaSources
   )
   .dependsOn(util % "provided")
+  .jvmPlatform(
+    scalaVersions = scala2And3Versions
+  )
 
-lazy val proxy = project
+lazy val proxy = projectMatrix
   .in(file("proxy"))
   .settings(commonSettings)
   .settings(libraryDependencies ++= Seq(javassist, scalatest % "test"))
   .dependsOn(macros % "test")
+  .jvmPlatform(
+    scalaVersions = scala2And3Versions
+  )
 
-lazy val testUtil = project
+lazy val testUtil = projectMatrix
   .in(file("test-util"))
   .settings(testSettings)
   .settings(
     libraryDependencies ++= Seq(
       scalatest,
-      scalaCompiler(scalaVersion.value),
       javaxInject
-    )
+    ) ++ compilerLibrary(scalaVersion.value)
+  )
+  .jvmPlatform(
+    scalaVersions = scala2And3Versions
   )
 
-lazy val tests = project
+lazy val tests = projectMatrix
   .in(file("tests"))
   .settings(testSettings)
   .dependsOn(macros % "provided", testUtil % "test", proxy)
+  .jvmPlatform(
+    scalaVersions = scala2And3Versions
+  )
 
-lazy val utilTests = project
+lazy val utilTests = projectMatrix
   .in(file("util-tests"))
   .settings(testSettings)
   .dependsOn(macros % "provided", util % "test", testUtil % "test")
+  .jvmPlatform(
+    scalaVersions = scala2And3Versions
+  )
 
 // The tests here are that the tests compile.
-lazy val tests2 = project
+lazy val tests2 = projectMatrix
   .in(file("tests2"))
   .settings(testSettings)
-  .settings(libraryDependencies += scalatest % "test")
+  .settings(
+    libraryDependencies += scalatest % "test"
+  )
   .dependsOn(util, macros % "provided", proxy)
+  .jvmPlatform(
+    // scalaVersions = scala2And3Versions
+    scalaVersions = List(scala3)
+  )
 
-lazy val macrosAkka = project
+lazy val macrosAkka = projectMatrix
   .in(file("macrosAkka"))
   .settings(commonSettings)
   .settings(libraryDependencies ++= Seq(akkaActor % "provided"))
   .dependsOn(macros)
+  .jvmPlatform(
+    scalaVersions = scala2
+  )
 
-lazy val macrosAkkaTests = project
+lazy val macrosAkkaTests = projectMatrix
   .in(file("macrosAkkaTests"))
   .settings(
     // Needed to avoid cryptic EOFException crashes in forked tests in Travis
@@ -149,6 +214,9 @@ lazy val macrosAkkaTests = project
   .settings(testSettings)
   .settings(libraryDependencies ++= Seq(scalatest, tagging, akkaActor))
   .dependsOn(macrosAkka, testUtil)
+  .jvmPlatform(
+    scalaVersions = scala2
+  )
 
 compile in Compile := {
   // Enabling debug project-wide. Can't find a better way to pass options to scalac.
