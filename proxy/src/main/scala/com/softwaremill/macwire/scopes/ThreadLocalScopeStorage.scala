@@ -22,7 +22,7 @@ trait ThreadLocalScopeStorage extends Scope {
     }
   }
 
-  def associate(storage: ScopeStorage) {
+  def associate(storage: ScopeStorage): Unit = {
     if (theStorage.get() != null) {
       throw new IllegalStateException("This thread is already associated with a storage!")
     }
@@ -30,20 +30,20 @@ trait ThreadLocalScopeStorage extends Scope {
     theStorage.set(storage)
   }
 
-  def associate(storage: collection.mutable.Map[String, Any]) {
+  def associate(storage: collection.mutable.Map[String, Any]): Unit = {
     associate(new MapScopeStorage(storage))
   }
 
-  def associate(storage: java.util.Map[String, Any]) {
+  def associate(storage: java.util.Map[String, Any]): Unit = {
     import scala.collection.JavaConverters._
     associate(storage.asScala)
   }
 
-  def associateWithEmptyStorage() {
+  def associateWithEmptyStorage() = {
     associate(new mutable.HashMap[String, Any]())
   }
 
-  def disassociate() {
+  def disassociate() = {
     if (theStorage.get() == null) {
       throwNotAssociatedWithStorage()
     }
@@ -77,7 +77,7 @@ trait ThreadLocalScopeStorage extends Scope {
     }
   }
 
-  private def throwNotAssociatedWithStorage() {
+  private def throwNotAssociatedWithStorage() = {
     throw new IllegalStateException("This thread is not associated with a storage!")
   }
 }
