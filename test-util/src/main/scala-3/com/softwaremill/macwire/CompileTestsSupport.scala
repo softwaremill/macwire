@@ -12,6 +12,7 @@ import java.nio.file.Paths
 import java.nio.file.OpenOption
 import java.nio.file.StandardOpenOption
 // import scala.tools.reflect.ToolBoxError
+import dotty.tools.dotc.reporting.ThrowingReporter
 
 trait CompileTestsSupport extends AnyFlatSpec with Matchers {
    type ExpectedFailures = List[String]
@@ -80,8 +81,9 @@ trait CompileTestsSupport extends AnyFlatSpec with Matchers {
     val tempPath = Paths.get(Properties.tempTestFile)
 
    private def createTempFile(content: String): Path = {
-    // Files.delete(tempPath) 
-    Files.write(tempPath, content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.WRITE)
+     if Files.exists(tempPath) then Files.delete(tempPath)
+     
+     Files.write(tempPath, content.getBytes, StandardOpenOption.CREATE, StandardOpenOption.WRITE)
   }
 
 
@@ -94,11 +96,13 @@ trait CompileTestsSupport extends AnyFlatSpec with Matchers {
        val source = loadTest("/test-cases/" + testName, imports)
        val testFile = createTempFile(source)
        val driver = Driver()
-       val reporter = new TestReporter()
+       val testReporter = new TestReporter
+      //  val reporter = new ThrowingReporter(testReporter)
+       val reporter = testReporter
        val classpath = Array("-classpath", Properties.currentClasspath)
       driver.process(classpath :+ tempPath.toString, reporter)
 
-      val infos = reporter.storedInfos
+      val infos = testReporter.storedInfos
       infos.map(_.msg) should contain theSameElementsAs expectedFailures
      }
    }
@@ -115,7 +119,9 @@ trait CompileTestsSupport extends AnyFlatSpec with Matchers {
      }
    }
 
-   private def loadTest(name: String, imports: String) = imports + resolveDirectives(loadResource(name))
+   private def loadTest(name: String, imports: String) = wrapInMainObject(imports + resolveDirectives(loadResource(name)))
+
+   private def wrapInMainObject(source: String) = s"object Main { $source }"
 
    private def loadResource(name: String) = {
      val resource = this.getClass.getResourceAsStream(name)
@@ -135,5 +141,5 @@ trait CompileTestsSupport extends AnyFlatSpec with Matchers {
 import dotty.tools.dotc.reporting.StoreReporter
 
 class TestReporter extends StoreReporter(null) {
-  def storedInfos = infos.toList
+  def storedInfos = if infos == null then List.empty else infos.toList
 }
