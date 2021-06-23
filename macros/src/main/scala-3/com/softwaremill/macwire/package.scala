@@ -1,8 +1,7 @@
 package com.softwaremill
 
-
 package object macwire {
-  inline def wire[T]: T = ???
+  inline def wire[T]: T = ${ MacwireMacros.wireImpl[T] }
 
   def wireSet[T]: Set[T] = ???
 
