@@ -767,5 +767,5 @@ We offer commercial support for MacWire and related technologies, as well as dev
 
 ## Copyright
 
-Copyright (C) 2013-2019 SoftwareMill [https://softwaremill.com](https://softwaremill.com).
+Copyright (C) 2013-2021 SoftwareMill [https://softwaremill.com](https://softwaremill.com).
 
