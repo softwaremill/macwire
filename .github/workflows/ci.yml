@@ -10,6 +10,8 @@ jobs:
     # run on external PRs, but not on internal PRs since those will be run by push to branch
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-20.04
+    env:
+      JAVA_OPTS: -Xmx5G
     strategy:
       matrix:
         java: [ '8', '11', '17-ea' ]
@@ -46,6 +48,8 @@ jobs:
     needs: [ci]
     if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-20.04
+    env:
+      JAVA_OPTS: -Xmx5G
     steps:
       - name: Checkout
         uses: actions/checkout@v2
