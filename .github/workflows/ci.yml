@@ -16,7 +16,7 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-    - name: Set up JDK 11
+    - name: Set up JDK
       uses: actions/setup-java@v2
       with:
         distribution: 'adopt'
@@ -28,7 +28,7 @@ jobs:
           ~/.sbt
           ~/.ivy2/cache
           ~/.coursier
-        key: sbt-cache-${{ runner.os }}-${{ hashFiles('project/build.properties') }}
+        key: sbt-cache-${{ runner.os }}-${{ hashFiles('project/build.properties') }}-${{ matrix.java }}
     - name: Compile
       run: sbt -v compile
     - name: Test
