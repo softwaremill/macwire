@@ -69,7 +69,6 @@ lazy val proxy = projectMatrix
   .settings(libraryDependencies ++= Seq(javassist, scalatest % "test"))
   .dependsOn(macros % "test")
   .jvmPlatform(scalaVersions = scala2)
-  .jsPlatform(scalaVersions = scala2)
 
 lazy val testUtil = projectMatrix
   .in(file("test-util"))
@@ -82,21 +81,18 @@ lazy val testUtil = projectMatrix
     )
   )
   .jvmPlatform(scalaVersions = scala2)
-  .jsPlatform(scalaVersions = scala2)
 
 lazy val tests = projectMatrix
   .in(file("tests"))
   .settings(testSettings)
   .dependsOn(macros % "provided", testUtil % "test", proxy)
   .jvmPlatform(scalaVersions = scala2)
-  .jsPlatform(scalaVersions = scala2)
 
 lazy val utilTests = projectMatrix
   .in(file("util-tests"))
   .settings(testSettings)
   .dependsOn(macros % "provided", util % "test", testUtil % "test")
   .jvmPlatform(scalaVersions = scala2)
-  .jsPlatform(scalaVersions = scala2)
 
 // The tests here are that the tests compile.
 lazy val tests2 = projectMatrix
@@ -105,7 +101,6 @@ lazy val tests2 = projectMatrix
   .settings(libraryDependencies += scalatest % "test")
   .dependsOn(util, macros % "provided", proxy)
   .jvmPlatform(scalaVersions = scala2)
-  .jsPlatform(scalaVersions = scala2)
 
 lazy val macrosAkka = projectMatrix
   .in(file("macrosAkka"))
@@ -127,7 +122,6 @@ lazy val macrosAkkaTests = projectMatrix
   .settings(libraryDependencies ++= Seq(scalatest, tagging, akkaActor))
   .dependsOn(macrosAkka, testUtil)
   .jvmPlatform(scalaVersions = scala2)
-  .jsPlatform(scalaVersions = scala2)
 
 Compile / compile := {
   // Enabling debug project-wide. Can't find a better way to pass options to scalac.
