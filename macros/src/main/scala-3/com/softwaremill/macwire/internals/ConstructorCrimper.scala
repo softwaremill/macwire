@@ -63,26 +63,25 @@ private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](log: Logger)(usi
     constructorArgs.map(_.foldLeft(constructionMethodTree)((acc: Term, args: List[Term]) => Apply(acc, args)))
   }
 
-  def wireConstructorParams(paramLists: List[List[Symbol]]): List[List[Term]] = paramLists.map(_.map{p =>
-    println(s"Looking for: $p")
-
-    dependencyResolver.resolve(p)
-  })
+  def wireConstructorParams(paramLists: List[List[Symbol]]): List[List[Term]] = paramLists.map(_.map(p => dependencyResolver.resolve(p, /*SI-4751*/paramType(p))))
 
   def wireConstructorParamsWithImplicitLookups(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.map(_.map {
     // case i if i.isImplicit => q"implicitly[${paramType(i)}]"
-    // case p => dependencyResolver.resolve(p, /*SI-4751*/ paramType(p))
-    case p => dependencyResolver.resolve(p)
+    case p => dependencyResolver.resolve(p, /*SI-4751*/ paramType(p))
   })
 
-  // private def paramType(param: Symbol): Type = {
-  //   val (sym: Symbol, tpeArgs: List[Type]) = targetTypeD match {
-  //     case TypeRef(_, sym, tpeArgs) => (sym, tpeArgs)
-  //     case t => abort(s"Target type not supported for wiring: $t. Please file a bug report with your use-case.")
-  //   }
-  //   val pTpe = param.typeSignature.substituteTypes(sym.asClass.typeParams, tpeArgs)
-  //   if (param.asTerm.isByNameParam) pTpe.typeArgs.head else pTpe
-  // }
+  private def paramType(param: Symbol): TypeRepr = {
+    //TODO
+
+    // val (sym: Symbol, tpeArgs: List[Type]) = targetTypeD match {
+    //   case TypeRef(_, sym, tpeArgs) => (sym, tpeArgs)
+    //   case t => abort(s"Target type not supported for wiring: $t. Please file a bug report with your use-case.")
+    // }
+    // val pTpe = param.typeSignature.substituteTypes(sym.asClass.typeParams, tpeArgs)
+    // if (param.asTerm.isByNameParam) pTpe.typeArgs.head else pTpe
+    
+    Ref(param).tpe.widen
+  }
 
   /**
     * In some cases there is one extra (phantom) constructor.

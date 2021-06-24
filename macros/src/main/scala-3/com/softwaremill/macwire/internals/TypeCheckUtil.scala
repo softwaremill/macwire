@@ -1,11 +1,11 @@
-// package com.softwaremill.macwire.internals
+package com.softwaremill.macwire.internals
 
-// import scala.reflect.macros.blackbox
+import scala.quoted.*
 
-// private[macwire] class TypeCheckUtil[C <: blackbox.Context](val c: C, log: Logger) {
-//   import c.universe._
+private[macwire] class TypeCheckUtil[Q <: Quotes](log: Logger)(using val q: Q) {
+  import q.reflect.*
 
-//   def typeCheckIfNeeded(tree: Tree): Type = {
+//   def typeCheckIfNeeded(tree: TypeTree): Type = {
 //     if( tree.tpe != null ) {
 //       tree.tpe
 //     } else {
@@ -40,20 +40,21 @@
 //     }
 //   }
 
-//   def checkCandidate(target: Type, tpt: Type): Boolean = {
-//     val typesToCheck = tpt :: (tpt match {
-//       case NullaryMethodType(resultType) => List(resultType)
-//       case _ => Nil
-//     })
+  def checkCandidate(target: TypeRepr, tpt: TypeRepr): Boolean = {
+    // val typesToCheck = tpt :: (tpt match {
+    //   case NullaryMethodType(resultType) => List(resultType)
+    //   case _ => Nil
+    // })
 
-//     typesToCheck.exists(ty => ty <:< target && isNotNullOrNothing(ty))
-//   }
+    val typesToCheck = List(tpt)
+    typesToCheck.exists(ty => ty <:< target && isNotNullOrNothing(ty))
+  }
 
-//   private def isNotNullOrNothing(tpe: Type): Boolean = {
-//     !(tpe =:= typeOf[Nothing]) && !(tpe =:= typeOf[Null])
-//   }
+  private def isNotNullOrNothing(tpe: TypeRepr): Boolean = {
+    !(tpe =:= TypeRepr.of[Nothing]) && !(tpe =:= TypeRepr.of[Null])
+  }
 
-//   private def typeCheckExpressionOfType(typeTree: Tree): Type = {
+//   private def typeCheckExpressionOfType(typeTree: Tree): TypeRepr = {
 //     c.typecheck(q"$typeTree", c.TYPEmode).tpe
 //   }
-// }
+}
