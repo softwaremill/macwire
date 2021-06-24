@@ -2,12 +2,13 @@ package com.softwaremill.macwire
 
 import java.io.File
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.io.Source
 import scala.tools.reflect.ToolBoxError
 
-trait CompileTestsSupport extends FlatSpec with Matchers {
+trait CompileTestsSupport extends AnyFlatSpec with Matchers {
    type ExpectedFailures = List[String]
 
    val GlobalImports = "import com.softwaremill.macwire._\n\n"
