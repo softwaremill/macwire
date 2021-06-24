@@ -23,7 +23,7 @@ val testSettings = commonSettings ++ Seq(
 )
 
 val tagging = "com.softwaremill.common" %% "tagging" % "2.2.1"
-val scalatest = "org.scalatest" %% "scalatest" % "3.0.8"
+val scalatest = "org.scalatest" %% "scalatest" % "3.2.9"
 val javassist = "org.javassist" % "javassist" % "3.20.0-GA"
 val akkaActor = "com.typesafe.akka" %% "akka-actor" % "2.5.23"
 val javaxInject = "javax.inject" % "javax.inject" % "1"
@@ -65,8 +65,8 @@ lazy val macros = projectMatrix
 lazy val proxy = projectMatrix
   .in(file("proxy"))
   .settings(commonSettings)
-  .settings(libraryDependencies ++= Seq(javassist, scalatest % "test"))
-  .dependsOn(macros % "test")
+  .settings(libraryDependencies ++= Seq(javassist, scalatest % Test))
+  .dependsOn(macros % Test)
   .jvmPlatform(scalaVersions = scala2)
 
 lazy val testUtil = projectMatrix
@@ -84,20 +84,20 @@ lazy val testUtil = projectMatrix
 lazy val tests = projectMatrix
   .in(file("tests"))
   .settings(testSettings)
-  .dependsOn(macros % "provided", testUtil % "test", proxy)
+  .dependsOn(macros % "provided", testUtil % Test, proxy)
   .jvmPlatform(scalaVersions = scala2)
 
 lazy val utilTests = projectMatrix
   .in(file("util-tests"))
   .settings(testSettings)
-  .dependsOn(macros % "provided", util % "test", testUtil % "test")
+  .dependsOn(macros % "provided", util % Test, testUtil % Test)
   .jvmPlatform(scalaVersions = scala2)
 
 // The tests here are that the tests compile.
 lazy val tests2 = projectMatrix
   .in(file("tests2"))
   .settings(testSettings)
-  .settings(libraryDependencies += scalatest % "test")
+  .settings(libraryDependencies += scalatest % Test)
   .dependsOn(util, macros % "provided", proxy)
   .jvmPlatform(scalaVersions = scala2)
 

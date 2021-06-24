@@ -1,9 +1,10 @@
 package com.softwaremill.macwire
 
 import com.softwaremill.macwire.Wired.InstanceFactoryMap
-import org.scalatest._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.flatspec.AnyFlatSpec
 
-class WiredTest extends FlatSpec with Matchers {
+class WiredTest extends AnyFlatSpec with Matchers {
   import WiredTest._
 
   def createInstanceFactoryMap(instances: AnyRef*): InstanceFactoryMap = Map(instances.map(i => i.getClass -> (() => i)): _*)
