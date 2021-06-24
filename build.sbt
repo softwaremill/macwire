@@ -3,11 +3,10 @@ import sbt.Keys._
 
 excludeLintKeys in Global ++= Set(ideSkipProject)
 
-val scala2_11 = "2.11.12"
 val scala2_12 = "2.12.13"
 val scala2_13 = "2.13.6"
 
-val scala2 = List(scala2_11, scala2_12, scala2_13)
+val scala2 = List(scala2_12, scala2_13)
 
 val commonSettings = commonSmlBuildSettings ++ ossPublishSettings ++ Seq(
   organization := "com.softwaremill.macwire",
