@@ -30,7 +30,6 @@ private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](log: Logger)(usi
     case c if c == Symbol.noSymbol => None
     case s => Some(s)
   }
-  // publicConstructors.find(_.asMethod.isPrimaryConstructor)
 
   lazy val injectConstructors: Iterable[Symbol] = {
     val isInjectAnnotation = (a: Term) => a.tpe.typeSymbol.fullName == "javax.inject.Inject"
@@ -43,10 +42,11 @@ private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](log: Logger)(usi
 
   lazy val constructor: Option[Symbol] = log.withBlock(s"Looking for constructor for $targetType"){
     val ctor = injectConstructor orElse primaryConstructor
-    // ctor.foreach(ctor => log(s"Found ${showConstructor(ctor)}"))
+    ctor.foreach(ctor => log(s"Found ${showConstructor(ctor)}"))
     ctor
   }
 
+  //TODO
   // lazy val constructorParamLists: Option[List[List[Symbol]]] = constructor.map(_.termParamss.map(_.params.filterNot(_.headOption.exists(_.isImplicit))))
   lazy val constructorParamLists: Option[List[List[Symbol]]] = constructor.map(_.paramSymss)
 

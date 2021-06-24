@@ -4,43 +4,57 @@ import scala.quoted.*
 
 private[macwire] class CompanionCrimper [Q <: Quotes, T: Type](log: Logger)(using val q: Q) {
   import q.reflect.*
-  // lazy val dependencyResolver = new DependencyResolver[c.type](c, log)
+  lazy val dependencyResolver = new DependencyResolver[q.type, T](log)
 
-  // lazy val targetType: Type = implicitly[c.WeakTypeTag[T]].tpe
+  lazy val targetType = TypeRepr.of[T]
 
-  // lazy val companionType: Option[Type] = if(targetType.companion == NoType) None else Some(targetType.companion)
+  lazy val companionType: Option[Symbol] = targetType.typeSymbol.companionModule match {
+    case c if c == Symbol.noSymbol => None
+    case c => Some(c)
+  }
 
-  // def isCompanionApply(method: Symbol): Boolean =
-  //   method.isMethod &&
-  //   method.isPublic &&
-  //   method.asMethod.returnType <:< targetType &&
-  //   method.asMethod.name.decodedName.toString == "apply"
+  def returnType(symbol: Symbol): TypeRepr = symbol.tree match {
+    case dd: DefDef => dd.returnTpt.tpe
+  }
 
-  // lazy val applies: Option[List[Symbol]] = log.withBlock("Looking for apply methods of Companion Object") {
-  //   val as: Option[List[Symbol]] = companionType.map(_.members.filter(isCompanionApply).toList)
-  //   as.foreach(x => log.withBlock(s"There are ${x.size} apply methods:" ) { x.foreach(c => log(showApply(c))) })
-  //   as
-  // }
+  def isCompanionApply(method: Symbol): Boolean = 
+    method.isDefDef &&
+    !(method.flags is Flags.Private) &&
+    !(method.flags is Flags.Protected) &&
+    returnType(method) <:< targetType &&
+    method.name == "apply"
 
-  // lazy val apply: Option[Symbol] = applies.flatMap( _ match {
-  //   case applyMethod :: Nil => Some(applyMethod)
-  //   case _ => None
-  // })
+  lazy val applies: Option[List[Symbol]] = log.withBlock("Looking for apply methods of Companion Object") {
+    val as: Option[List[Symbol]] = companionType.map(_.declarations.filter(isCompanionApply).toList)
+            println(s"AS [${as.map(_.map(_.tree).mkString("\n"))}]")
 
-  // lazy val applySelect: Option[Select] = apply.map(a => Select(Ident(targetType.typeSymbol.companion), a))
+    as.foreach(x => log.withBlock(s"There are ${x.size} apply methods:" ) { x.foreach(c => log(showApply(c))) })
+    as
+  }
 
-  // lazy val applyParamLists: Option[List[List[Symbol]]] = apply.map(_.asMethod.paramLists)
+  lazy val apply: Option[Symbol] = applies.flatMap( _ match {
+    case applyMethod :: Nil => Some(applyMethod)
+    case _ => None
+  })
 
-  // def wireParams(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.map(_.map(p => dependencyResolver.resolve(p, p.typeSignature)))
+  lazy val applySelect: Option[Select] = apply.map(a => Select(Ref(targetType.typeSymbol.companionModule), a))
 
-  // lazy val applyArgs: Option[List[List[Tree]]] = applyParamLists.map(wireParams)
+  lazy val applyParamLists: Option[List[List[Symbol]]] = apply.map(_.paramSymss)
 
-  lazy val applyTree: Option[Tree] = ???
-  // for {
-  //   pl: List[List[Tree]] <- applyArgs
-  //   applyMethod: Tree <- applySelect
-  // } yield pl.foldLeft(applyMethod)((acc: Tree, args: List[Tree]) => Apply(acc, args))
+  def wireParams(paramLists: List[List[Symbol]]): List[List[Term]] = paramLists.map(_.map(p => dependencyResolver.resolve(p, paramType(p))))
 
-  // def showApply(c: Symbol): String = c.asMethod.typeSignature.toString
+  lazy val applyArgs: Option[List[List[Term]]] = applyParamLists.map(wireParams)
+
+  lazy val applyTree: Option[Tree] = for {
+    pl: List[List[Term]] <- applyArgs
+    applyMethod: Term <- applySelect
+  } yield pl.foldLeft(applyMethod)((acc: Term, args: List[Term]) => Apply(acc, args))
+
+    private def paramType(param: Symbol): TypeRepr = {
+//FIXME
+    Ref(param).tpe.widen
+  }
+
+  def showApply(c: Symbol): String = c.toString
 }
 
