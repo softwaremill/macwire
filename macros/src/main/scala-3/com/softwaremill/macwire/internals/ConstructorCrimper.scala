@@ -1,6 +1,7 @@
 package com.softwaremill.macwire.internals
 
 import scala.quoted.*
+import scala.annotation.Annotation
 
 private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](log: Logger)(using val q: Q) {
   import q.reflect.*
@@ -17,38 +18,37 @@ private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](log: Logger)(usi
 
   // lazy val classOfT: Expr[Class[T]] = c.Expr[Class[T]](q"classOf[$targetType]")
 
-  // lazy val publicConstructors: Iterable[Symbol] = {
-  //   val ctors = targetType.typeSymbol.memberMethods
-  //     .filter(m => m.isConstructor && m.isPublic)
-  //     .filterNot(isPhantomConstructor)
-  //   log.withBlock(s"There are ${ctors.size} eligible constructors" ) { ctors.foreach(c => log(showConstructor(c))) }
-  //   ctors
-  // }
+  lazy val publicConstructors: Iterable[Symbol] = {
+    val ctors = targetType.typeSymbol.declarations
+      .filter(m => m.isClassConstructor && !(m.flags is (Flags.Private | Flags.Protected)))
+      .filterNot(isPhantomConstructor)
+    log.withBlock(s"There are ${ctors.size} eligible constructors" ) { ctors.foreach(c => log(showConstructor(c))) }
+    ctors
+  }
 
-  lazy val primaryConstructor: Option[DefDef] = targetType.typeSymbol.primaryConstructor.tree match {
-    case dd: DefDef => Some(dd)
-    case _ => None
+  lazy val primaryConstructor: Option[Symbol] = targetType.typeSymbol.primaryConstructor match {
+    case c if c == Symbol.noSymbol => None
+    case s => Some(s)
   }
   // publicConstructors.find(_.asMethod.isPrimaryConstructor)
 
-  lazy val injectConstructors: Iterable[DefDef] = List.empty
-  // {
-  //   val isInjectAnnotation = (a: Annotation) => a.toString == "javax.inject.Inject"
-  //   val ctors = publicConstructors.filter(_.annotations.exists(isInjectAnnotation))
-  //   log.withBlock(s"There are ${ctors.size} constructors annotated with @javax.inject.Inject" ) { ctors.foreach(c => log(showConstructor(c))) }
-  //   ctors
-  // }
+  lazy val injectConstructors: Iterable[Symbol] = {
+    val isInjectAnnotation = (a: Term) => a.tpe.typeSymbol.fullName == "javax.inject.Inject"
+    val ctors = publicConstructors.filter(_.annotations.exists(isInjectAnnotation))
+    log.withBlock(s"There are ${ctors.size} constructors annotated with @javax.inject.Inject" ) { ctors.foreach(c => log(showConstructor(c))) }
+    ctors
+  }
 
-  lazy val injectConstructor: Option[DefDef] = if(injectConstructors.size > 1) abort(s"Ambiguous constructors annotated with @javax.inject.Inject for type [$targetType]") else injectConstructors.headOption
+  lazy val injectConstructor: Option[Symbol] = if(injectConstructors.size > 1) abort(s"Ambiguous constructors annotated with @javax.inject.Inject for type [$targetType]") else injectConstructors.headOption
 
-  lazy val constructor: Option[DefDef] = log.withBlock(s"Looking for constructor for $targetType"){
+  lazy val constructor: Option[Symbol] = log.withBlock(s"Looking for constructor for $targetType"){
     val ctor = injectConstructor orElse primaryConstructor
     // ctor.foreach(ctor => log(s"Found ${showConstructor(ctor)}"))
     ctor
   }
 
   // lazy val constructorParamLists: Option[List[List[Symbol]]] = constructor.map(_.termParamss.map(_.params.filterNot(_.headOption.exists(_.isImplicit))))
-  lazy val constructorParamLists: Option[List[List[Symbol]]] = constructor.map(_.symbol.paramSymss)
+  lazy val constructorParamLists: Option[List[List[Symbol]]] = constructor.map(_.paramSymss)
 
   lazy val constructorArgs: Option[List[List[Term]]] = log.withBlock("Looking for targetConstructor arguments") {
     constructorParamLists.map(wireConstructorParams)
@@ -59,7 +59,7 @@ private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](log: Logger)(usi
   // }
 
   lazy val constructorTree: Option[q.reflect.Tree] =  log.withBlock(s"Creating Constructor Tree for $targetType"){
-    val constructionMethodTree: Term = Select(New(TypeIdent(targetType.typeSymbol)), constructor.get.symbol)
+    val constructionMethodTree: Term = Select(New(TypeIdent(targetType.typeSymbol)), constructor.get)
     constructorArgs.map(_.foldLeft(constructionMethodTree)((acc: Term, args: List[Term]) => Apply(acc, args)))
   }
 
