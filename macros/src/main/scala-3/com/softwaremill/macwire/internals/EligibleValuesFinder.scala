@@ -118,7 +118,7 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
     override def hashCode() = expr.toString().hashCode
 
     override def equals(obj: scala.Any) = obj match {
-      case EligibleValue(_, e) => expr.asExpr.matches(e.asExpr)
+      case EligibleValue(_, e) => expr == e//FIXME not sure if `equalsStructure` -> `==` 
       case _ => false
     }
   }
@@ -135,7 +135,7 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
       // the only reliable method to compare trees is using structural equality, but there shouldn't be a lot of
       // trees with a given type, so the n^2 complexity shouldn't hurt
       def addIfUnique(addTo: List[Tree], t: Tree): List[Tree] = {
-        addTo.find(_.asExpr.matches(t.asExpr)).fold(t :: addTo)(_ => addTo)
+        addTo.find(_ == t.asExpr).fold(t :: addTo)(_ => addTo)
       }
 
       trees.foldLeft(List.empty[Tree])(addIfUnique)

@@ -18,17 +18,18 @@ private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](log: Logger)(usi
 
   // lazy val classOfT: Expr[Class[T]] = c.Expr[Class[T]](q"classOf[$targetType]")
 
+  private def isAccessibleConstructor(s: Symbol) = s.isClassConstructor && !(s.flags is Flags.Private) && !(s.flags is Flags.Protected)
   lazy val publicConstructors: Iterable[Symbol] = {
     val ctors = targetType.typeSymbol.declarations
-      .filter(m => m.isClassConstructor && !(m.flags is (Flags.Private | Flags.Protected)))
+      .filter(isAccessibleConstructor)
       .filterNot(isPhantomConstructor)
-    log.withBlock(s"There are ${ctors.size} eligible constructors" ) { ctors.foreach(c => log(showConstructor(c))) }
+    // log.withBlock(s"There are ${ctors.size} eligible constructors" ) { ctors.foreach(c => log(showConstructor(c))) }
     ctors
   }
 
   lazy val primaryConstructor: Option[Symbol] = targetType.typeSymbol.primaryConstructor match {
-    case c if c == Symbol.noSymbol => None
-    case s => Some(s)
+    case c if isAccessibleConstructor(c) => Some(c)
+    case c => None
   }
 
   lazy val injectConstructors: Iterable[Symbol] = {
@@ -58,9 +59,14 @@ private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](log: Logger)(usi
   //   constructor.map(_.asMethod.paramLists).map(wireConstructorParamsWithImplicitLookups)
   // }
 
-  lazy val constructorTree: Option[q.reflect.Tree] =  log.withBlock(s"Creating Constructor Tree for $targetType"){
-    val constructionMethodTree: Term = Select(New(TypeIdent(targetType.typeSymbol)), constructor.get)
-    constructorArgs.map(_.foldLeft(constructionMethodTree)((acc: Term, args: List[Term]) => Apply(acc, args)))
+  lazy val constructorTree: Option[Tree] =  log.withBlock(s"Creating Constructor Tree for $targetType"){
+    for {
+      constructorValue <- constructor
+      constructorArgsValue <- constructorArgs
+    } yield {
+      val constructionMethodTree: Term = Select(New(TypeIdent(targetType.typeSymbol)), constructorValue)
+      constructorArgsValue.foldLeft(constructionMethodTree)((acc: Term, args: List[Term]) => Apply(acc, args))
+    }
   }
 
   def wireConstructorParams(paramLists: List[List[Symbol]]): List[List[Term]] = paramLists.map(_.map(p => dependencyResolver.resolve(p, /*SI-4751*/paramType(p))))

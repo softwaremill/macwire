@@ -26,7 +26,6 @@ private[macwire] class CompanionCrimper [Q <: Quotes, T: Type](log: Logger)(usin
 
   lazy val applies: Option[List[Symbol]] = log.withBlock("Looking for apply methods of Companion Object") {
     val as: Option[List[Symbol]] = companionType.map(_.declarations.filter(isCompanionApply).toList)
-            println(s"AS [${as.map(_.map(_.tree).mkString("\n"))}]")
 
     as.foreach(x => log.withBlock(s"There are ${x.size} apply methods:" ) { x.foreach(c => log(showApply(c))) })
     as
