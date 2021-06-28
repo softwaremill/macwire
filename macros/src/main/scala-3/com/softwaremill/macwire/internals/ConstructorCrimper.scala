@@ -39,7 +39,7 @@ private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](log: Logger)(usi
     ctors
   }
 
-  lazy val injectConstructor: Option[Symbol] = if(injectConstructors.size > 1) abort(s"Ambiguous constructors annotated with @javax.inject.Inject for type [$targetType]") else injectConstructors.headOption
+  lazy val injectConstructor: Option[Symbol] = if(injectConstructors.size > 1) abort(s"Ambiguous constructors annotated with @javax.inject.Inject for type [${targetType.typeSymbol.name}]") else injectConstructors.headOption
 
   lazy val constructor: Option[Symbol] = log.withBlock(s"Looking for constructor for $targetType"){
     val ctor = injectConstructor orElse primaryConstructor

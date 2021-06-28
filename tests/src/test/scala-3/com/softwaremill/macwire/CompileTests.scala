@@ -4,7 +4,7 @@ class CompileTests extends CompileTestsSupport {
 
   runTestsWith(
     expectedFailures = List(
-      "companionFactoryAmbiguous" -> List("No public primary constructor found for", "Test.PrivConstructor",
+      "companionFactoryAmbiguous" -> List("No public primary constructor found for", "PrivConstructor",
                                           "and multiple matching apply methods in its companion object were found."),
       "explicitDepsNotWiredWithImplicitVals" -> List(valueNotFound("A")),
       "explicitDepsWiredWithImplicitValsFromMethodScope" -> List(ambiguousResMsg("A"), "dependency", "implicitDependencyA"),
@@ -15,9 +15,10 @@ class CompileTests extends CompileTestsSupport {
       "simpleValsMissingValue" -> List(valueNotFound("B")),
       "simpleValsDuplicateValue" -> List(ambiguousResMsg("B"), "theB1", "theB2"),
       "secondaryConstructorNotAnnotated" -> List(valueNotFound("String")),
-      "phantomConstructor" -> List("Cannot find a public constructor nor a companion object for [Target]"),
-      "companionObjectHasNoMethods" -> List("Companion object for",  "Target] has no apply methods constructing target type."),
-      "companionObjectHasFakeApplyMethods" -> List("Companion object for",  "Target] has no apply methods constructing target type."),
+      //Scala 3 automatically generates a companion for any class
+      "phantomConstructor" -> List("Cannot find a public constructor", "[Target]"),
+      "companionObjectHasNoMethods" -> List("companion object",  "has no apply methods constructing target type", "[Target]"),
+      "companionObjectHasFakeApplyMethods" -> List("companion object",  "has no apply methods constructing target type", "[Target]"),
       "toManyInjectAnnotations" -> List("Ambiguous constructors annotated with @javax.inject.Inject for type [Target]"),
       "nullaryMethodUsedAsCandidate" -> List("Found multiple values of type [A]: [List(foo, a)]"),
       "wireWithTwoParamsLists" -> List("found   : A => (B => __wrapper$1", "required: ? => __wrapper$1")

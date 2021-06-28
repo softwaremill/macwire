@@ -8,7 +8,7 @@ private[macwire] class CompanionCrimper [Q <: Quotes, T: Type](log: Logger)(usin
 
   lazy val targetType = TypeRepr.of[T]
 
-  lazy val companionType: Option[Symbol] = targetType.typeSymbol.companionModule match {
+  lazy val companionType: Option[Symbol] = targetType.typeSymbol.companionClass match {
     case c if c == Symbol.noSymbol => None
     case c => Some(c)
   }

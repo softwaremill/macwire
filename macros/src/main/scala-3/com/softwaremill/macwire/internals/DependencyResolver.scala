@@ -16,7 +16,7 @@ private[macwire] class DependencyResolver[Q <: Quotes, T: Type](debug: Logger)(u
   def resolve(param: Symbol, t: TypeRepr): Term = {
 
     eligibleValues.findInFirstScope(t).toList match {
-      case Nil => report.throwError(s"Cannot find a value of type: [$t]")
+      case Nil => report.throwError(s"Cannot find a value of type: [${showTypeName(t)}]")
       case value :: Nil =>
         val forwardValues = eligibleValues.findInScope(t, LocalForward)
         if (forwardValues.nonEmpty) {
@@ -29,7 +29,7 @@ private[macwire] class DependencyResolver[Q <: Quotes, T: Type](debug: Logger)(u
         //   case a => a
         // }
         
-      case values => report.throwError(s"Found multiple values of type [$t]: [$values]")
+      case values => report.throwError(s"Found multiple values of type [${showTypeName(t)}]: [$values]")
     }
   }
   

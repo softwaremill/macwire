@@ -4,6 +4,7 @@ import java.io.File
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.OptionValues
 
 import scala.io.Source
 import java.nio.file.Path
@@ -14,7 +15,7 @@ import java.nio.file.StandardOpenOption
 // import scala.tools.reflect.ToolBoxError
 import dotty.tools.dotc.reporting.ThrowingReporter
 
-trait CompileTestsSupport extends AnyFlatSpec with Matchers {
+trait CompileTestsSupport extends AnyFlatSpec with Matchers with OptionValues {
    type ExpectedFailures = List[String]
 
    val GlobalImports = "import com.softwaremill.macwire._\n\n"
@@ -103,7 +104,14 @@ trait CompileTestsSupport extends AnyFlatSpec with Matchers {
       driver.process(classpath :+ tempPath.toString, reporter)
 
       val infos = testReporter.storedInfos
-      infos.map(_.msg) should contain theSameElementsAs expectedFailures
+      if (expectedFailures.size > 0) {
+        val error = infos.filter(_.level >= 2).map(_.message).headOption.value
+        
+        expectedFailures.foreach(part => error should include (part))
+      } else {
+        infos shouldBe empty
+      }
+      
      }
    }
 
@@ -121,7 +129,7 @@ trait CompileTestsSupport extends AnyFlatSpec with Matchers {
 
    private def loadTest(name: String, imports: String) = wrapInMainObject(imports + resolveDirectives(loadResource(name)))
 
-   private def wrapInMainObject(source: String) = s"object Main { $source }"
+   private def wrapInMainObject(source: String) = s"object Main {\n $source  \n}"
 
    private def loadResource(name: String) = {
      val resource = this.getClass.getResourceAsStream(name)
