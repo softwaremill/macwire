@@ -3,7 +3,7 @@ package com.softwaremill
 package object macwire {
   inline def wire[T]: T = ${ MacwireMacros.wireImpl[T] }
 
-  def wireSet[T]: Set[T] = ???
+  inline def wireSet[T]: Set[T] = ${ MacwireMacros.wireSet_impl[T] }
 
   //TODO 
   //TESTS: wireWith.success

@@ -27,4 +27,21 @@ object MacwireMacros {
     code.asExprOf[T]
   }
 
+  def wireSet_impl[T: Type](using q: Quotes): Expr[Set[T]] = {
+    import q.reflect.*
+
+    val tpe = TypeRepr.of[T]
+    val dependencyResolver = new DependencyResolver[q.type, T](log)
+
+    val instances = dependencyResolver.resolveAll(tpe)
+
+    // The lack of hygiene can be seen here as a feature, the choice of Set implementation
+    // is left to the user - you want a `mutable.Set`, just import `mutable.Set` before the `wireSet[T]` call
+    val code = '{ ${ Expr.ofSeq(instances.toSeq.map(_.asExprOf[T])) }.toSet }
+    
+
+    log(s"Generated code: ${code.show}")
+    code
+  }
+
 }
