@@ -69,7 +69,7 @@ private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](log: Logger)(usi
     }
   }
 
-  def wireConstructorParams(paramLists: List[List[Symbol]]): List[List[Term]] = paramLists.map(_.map(p => dependencyResolver.resolve(p, /*SI-4751*/paramType(p))))
+  def wireConstructorParams(paramLists: List[List[Symbol]]): List[List[Term]] = paramLists.map(_.map(p => dependencyResolver.resolve(p, /*SI-4751*/paramType(p)) ))
 
   def wireConstructorParamsWithImplicitLookups(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.map(_.map {
     // case i if i.isImplicit => q"implicitly[${paramType(i)}]"
@@ -78,7 +78,7 @@ private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](log: Logger)(usi
 
   private def paramType(param: Symbol): TypeRepr = {
     //TODO
-
+    
     // val (sym: Symbol, tpeArgs: List[Type]) = targetTypeD match {
     //   case TypeRef(_, sym, tpeArgs) => (sym, tpeArgs)
     //   case t => abort(s"Target type not supported for wiring: $t. Please file a bug report with your use-case.")
@@ -86,6 +86,7 @@ private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](log: Logger)(usi
     // val pTpe = param.typeSignature.substituteTypes(sym.asClass.typeParams, tpeArgs)
     // if (param.asTerm.isByNameParam) pTpe.typeArgs.head else pTpe
     
+    //FIXME assertion error in test inheritanceHKT.success, selfTypeHKT.success
     Ref(param).tpe.widen
   }
 

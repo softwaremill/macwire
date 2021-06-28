@@ -1,7 +1,7 @@
 #include commonClassesWithImplicitDependencies
 
 trait DependencyProvider {
-  implicit val implicitDependency = new Dependency
+  implicit val implicitDependency: Dependency = new Dependency
 }
 
 object ParentsScope extends DependencyProvider {

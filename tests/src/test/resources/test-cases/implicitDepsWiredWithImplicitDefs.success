@@ -1,6 +1,6 @@
 #include commonClassesWithImplicitDependencies
 
-implicit def dependency = new Dependency
+implicit def dependency: Dependency = new Dependency
 
 object Test  {
   val service = wire[Service]

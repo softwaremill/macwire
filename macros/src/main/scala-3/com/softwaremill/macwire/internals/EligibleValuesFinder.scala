@@ -14,6 +14,14 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
   def find(): EligibleValues = {
     val wiredDef = Symbol.spliceOwner.owner
     val wiredOwner = wiredDef.owner
+    
+    /** TODO
+    * support for multilevel enclosing class and parameters - diamondInheritance.success,implicitDepsWiredWithImplicitDefs.success, implicitDepsWiredWithImplicitVals.success
+    * support for method params - implicitDepsWiredWithImplicitValsFromMethodScope.success, functionApplication.success,anonFuncAndMethodsArgsWiredOk.success, anonFuncArgsWiredOk.success,
+    *    methodMixedOk.success, methodParamsInApplyOk.success, methodParamsOk.success, methodSingleParamOk.success, methodWithSingleImplicitParamOk.success, nestedAnonFuncsWired.success
+    *    nestedMethodsWired.success
+    * search in blocks - methodContainingValDef.success, methodWithWiredWithinIfThenElse.success, methodWithWiredWithinPatternMatch.success, 
+    **/
 
     //1 - enclosing class
     val classScopeValues = (wiredOwner.declaredMethods ::: wiredOwner.declaredFields)
@@ -28,6 +36,7 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
     //TODO
     //it seems that import statement is missed in the tree obtained from Symbol.spliceOwner
     //https://github.com/lampepfl/dotty/issues/12965
+    //Tests: import*.success (7)
     val importScopeValues = List.empty[EligibleValue]
 
     //3 - parent types
@@ -39,6 +48,7 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
     //             EligibleValue(m.rhs.map(_.tpe).getOrElse(m.returnTpt.tpe), m)
     // }
     // https://github.com/lampepfl/dotty/discussions/12966
+    //Tests: implicitDepsWiredWithImplicitValsFromParentsScope.success, inheritance*.success(9), selfType.success, selfTypeHKT.success
     val parentScopValues = List.empty[EligibleValue]
 
     EligibleValues(Map(

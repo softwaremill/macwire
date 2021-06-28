@@ -1,8 +1,8 @@
 #include commonSimpleClasses
 
 trait DependencyProvider {
-  implicit val a = new A()
-  implicit val b = new B()
+  implicit val a: A = new A()
+  implicit val b: B = new B()
 }
 
 object ParentsScope extends DependencyProvider {

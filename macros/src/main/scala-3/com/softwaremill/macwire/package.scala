@@ -5,6 +5,8 @@ package object macwire {
 
   def wireSet[T]: Set[T] = ???
 
+  //TODO 
+  //TESTS: wireWith.success
   def wireWith[RES](factory: () => RES): RES = ???
   def wireWith[A,RES](factory: (A) => RES): RES = ???
   def wireWith[A,B,RES](factory: (A,B) => RES): RES = ???

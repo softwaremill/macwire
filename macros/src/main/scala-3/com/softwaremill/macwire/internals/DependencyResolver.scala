@@ -23,7 +23,12 @@ private[macwire] class DependencyResolver[Q <: Quotes, T: Type](debug: Logger)(u
           report.warning(s"Found [$value] for parameter [${param.name}], " +
             s"but a forward reference [${forwardValues.mkString(", ")}] was also eligible")
         }
-        Ref(value.symbol)
+        Ref(value.symbol).changeOwner(Symbol.spliceOwner.owner.owner)
+        // match {
+        //   case Select(This(_), a) => Select(This(param.owner), value.symbol)
+        //   case a => a
+        // }
+        
       case values => report.throwError(s"Found multiple values of type [$t]: [$values]")
     }
   }

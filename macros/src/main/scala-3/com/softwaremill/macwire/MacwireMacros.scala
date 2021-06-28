@@ -13,6 +13,7 @@ object MacwireMacros {
     val companionCrimper = new CompanionCrimper[q.type, T](log)
 
     lazy val targetType = constructorCrimper.targetType.toString
+    //TODO
     lazy val whatWasWrong: String = "???"
     //  {
     //   if (constructorCrimper.constructor.isEmpty && companionCrimper.companionType.isEmpty)
