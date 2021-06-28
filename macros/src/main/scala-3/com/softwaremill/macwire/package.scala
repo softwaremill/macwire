@@ -5,31 +5,31 @@ package object macwire {
 
   inline def wireSet[T]: Set[T] = ${ MacwireMacros.wireSet_impl[T] }
 
-  //TODO 
   //TESTS: wireWith.success
-  def wireWith[RES](factory: () => RES): RES = ???
-  def wireWith[A,RES](factory: (A) => RES): RES = ???
-  def wireWith[A,B,RES](factory: (A,B) => RES): RES = ???
-  def wireWith[A,B,C,RES](factory: (A,B,C) => RES): RES = ???
-  def wireWith[A,B,C,D,RES](factory: (A,B,C,D) => RES): RES = ???
-  def wireWith[A,B,C,D,E,RES](factory: (A,B,C,D,E) => RES): RES = ???
-  def wireWith[A,B,C,D,E,F,RES](factory: (A,B,C,D,E,F) => RES): RES = ???
-  def wireWith[A,B,C,D,E,F,G,RES](factory: (A,B,C,D,E,F,G) => RES): RES = ???
-  def wireWith[A,B,C,D,E,F,G,H,RES](factory: (A,B,C,D,E,F,G,H) => RES): RES = ???
-  def wireWith[A,B,C,D,E,F,G,H,I,RES](factory: (A,B,C,D,E,F,G,H,I) => RES): RES = ???
-  def wireWith[A,B,C,D,E,F,G,H,I,J,RES](factory: (A,B,C,D,E,F,G,H,I,J) => RES): RES = ???
-  def wireWith[A,B,C,D,E,F,G,H,I,J,K,RES](factory: (A,B,C,D,E,F,G,H,I,J,K) => RES): RES = ???
-  def wireWith[A,B,C,D,E,F,G,H,I,J,K,L,RES](factory: (A,B,C,D,E,F,G,H,I,J,K,L) => RES): RES = ???
-  def wireWith[A,B,C,D,E,F,G,H,I,J,K,L,M,RES](factory: (A,B,C,D,E,F,G,H,I,J,K,L,M) => RES): RES = ???
-  def wireWith[A,B,C,D,E,F,G,H,I,J,K,L,M,N,RES](factory: (A,B,C,D,E,F,G,H,I,J,K,L,M,N) => RES): RES = ???
-  def wireWith[A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,RES](factory: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O) => RES): RES = ???
-  def wireWith[A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,RES](factory: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P) => RES): RES = ???
-  def wireWith[A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,RES](factory: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q) => RES): RES = ???
-  def wireWith[A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,RES](factory: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R) => RES): RES = ???
-  def wireWith[A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,RES](factory: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S) => RES): RES = ???
-  def wireWith[A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,RES](factory: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T) => RES): RES = ???
-  def wireWith[A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,RES](factory: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U) => RES): RES = ???
-  def wireWith[A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,RES](factory: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V) => RES): RES = ???
+  inline def wireWith[RES](inline factory: () => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }
+  inline def wireWith[A,RES](inline factory: (A) => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }
+  inline def wireWith[A,B,RES](inline factory: (A,B) => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }
+  inline def wireWith[A,B,C,RES](inline factory: (A,B,C) => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }
+  inline def wireWith[A,B,C,D,RES](inline factory: (A,B,C,D) => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }
+  inline def wireWith[A,B,C,D,E,RES](inline factory: (A,B,C,D,E) => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }
+  inline def wireWith[A,B,C,D,E,F,RES](inline factory: (A,B,C,D,E,F) => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }
+  inline def wireWith[A,B,C,D,E,F,G,RES](inline factory: (A,B,C,D,E,F,G) => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }
+  inline def wireWith[A,B,C,D,E,F,G,H,RES](inline factory: (A,B,C,D,E,F,G,H) => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }
+  inline def wireWith[A,B,C,D,E,F,G,H,I,RES](inline factory: (A,B,C,D,E,F,G,H,I) => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }
+  inline def wireWith[A,B,C,D,E,F,G,H,I,J,RES](inline factory: (A,B,C,D,E,F,G,H,I,J) => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }
+  inline def wireWith[A,B,C,D,E,F,G,H,I,J,K,RES](inline factory: (A,B,C,D,E,F,G,H,I,J,K) => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }
+  inline def wireWith[A,B,C,D,E,F,G,H,I,J,K,L,RES](inline factory: (A,B,C,D,E,F,G,H,I,J,K,L) => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }
+  inline def wireWith[A,B,C,D,E,F,G,H,I,J,K,L,M,RES](inline factory: (A,B,C,D,E,F,G,H,I,J,K,L,M) => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }
+  inline def wireWith[A,B,C,D,E,F,G,H,I,J,K,L,M,N,RES](inline factory: (A,B,C,D,E,F,G,H,I,J,K,L,M,N) => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }
+  inline def wireWith[A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,RES](inline factory: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O) => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }
+  inline def wireWith[A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,RES](inline factory: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P) => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }
+  inline def wireWith[A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,RES](inline factory: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q) => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }
+  inline def wireWith[A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,RES](inline factory: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R) => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }
+  inline def wireWith[A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,RES](inline factory: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S) => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }
+  inline def wireWith[A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,RES](inline factory: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T) => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }
+  inline def wireWith[A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,RES](inline factory: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U) => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }
+  inline def wireWith[A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,RES](inline factory: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V) => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }
 
+  
   def wiredInModule(in: AnyRef): Wired = ???
 }

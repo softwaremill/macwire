@@ -2,6 +2,7 @@ package com.softwaremill.macwire
 
 import com.softwaremill.macwire.internals.*
 import scala.quoted.*
+import java.sql.Types
 
 object MacwireMacros {
   private val log = new Logger()
@@ -25,6 +26,33 @@ object MacwireMacros {
       
     log(s"Generated code: ${code.show}, ${code}")
     code.asExprOf[T]
+  }
+
+  def wireWith_impl[T: Type](using q: Quotes)(factory: Expr[Any]): Expr[T] = {
+    import q.reflect.*
+
+    val typeCheckUtil = new TypeCheckUtil[q.type](log)
+    val dependencyResolver = new DependencyResolver[q.type, T](log)
+    // import typeCheckUtil.typeCheckIfNeeded
+
+    println(s"FACTORY [${factory.asTerm}]")
+    
+    val (params, fun) = factory.asTerm match {
+      case Inlined(_, _, Block(List(DefDef(_, List(p), _, Some(Apply(f, _)))),_)) => (p.params, f)
+      case _ => report.throwError(s"Not supported factory type: [$factory]")
+      
+    }
+
+    val values = params.map {
+      // case vd@ValDef(_, name, tpt, rhs) => dependencyResolver.resolve(vd.symbol, typeCheckIfNeeded(tpt))
+      case vd@ValDef(name, tpt, rhs) => dependencyResolver.resolve(vd.symbol, tpt.tpe)
+    }
+
+    println(s"Values [${values.mkString(", ")}]")
+    
+    val code = Apply(fun, values).asExprOf[T]
+
+    code
   }
 
   def wireSet_impl[T: Type](using q: Quotes): Expr[Set[T]] = {

@@ -104,12 +104,13 @@ trait CompileTestsSupport extends AnyFlatSpec with Matchers with OptionValues {
       driver.process(classpath :+ tempPath.toString, reporter)
 
       val infos = testReporter.storedInfos
+      val errors = infos.filter(_.level >= 2).map(_.message)
       if (expectedFailures.size > 0) {
-        val error = infos.filter(_.level >= 2).map(_.message).headOption.value
+        val error = errors.headOption.value
         
         expectedFailures.foreach(part => error should include (part))
       } else {
-        infos shouldBe empty
+        errors shouldBe empty
       }
       
      }
