@@ -2,7 +2,6 @@ package com.softwaremill.macwire
 
 import com.softwaremill.macwire.internals.*
 import scala.quoted.*
-import java.sql.Types
 
 object MacwireMacros {
   private val log = new Logger()
@@ -26,6 +25,10 @@ object MacwireMacros {
       
     log(s"Generated code: ${code.show}, ${code}")
     code.asExprOf[T]
+  }
+
+  def wireRecImpl[T: Type](using q: Quotes): Expr[T] = {
+    ???
   }
 
   def wireWith_impl[T: Type](using q: Quotes)(factory: Expr[Any]): Expr[T] = {
