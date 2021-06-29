@@ -63,8 +63,7 @@ object MacwireMacros {
 
     val instances = dependencyResolver.resolveAll(tpe)
 
-    // The lack of hygiene can be seen here as a feature, the choice of Set implementation
-    // is left to the user - you want a `mutable.Set`, just import `mutable.Set` before the `wireSet[T]` call
+    //FIXME currently fails with "While expanding a macro, a reference to parameter n was used outside the scope where it was defined"
     val code = '{ ${ Expr.ofSeq(instances.toSeq.map(_.asExprOf[T])) }.toSet }
     
 
