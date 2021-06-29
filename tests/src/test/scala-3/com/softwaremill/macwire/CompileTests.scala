@@ -21,7 +21,8 @@ class CompileTests extends CompileTestsSupport {
       "companionObjectHasFakeApplyMethods" -> List("companion object",  "has no apply methods constructing target type", "[Target]"),
       "toManyInjectAnnotations" -> List("Ambiguous constructors annotated with @javax.inject.Inject for type [Target]"),
       "nullaryMethodUsedAsCandidate" -> List("Found multiple values of type [A]: [List(foo, a)]"),
-      "wireWithTwoParamsLists" -> List("found   : A => (B => __wrapper$1", "required: ? => __wrapper$1")
+      "wireWithTwoParamsLists" -> List("found   : A => (B => __wrapper$1", "required: ? => __wrapper$1"),
+      "wireRecEmptyString" -> List(valueNotFound("String"))
     ),
     expectedWarnings = List(
       // "forwardReferenceInBlock" -> List("Found [a] for parameter [a], but a forward reference [forwardA] was also eligible")

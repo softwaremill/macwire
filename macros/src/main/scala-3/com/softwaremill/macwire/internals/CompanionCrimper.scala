@@ -2,10 +2,9 @@ package com.softwaremill.macwire.internals
 
 import scala.quoted.*
 
-private[macwire] class CompanionCrimper [Q <: Quotes, T: Type](log: Logger)(using val q: Q) {
+private[macwire] class CompanionCrimper [Q <: Quotes, T: Type](using val q: Q)(dependencyResolver: => DependencyResolver[q.type, T], log: Logger) {
   import q.reflect.*
-  lazy val dependencyResolver = new DependencyResolver[q.type, T](log)
-
+  
   lazy val targetType = TypeRepr.of[T]
 
   lazy val companionType: Option[Symbol] = targetType.typeSymbol.companionClass match {

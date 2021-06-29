@@ -3,10 +3,8 @@ package com.softwaremill.macwire.internals
 import scala.quoted.*
 import scala.annotation.Annotation
 
-private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](log: Logger)(using val q: Q) {
+private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](using val q: Q)(dependencyResolver: => DependencyResolver[q.type, T], log: Logger) {
   import q.reflect.*
-
-  lazy val dependencyResolver = new DependencyResolver[q.type, T](log)
 
   // lazy val typeCheckUtil = new TypeCheckUtil[c.type](c, log)
 
@@ -76,14 +74,12 @@ private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](log: Logger)(usi
     case p => dependencyResolver.resolve(p, /*SI-4751*/ paramType(p))
   })
 
-  private def paramType(param: Symbol): TypeRepr = {
-    //TODO
-    
+  private def paramType(param: Symbol): TypeRepr = {    
     // val (sym: Symbol, tpeArgs: List[Type]) = targetTypeD match {
     //   case TypeRef(_, sym, tpeArgs) => (sym, tpeArgs)
     //   case t => abort(s"Target type not supported for wiring: $t. Please file a bug report with your use-case.")
     // }
-    // val pTpe = param.typeSignature.substituteTypes(sym.asClass.typeParams, tpeArgs)
+    // val pTpe = param.signature.substituteTypes(sym.asClass.typeParams, tpeArgs)
     // if (param.asTerm.isByNameParam) pTpe.typeArgs.head else pTpe
     
     //FIXME assertion error in test inheritanceHKT.success, selfTypeHKT.success
