@@ -10,30 +10,30 @@ object MacwireMacros {
     import q.reflect.*
 
     val dependencyResolver = DependencyResolver.throwErrorOnResolutionFailure[q.type, T](log)
-    val constructorCrimper = new ConstructorCrimper[q.type, T](using q)(dependencyResolver, log)
-    val companionCrimper = new CompanionCrimper[q.type, T](using q)(dependencyResolver, log)
-    
-    lazy val whatWasWrong: String = {
-      if (constructorCrimper.constructor.isEmpty && companionCrimper.applies.isDefined && companionCrimper.applies.get.isEmpty)
-        s"Cannot find a public constructor and the companion object has no apply methods constructing target type for [${showTypeName[T]}]"
-      else if (companionCrimper.applies.isDefined && companionCrimper.applies.get.size > 1)
-        s"No public primary constructor found for ${showTypeName[T]} and multiple matching apply methods in its companion object were found."
-      else s"Target type not supported for wiring: ${showTypeName[T]}. Please file a bug report with your use-case."
-    }
 
-    val code: Tree = (constructorCrimper.constructorTree orElse companionCrimper.applyTree)
-      .getOrElse(report.throwError(whatWasWrong))
-      
-    log(s"Generated code: ${code.show}, ${code}")
-    code.asExprOf[T]
+    wire[T](using q)(dependencyResolver)
   }
 
+  //TODO build failure path 
   def wireRecImpl[T: Type](using q: Quotes): Expr[T] = {
     import q.reflect.*
 
-    val dependencyResolver = new DependencyResolver[q.type, T](using q)(log, tpe => tpe.asType match {
-      case '[t] => wireImpl[t].asTerm
-    })
+    // FIXME for some reason `TypeRepr.of[String].typeSymbol.owner` and `defn.JavaLangPackage` have different hash codes 
+    def isWireable(tpe: TypeRepr): Boolean = tpe.classSymbol.map(_.owner.fullName != defn.JavaLangPackage.fullName).getOrElse(false)
+    
+    val dependencyResolver = new DependencyResolver[q.type, T](using q)(log, tpe => 
+      if !isWireable(tpe) then report.throwError(s"Cannot find a value of type: [${showTypeName(tpe)}]")
+      else tpe.asType match {
+        case '[t] => wireRecImpl[t].asTerm
+      }
+    )
+    
+    wire[T](using q)(dependencyResolver)
+  }
+
+  private def wire[T: Type](using q: Quotes)(dependencyResolver: DependencyResolver[q.type, T]): Expr[T] = {
+    import q.reflect.*
+
     val constructorCrimper = new ConstructorCrimper[q.type, T](using q)(dependencyResolver, log)
     val companionCrimper = new CompanionCrimper[q.type, T](using q)(dependencyResolver, log)
     

@@ -16,7 +16,7 @@ private[macwire] class DependencyResolver[Q <: Quotes, T: Type](using val q: Q)(
   def resolve(param: Symbol, t: TypeRepr): Term = {
 
     eligibleValues.findInFirstScope(t).toList match {
-      case Nil => resolutionFallback(t)
+      case Nil =>  resolutionFallback(t) 
       case value :: Nil =>
         val forwardValues = eligibleValues.findInScope(t, LocalForward)
         if (forwardValues.nonEmpty) {
@@ -42,5 +42,5 @@ private[macwire] class DependencyResolver[Q <: Quotes, T: Type](using val q: Q)(
 }
 
 object DependencyResolver {
-  def throwErrorOnResolutionFailure[Q <: Quotes, T: Type](debug: Logger)(using q: Q) = new DependencyResolver[q.type, T](using q)(debug, _ => q.reflect.report.throwError(s"Cannot find a value of type: [${showTypeName[T]}]"))
+  def throwErrorOnResolutionFailure[Q <: Quotes, T: Type](debug: Logger)(using q: Q) = new DependencyResolver[q.type, T](using q)(debug, tpe => q.reflect.report.throwError(s"Cannot find a value of type: [${showTypeName(tpe)}]"))
 }
