@@ -8,7 +8,7 @@ object MethodScope {
   }
 }
 
-implicit val implicitA = new A()
-implicit val implicitB = new B()
+implicit val implicitA: A = new A()
+implicit val implicitB: B = new B()
 
 MethodScope.someMethod(new A())

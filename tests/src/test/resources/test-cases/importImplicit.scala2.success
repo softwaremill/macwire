@@ -2,7 +2,7 @@ case class A()
 case class B(a: A)
 
 object Import {
-    implicit val a = A()
+    implicit val a: A = A()
 }
 
 object Test {

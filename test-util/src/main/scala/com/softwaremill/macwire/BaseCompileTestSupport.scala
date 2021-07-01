@@ -33,11 +33,11 @@ private [macwire] trait BaseCompileTestsSupport extends AnyFlatSpec with Matcher
      checkEachExpectationMatchATestCase(expectedWarnings, warningNames)
 
      // add the tests
-     successNames.foreach(name => addTest(name + ".success", Nil, Nil))
-    //  warningNames.foreach(name => addTest(name + ".warning", Nil, expectedWarningsMap.getOrElse(name,
-    //    sys.error(s"Cannot find expected warning for $name"))))
-     failureNames.foreach(name => addTest(name + ".failure", expectedFailuresMap.getOrElse(name,
-       sys.error(s"Cannot find expected failures for $name")), Nil ))
+     successNames.map(isIgnoredWithName).foreach { case (name, ignored) => addTest(name + ".success", ignored, Nil, Nil) }
+     warningNames.map(isIgnoredWithName).foreach { case (name, ignored) =>  addTest(name + ".warning", ignored, Nil, if(ignored) Nil else expectedWarningsMap.getOrElse(name,
+       sys.error(s"Cannot find expected warning for $name"))) }
+     failureNames.map(isIgnoredWithName).foreach { case (name, ignored) => addTest(name + ".failure", ignored, if(ignored) Nil else expectedFailuresMap.getOrElse(name,
+       sys.error(s"Cannot find expected failures for $name")), Nil ) }
    }
 
    private def checkNoDuplicatedExpectation(expectationList: List[(String, ExpectedFailures)],
@@ -71,8 +71,15 @@ private [macwire] trait BaseCompileTestsSupport extends AnyFlatSpec with Matcher
         warningNames.map(_.stripSuffix(".warning")))
    }
 
-   def addTest(testName: String, expectedFailures: ExpectedFailures, expectedWarningsFragments: List[String], imports: String = GlobalImports): Unit
+   protected val ignoreSuffixes: List[String]
 
+   private def isIgnoredWithName(testCase: String): (String, Boolean) = ignoreSuffixes.find(testCase.endsWith) match {
+     case None => (testCase, false)
+     case Some(suffix) => (testCase.stripSuffix(suffix), true)
+   }
+
+   def addTest(testName: String, ignored: Boolean, expectedFailures: ExpectedFailures, expectedWarningsFragments: List[String], imports: String = GlobalImports): Unit
+   
    private def findTestCaseFiles(basedOn: String): List[File] = {
      val resource = this.getClass.getResource("/test-cases/" + basedOn)
      if (resource == null) {

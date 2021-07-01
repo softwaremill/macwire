@@ -13,12 +13,14 @@ import java.nio.file.Files
 import java.nio.file.OpenOption
 import java.nio.file.StandardOpenOption
 
-import dotty.tools.dotc.reporting.ThrowingReporter
+import dotty.tools.dotc.reporting.{ThrowingReporter, Diagnostic}
 import dotty.tools.dotc.Driver
 import java.io.IOException
 
 trait CompileTestsSupport extends BaseCompileTestsSupport with OptionValues {
    type ExpectedFailures = List[String]
+
+   override val ignoreSuffixes: List[String] = List(".scala2")
 
    private def withTempFile(content: String)(f: Path => Unit) = {
     var tempFile: Path = null 
@@ -31,10 +33,13 @@ trait CompileTestsSupport extends BaseCompileTestsSupport with OptionValues {
       Files.delete(tempFile)
     }
    }
-   
-   override def addTest(testName: String, expectedFailures: ExpectedFailures, expectedWarningsFragments: List[String], imports: String = GlobalImports) = {
-     testName should (if (expectedFailures.isEmpty) "compile & run" else "cause a compile error") in {
-      if expectedWarningsFragments.nonEmpty then throw new NotImplementedError
+
+   override def addTest(testName: String, ignored: Boolean, expectedFailures: ExpectedFailures, expectedWarningsFragments: List[String], imports: String = GlobalImports) = {
+     behavior of testName
+     val description = (if (expectedFailures.isEmpty) "compile & run" else "cause a compile error")
+     def op(testFun: => Any)  = if (ignored) { ignore should description in testFun } else { it should description in testFun }
+     
+     op {
         withTempFile(loadTest("/test-cases/" + testName, imports)) { path =>
           val driver = Driver()
           val testReporter = new TestReporter
@@ -44,21 +49,28 @@ trait CompileTestsSupport extends BaseCompileTestsSupport with OptionValues {
           driver.process(classpath :+ path.toString, reporter)
 
           val infos = testReporter.storedInfos
-          val errors = infos.filter(_.level >= 2).map(_.message)
-          if (expectedFailures.size > 0) {
-            val error = errors.mkString("\n")
-            
-            expectedFailures.foreach(part => error should include (part))
-          } else {
-            errors shouldBe empty
+          
+          def verifyInfo(level: Int, expected: List[String]) = {
+            val actual = infos.filter(_.level == level).map(_.message)
+     
+            if (expected.size > 0) {
+              val info = actual.mkString("\n")
+              
+              expected.foreach(part => info should include (part))
+            } else {
+              actual shouldBe empty
+            }
           }
+
+          verifyInfo(1, expectedWarningsFragments)
+          verifyInfo(2, expectedFailures)
         }      
      }
    }
 
    private def loadTest(name: String, imports: String) = wrapInMainObject(imports + resolveDirectives(loadResource(name)))
 
-   private def wrapInMainObject(source: String) = s"object Main {\n $source  \n}"
+   private def wrapInMainObject(source: String) = s"object Main {\n  ${source.linesIterator.mkString("\n  ")}\n}"
 
  }
 
