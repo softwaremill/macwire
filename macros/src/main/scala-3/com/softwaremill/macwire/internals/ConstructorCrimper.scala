@@ -3,7 +3,7 @@ package com.softwaremill.macwire.internals
 import scala.quoted.*
 import scala.annotation.Annotation
 
-private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](using val q: Q)(dependencyResolver: => DependencyResolver[q.type, T], log: Logger) {
+private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](using val q: Q)(dependencyResolver: DependencyResolver[q.type, T], log: Logger) {
   import q.reflect.*
 
   // lazy val typeCheckUtil = new TypeCheckUtil[c.type](c, log)
