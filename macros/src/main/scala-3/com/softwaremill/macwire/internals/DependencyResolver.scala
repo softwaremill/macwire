@@ -3,7 +3,7 @@ package com.softwaremill.macwire.internals
 import scala.quoted.*
 import EligibleValuesFinder.Scope.*
 
-private[macwire] class DependencyResolver[Q <: Quotes, T: Type](debug: Logger)(using val q: Q) {
+private[macwire] class DependencyResolver[Q <: Quotes, T: Type](using val q: Q)(debug: Logger, resolutionFallback: q.reflect.TypeRepr => q.reflect.Term) {
   import q.reflect.*
   private val eligibleValuesFinder = new EligibleValuesFinder[q.type](debug)
 
@@ -16,7 +16,7 @@ private[macwire] class DependencyResolver[Q <: Quotes, T: Type](debug: Logger)(u
   def resolve(param: Symbol, t: TypeRepr): Term = {
 
     eligibleValues.findInFirstScope(t).toList match {
-      case Nil => report.throwError(s"Cannot find a value of type: [${showTypeName(t)}]")
+      case Nil =>  resolutionFallback(t) 
       case value :: Nil =>
         val forwardValues = eligibleValues.findInScope(t, LocalForward)
         if (forwardValues.nonEmpty) {
@@ -39,4 +39,8 @@ private[macwire] class DependencyResolver[Q <: Quotes, T: Type](debug: Logger)(u
   def resolveAll(t: TypeRepr): Iterable[Tree] = {
     eligibleValues.findInAllScope(t)
   }
+}
+
+object DependencyResolver {
+  def throwErrorOnResolutionFailure[Q <: Quotes, T: Type](debug: Logger)(using q: Q) = new DependencyResolver[q.type, T](using q)(debug, tpe => q.reflect.report.throwError(s"Cannot find a value of type: [${showTypeName(tpe)}]"))
 }

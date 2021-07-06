@@ -32,4 +32,6 @@ package object macwire {
 
   
   def wiredInModule(in: AnyRef): Wired = ???
+
+  inline def wireRec[T]: T = ${ MacwireMacros.wireRecImpl[T] }
 }
