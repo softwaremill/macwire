@@ -3,8 +3,8 @@
 object MethodScope {
   def someMethod(dependency: A)(implicit implicitDependencyA: A, implicitDependencyB: B) = {
     val c = wire[C]
-    require(c.a eq a)
-    require(c.b eq b)
+    require(c.a eq implicitDependencyA)
+    require(c.b eq implicitDependencyB)
   }
 }
 
