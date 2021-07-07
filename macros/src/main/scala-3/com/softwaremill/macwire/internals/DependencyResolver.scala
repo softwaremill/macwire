@@ -17,14 +17,7 @@ private[macwire] class DependencyResolver[Q <: Quotes, T: Type](using val q: Q)(
 
     eligibleValues.findInFirstScope(t).toList match {
       case Nil =>  resolutionFallback(t) 
-      case value :: Nil =>
-        val forwardValues = eligibleValues.findInScope(t, LocalForward)
-        if (forwardValues.nonEmpty) {
-          report.warning(s"Found [$value] for parameter [${param.name}], " +
-            s"but a forward reference [${forwardValues.mkString(", ")}] was also eligible")
-        }
-        
-        Ref(value.symbol).changeOwner(Symbol.spliceOwner.owner.owner)
+      case value :: Nil => Ref(value.symbol).changeOwner(Symbol.spliceOwner.owner.owner)
         
       case values => report.throwError(s"Found multiple values of type [${showTypeName(t)}]: [$values]")
     }

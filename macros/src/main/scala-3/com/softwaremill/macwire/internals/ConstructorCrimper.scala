@@ -51,7 +51,7 @@ private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](using val q: Q)(
   lazy val constructorParamLists: Option[List[List[Symbol]]] = constructor.map(_.paramSymss)
 
   lazy val constructorArgs: Option[List[List[Term]]] = log.withBlock("Looking for targetConstructor arguments") {
-    constructorParamLists.map(wireConstructorParams)
+    constructorParamLists.map(wireConstructorParamsWithImplicitLookups)
   }
 
   // lazy val constructorArgsWithImplicitLookups: Option[List[List[Tree]]] = log.withBlock("Looking for targetConstructor arguments with implicit lookups") {
@@ -70,10 +70,15 @@ private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](using val q: Q)(
 
   def wireConstructorParams(paramLists: List[List[Symbol]]): List[List[Term]] = paramLists.map(_.map(p => dependencyResolver.resolve(p, /*SI-4751*/paramType(p)) ))
 
-  def wireConstructorParamsWithImplicitLookups(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.map(_.map {
-    // case i if i.isImplicit => q"implicitly[${paramType(i)}]"
+  def wireConstructorParamsWithImplicitLookups(paramLists: List[List[Symbol]]): List[List[Term]] = paramLists.map(_.map {
+    case i if i.flags is Flags.Implicit => resolveImplicitOrFail(i)
     case p => dependencyResolver.resolve(p, /*SI-4751*/ paramType(p))
   })
+
+  private def resolveImplicitOrFail(param: Symbol): Term = Implicits.search(paramType(param)) match {
+    case iss: ImplicitSearchSuccess => iss.tree
+    case isf: ImplicitSearchFailure => report.throwError(s"Failed to resolve an implicit for [$param].")
+  }
 
   private def paramType(param: Symbol): TypeRepr = {    
     // val (sym: Symbol, tpeArgs: List[Type]) = targetTypeD match {
