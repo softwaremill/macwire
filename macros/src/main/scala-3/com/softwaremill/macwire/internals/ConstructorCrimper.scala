@@ -70,10 +70,10 @@ private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](using val q: Q)(
 
   def wireConstructorParams(paramLists: List[List[Symbol]]): List[List[Term]] = paramLists.map(_.map(p => dependencyResolver.resolve(p, /*SI-4751*/paramType(p)) ))
 
-  def wireConstructorParamsWithImplicitLookups(paramLists: List[List[Symbol]]): List[List[Term]] = paramLists.map(_.map {
-    case i if i.flags is Flags.Implicit => resolveImplicitOrFail(i)
-    case p => dependencyResolver.resolve(p, /*SI-4751*/ paramType(p))
-  })
+  def wireConstructorParamsWithImplicitLookups(paramLists: List[List[Symbol]]): List[List[Term]] = paramLists.map {
+    case params if params.forall(_.flags is Flags.Implicit) => params.map(resolveImplicitOrFail)
+    case params => params.map(p => dependencyResolver.resolve(p, /*SI-4751*/ paramType(p)))
+  }
 
   private def resolveImplicitOrFail(param: Symbol): Term = Implicits.search(paramType(param)) match {
     case iss: ImplicitSearchSuccess => iss.tree
