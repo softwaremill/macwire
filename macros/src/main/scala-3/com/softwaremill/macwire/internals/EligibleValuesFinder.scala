@@ -23,7 +23,8 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
     * search in blocks - methodContainingValDef.success, methodWithWiredWithinIfThenElse.success, methodWithWiredWithinPatternMatch.success, 
     **/
 
-    //1 - enclosing class
+    //1 - enclosing class    
+    println(s"WO: [$wiredOwner]")
     val classScopeValues = (wiredOwner.declaredMethods ::: wiredOwner.declaredFields)
         .filter(m => !m.fullName.startsWith("java.lang.Object") && !m.fullName.startsWith("scala.Any"))
         .map(_.tree).collect {
@@ -39,7 +40,20 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
     //Tests: import*.success (7)
     val importScopeValues = List.empty[EligibleValue]
 
-    //3 - parent types
+    //3 - params
+    def findParamsRec(s: Symbol): List[EligibleValue] = s.tree match {
+      case DefDef(_, lpc, _, _) => lpc.flatMap(_.params).collect {
+            case m: ValDef => EligibleValue(m.rhs.map(_.tpe).getOrElse(m.tpt.tpe), m)
+            case m: DefDef if m.termParamss.flatMap(_.params).isEmpty =>
+                EligibleValue(m.rhs.map(_.tpe).getOrElse(m.returnTpt.tpe), m)
+      } ::: findParamsRec(s.owner)
+      case _ => List.empty[EligibleValue]
+    }
+
+    val methodParamsScopeValues = findParamsRec(wiredDef)
+
+    // val params = List.empty[EligibleValue]
+    //4 - parent types
     // val parentScopValues = (wiredOwner.memberMethods ::: wiredOwner.memberFields).filterNot((wiredOwner.declaredMethods ::: wiredOwner.declaredFields).toSet)
     //     .filter(m => !m.fullName.startsWith("java.lang.Object") && !m.fullName.startsWith("scala.Any"))
     //     .map(_.tree).collect {
@@ -51,11 +65,14 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
     //Tests: implicitDepsWiredWithImplicitValsFromParentsScope.success, inheritance*.success(9), selfType.success, selfTypeHKT.success
     val parentScopValues = List.empty[EligibleValue]
 
-    EligibleValues(Map(
-        Scope.Class -> classScopeValues,
-        Scope.ParentOrModule -> importScopeValues,
-        Scope.ModuleInParent -> parentScopValues
+    val a = EligibleValues(Map(
+        Scope.init -> classScopeValues,
+        Scope(2) -> (methodParamsScopeValues ++ importScopeValues),
+        Scope(3) -> parentScopValues
     ))
+
+    println(s"EV: [${a.values.map(b => (b._1, b._2.mkString(", "))).mkString(", ")}]")
+    a
   }
 
   case class EligibleValue(tpe: TypeRepr, expr: Tree) {
@@ -68,7 +85,7 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
     }
   }
 
-  class EligibleValues(values: Map[Scope, List[EligibleValue]]) {
+  class EligibleValues(val values: Map[Scope, List[EligibleValue]]) {
 
     private def doFindInScope(tpe: TypeRepr, scope: Scope): List[Tree] = {
       for( scopedValue <- values.getOrElse(scope, Nil) if checkCandidate(target = tpe, tpt = scopedValue.tpe)) yield {
@@ -90,7 +107,7 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
       uniqueTrees(doFindInScope(tpe, scope))
     }
 
-    def findInFirstScope(tpe: TypeRepr, startingWith: Scope = Scope.Local): Iterable[Tree] = {
+    def findInFirstScope(tpe: TypeRepr, startingWith: Scope = Scope.init): Iterable[Tree] = {
       @tailrec
       def forScope(scope: Scope): Iterable[Tree] = {
         findInScope(tpe, scope) match {
@@ -110,7 +127,7 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
         val newAcc = doFindInScope(tpe, scope) ++ acc
         if( !scope.isMax ) accInScope(scope.widen, newAcc) else newAcc
       }
-      uniqueTrees(accInScope(Scope.Local, Nil))
+      uniqueTrees(accInScope(Scope.init, Nil))
     }
   }
 
@@ -121,9 +138,9 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
 }
 
 object EligibleValuesFinder {
-  abstract class Scope private(val value: Int) extends Ordered[Scope] {
+  case class Scope(val value: Int) extends Ordered[Scope] {
     /** @return the next Scope until Max */
-    def widen: Scope
+    def widen: Scope = copy(value = this.value + 1)
 
     def isMax: Boolean = widen == this
     override def compare(that: Scope): Int = this.value.compare(that.value)
@@ -137,25 +154,9 @@ object EligibleValuesFinder {
   object Scope extends Ordering[Scope] {
 
     /** The smallest Scope */
-    case object Local extends Scope(1) {
-      def widen: Scope = Class
-    }
-    case object Class extends Scope(2) {
-      def widen: Scope = ParentOrModule
-    }
-    case object ParentOrModule extends Scope(3) {
-      def widen: Scope = ModuleInParent
-    }
-    case object ModuleInParent extends Scope(4) {
-      def widen: Scope = ModuleInParent
-    }
-
-    /** A special scope for values that are located in a block after the wire call
-      * and therefore not reachable. */
-    case object LocalForward extends Scope(9) {
-      def widen: Scope = LocalForward
-    }
+    val init = Scope(1) 
 
     override def compare(a: Scope, b: Scope): Int = a.compare(b)
   }
+
 }

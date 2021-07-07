@@ -17,6 +17,7 @@ private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](using val q: Q)(
   // lazy val classOfT: Expr[Class[T]] = c.Expr[Class[T]](q"classOf[$targetType]")
 
   private def isAccessibleConstructor(s: Symbol) = s.isClassConstructor && !(s.flags is Flags.Private) && !(s.flags is Flags.Protected)
+  
   lazy val publicConstructors: Iterable[Symbol] = {
     val ctors = targetType.typeSymbol.declarations
       .filter(isAccessibleConstructor)

@@ -34,8 +34,8 @@ object MacwireMacros {
   private def wire[T: Type](using q: Quotes)(dependencyResolver: DependencyResolver[q.type, T]): Expr[T] = {
     import q.reflect.*
 
-    val constructorCrimper = new ConstructorCrimper[q.type, T](using q)(dependencyResolver, log)
-    val companionCrimper = new CompanionCrimper[q.type, T](using q)(dependencyResolver, log)
+    lazy val constructorCrimper = new ConstructorCrimper[q.type, T](using q)(dependencyResolver, log)
+    lazy val companionCrimper = new CompanionCrimper[q.type, T](using q)(dependencyResolver, log)
     
     lazy val whatWasWrong: String = {
       if (constructorCrimper.constructor.isEmpty && companionCrimper.applies.isDefined && companionCrimper.applies.get.isEmpty)
