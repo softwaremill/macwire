@@ -8,7 +8,6 @@ class CompileTests extends CompileTestsSupport {
                                           "and multiple matching apply methods in its companion object were found."),
       "explicitDepsNotWiredWithImplicitVals" -> List(valueNotFound("A")),
       "explicitDepsWiredWithImplicitValsFromMethodScope" -> List(ambiguousResMsg("A"), "dependency", "implicitDependencyA"),
-      "importAmbiguous" -> List(ambiguousResMsg("A"), "myA", "theA"),
       "nestedMethodsWired" -> List(ambiguousResMsg("A"), "outerA", "innerA"),
       "nestedWithManyMatchingParamsWired" -> List(ambiguousResMsg("A"), "a1", "a2", "a3"),
       "multipleMethodParameters" -> List(ambiguousResMsg("A"), "a1", "a2"),
@@ -25,7 +24,7 @@ class CompileTests extends CompileTestsSupport {
       "wireRecEmptyString" -> List(valueNotFound("String"))
     ),
     expectedWarnings = List(
-      // "forwardReferenceInBlock" -> List("Found [a] for parameter [a], but a forward reference [forwardA] was also eligible")
+      "forwardReferenceInBlock" -> List("Found [a] for parameter [a], but a forward reference [forwardA] was also eligible")
     )
   )
 }

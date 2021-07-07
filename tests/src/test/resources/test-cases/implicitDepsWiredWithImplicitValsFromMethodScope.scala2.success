@@ -6,7 +6,7 @@ object MethodScope {
     require(service.dependency eq implicitDependency)
   }
 }
-//it fails for Scala2 with "ambiguous implicit values" - bug?
-implicit val someImplicit: Dependency = new Dependency
+
+implicit val someImplicit = new Dependency
 
 MethodScope.someMethod(new Dependency)
