@@ -7,7 +7,24 @@ import scala.reflect.macros.blackbox
 object MacwireMacros {
   private val log = new Logger()
 
-  def wire_impl[T: c.WeakTypeTag](c: blackbox.Context): c.Expr[T] = {
+  def wire_impl[T: c.WeakTypeTag](c: blackbox.Context): c.Expr[T] = 
+    wire(c)(DependencyResolver.throwErrorOnResolutionFailure[c.type, c.universe.Type, c.universe.Tree](c, log))
+
+  def wireRec_impl[T: c.WeakTypeTag](c: blackbox.Context): c.Expr[T] = {
+    import c.universe._
+
+    // FIXME for some reason `TypeRepr.of[String].typeSymbol.owner` and `defn.JavaLangPackage` have different hash codes 
+    def isWireable(tpe: Type): Boolean = true
+    
+    val dependencyResolver = new DependencyResolver[c.type, Type, Tree](c, log)(tpe => 
+      if (!isWireable(tpe)) c.abort(c.enclosingPosition, s"Cannot find a value of type: [${tpe}]")
+      else wireRec_impl(c)(???).tree
+    )
+    
+    wire(c)(dependencyResolver)
+  }
+
+  def wire[T: c.WeakTypeTag](c: blackbox.Context)(dependencyResolver: DependencyResolver[c.type, c.universe.Type, c.universe.Tree]): c.Expr[T] = {
     import c.universe._
 
     val constructorCrimper = new ConstructorCrimper[c.type, T](c, log)
@@ -24,7 +41,7 @@ object MacwireMacros {
       else s"Target type not supported for wiring: $targetType. Please file a bug report with your use-case."
     }
 
-    val code: Tree = (constructorCrimper.constructorTree orElse companionCrimper.applyTree) getOrElse
+    val code: Tree = (constructorCrimper.constructorTree(dependencyResolver) orElse companionCrimper.applyTree(dependencyResolver)) getOrElse
       c.abort(c.enclosingPosition, whatWasWrong)
     log(s"Generated code: ${showCode(code)}, ${showRaw(code)}")
     c.Expr(code)
@@ -34,7 +51,7 @@ object MacwireMacros {
     import c.universe._
 
     val typeCheckUtil = new TypeCheckUtil[c.type](c, log)
-    val dependencyResolver = new DependencyResolver[c.type](c, log)
+    val dependencyResolver = DependencyResolver.throwErrorOnResolutionFailure[c.type, Type, Tree](c, log)
     import typeCheckUtil.typeCheckIfNeeded
 
     val (params, fun) = factory match {
@@ -61,7 +78,7 @@ object MacwireMacros {
     import c.universe._
     val targetType = implicitly[c.WeakTypeTag[T]]
 
-    val dependencyResolver = new DependencyResolver[c.type](c, log)
+    val dependencyResolver = DependencyResolver.throwErrorOnResolutionFailure[c.type, Type, Tree](c, log)
 
     val instances = dependencyResolver.resolveAll(targetType.tpe)
 
@@ -124,4 +141,5 @@ object MacwireMacros {
       code
     }
   }
+
 }

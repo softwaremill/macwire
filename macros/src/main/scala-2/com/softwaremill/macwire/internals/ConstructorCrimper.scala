@@ -2,10 +2,10 @@ package com.softwaremill.macwire.internals
 
 import scala.reflect.macros.blackbox
 
-private[macwire] class ConstructorCrimper[C <: blackbox.Context, T: C#WeakTypeTag](val c: C, log: Logger) {
+private[macwire] class ConstructorCrimper[C <: blackbox.Context, T: C#WeakTypeTag] (val c: C, log: Logger) {
   import c.universe._
 
-  lazy val dependencyResolver = new DependencyResolver[c.type](c, log)
+  type DependencyResolverType = DependencyResolver[c.type, Type, Tree]
 
   lazy val typeCheckUtil = new TypeCheckUtil[c.type](c, log)
 
@@ -44,22 +44,22 @@ private[macwire] class ConstructorCrimper[C <: blackbox.Context, T: C#WeakTypeTa
 
   lazy val constructorParamLists: Option[List[List[Symbol]]] = constructor.map(_.asMethod.paramLists.filterNot(_.headOption.exists(_.isImplicit)))
 
-  lazy val constructorArgs: Option[List[List[Tree]]] = log.withBlock("Looking for targetConstructor arguments") {
-    constructorParamLists.map(wireConstructorParams)
+  def constructorArgs(dependencyResolver: DependencyResolverType): Option[List[List[Tree]]] = log.withBlock("Looking for targetConstructor arguments") {
+    constructorParamLists.map(wireConstructorParams(dependencyResolver))
   }
 
-  lazy val constructorArgsWithImplicitLookups: Option[List[List[Tree]]] = log.withBlock("Looking for targetConstructor arguments with implicit lookups") {
-    constructor.map(_.asMethod.paramLists).map(wireConstructorParamsWithImplicitLookups)
+  def constructorArgsWithImplicitLookups(dependencyResolver: DependencyResolverType): Option[List[List[Tree]]] = log.withBlock("Looking for targetConstructor arguments with implicit lookups") {
+    constructor.map(_.asMethod.paramLists).map(wireConstructorParamsWithImplicitLookups(dependencyResolver))
   }
 
-  lazy val constructorTree: Option[Tree] =  log.withBlock(s"Creating Constructor Tree for $targetType"){
+  def constructorTree(dependencyResolver: DependencyResolverType): Option[Tree] =  log.withBlock(s"Creating Constructor Tree for $targetType"){
     val constructionMethodTree: Tree = Select(New(Ident(targetTypeD.typeSymbol)), termNames.CONSTRUCTOR)
-    constructorArgs.map(_.foldLeft(constructionMethodTree)((acc: Tree, args: List[Tree]) => Apply(acc, args)))
+    constructorArgs(dependencyResolver).map(_.foldLeft(constructionMethodTree)((acc: Tree, args: List[Tree]) => Apply(acc, args)))
   }
 
-  def wireConstructorParams(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.map(_.map(p => dependencyResolver.resolve(p, /*SI-4751*/paramType(p))))
+  def wireConstructorParams(dependencyResolver: DependencyResolverType)(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.map(_.map(p => dependencyResolver.resolve(p, /*SI-4751*/paramType(p))))
 
-  def wireConstructorParamsWithImplicitLookups(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.map(_.map {
+  def wireConstructorParamsWithImplicitLookups(dependencyResolver: DependencyResolverType)(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.map(_.map {
     case i if i.isImplicit => q"implicitly[${paramType(i)}]"
     case p => dependencyResolver.resolve(p, /*SI-4751*/ paramType(p))
   })

@@ -32,4 +32,7 @@ package object macwire {
   def wireWith[A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,RES](factory: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V) => RES): RES = macro MacwireMacros.wireWith_impl[RES]
 
   def wiredInModule(in: AnyRef): Wired = macro MacwireMacros.wiredInModule_impl
+
+  def wireRec[T]: T = macro MacwireMacros.wireRec_impl[T]
+
 }

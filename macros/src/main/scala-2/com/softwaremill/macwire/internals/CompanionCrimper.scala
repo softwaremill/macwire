@@ -5,7 +5,7 @@ import scala.reflect.macros.blackbox
 private[macwire] class CompanionCrimper [C <: blackbox.Context, T: C#WeakTypeTag](val c: C, log: Logger) {
   import c.universe._
 
-  lazy val dependencyResolver = new DependencyResolver[c.type](c, log)
+  type DependencyResolverType = DependencyResolver[c.type, Type, Tree]
 
   lazy val targetType: Type = implicitly[c.WeakTypeTag[T]].tpe
 
@@ -32,12 +32,12 @@ private[macwire] class CompanionCrimper [C <: blackbox.Context, T: C#WeakTypeTag
 
   lazy val applyParamLists: Option[List[List[Symbol]]] = apply.map(_.asMethod.paramLists)
 
-  def wireParams(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.map(_.map(p => dependencyResolver.resolve(p, p.typeSignature)))
+  def wireParams(dependencyResolver: DependencyResolverType)(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.map(_.map(p => dependencyResolver.resolve(p, p.typeSignature)))
 
-  lazy val applyArgs: Option[List[List[Tree]]] = applyParamLists.map(wireParams)
+  def applyArgs(dependencyResolver: DependencyResolverType): Option[List[List[Tree]]] = applyParamLists.map(wireParams(dependencyResolver))
 
-  lazy val applyTree: Option[Tree] = for {
-    pl: List[List[Tree]] <- applyArgs
+  def applyTree(dependencyResolver: DependencyResolverType): Option[Tree] = for {
+    pl: List[List[Tree]] <- applyArgs(dependencyResolver)
     applyMethod: Tree <- applySelect
   } yield pl.foldLeft(applyMethod)((acc: Tree, args: List[Tree]) => Apply(acc, args))
 

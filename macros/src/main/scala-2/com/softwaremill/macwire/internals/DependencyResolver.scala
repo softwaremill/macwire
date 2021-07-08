@@ -4,7 +4,7 @@ import com.softwaremill.macwire.internals.EligibleValuesFinder.Scope.LocalForwar
 
 import scala.reflect.macros.blackbox
 
-private[macwire] class DependencyResolver[C <: blackbox.Context](val c: C, debug: Logger) {
+private[macwire] class DependencyResolver[C <: blackbox.Context, TypeC <: C#Type, TreeC <: C#Tree](val c: C, debug: Logger)(resolutionFallback: TypeC => TreeC) {
 
   import c.universe._
 
@@ -19,7 +19,7 @@ private[macwire] class DependencyResolver[C <: blackbox.Context](val c: C, debug
   def resolve(param: Symbol, t: Type): Tree = {
 
     eligibleValues.findInFirstScope(t).toList match {
-      case Nil => c.abort(c.enclosingPosition, s"Cannot find a value of type: [$t]")
+      case Nil => resolutionFallback(t.asInstanceOf[TypeC]).asInstanceOf[Tree]
       case value :: Nil =>
         val forwardValues = eligibleValues.findInScope(t, LocalForward)
         if (forwardValues.nonEmpty) {
@@ -36,4 +36,9 @@ private[macwire] class DependencyResolver[C <: blackbox.Context](val c: C, debug
   def resolveAll(t: Type): Iterable[Tree] = {
     eligibleValues.findInAllScope(t)
   }
+}
+
+object DependencyResolver {
+  def throwErrorOnResolutionFailure[C <: blackbox.Context, TypeC <: C#Type, TreeC <: C#Tree](c: C, debug: Logger)  =
+    new DependencyResolver[C, TypeC, TreeC](c, debug)(t => c.abort(c.enclosingPosition, s"Cannot find a value of type: [$t]"))
 }
