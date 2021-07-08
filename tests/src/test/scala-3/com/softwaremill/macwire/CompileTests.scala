@@ -14,12 +14,10 @@ class CompileTests extends CompileTestsSupport {
       "simpleValsMissingValue" -> List(valueNotFound("B")),
       "simpleValsDuplicateValue" -> List(ambiguousResMsg("B"), "theB1", "theB2"),
       "secondaryConstructorNotAnnotated" -> List(valueNotFound("String")),
-      //Scala 3 automatically generates a companion for any class
       "phantomConstructor" -> List("Cannot find a public constructor", "[Target]"),
       "companionObjectHasNoMethods" -> List("companion object",  "has no apply methods constructing target type", "[Target]"),
       "companionObjectHasFakeApplyMethods" -> List("companion object",  "has no apply methods constructing target type", "[Target]"),
       "toManyInjectAnnotations" -> List("Ambiguous constructors annotated with @javax.inject.Inject for type [Target]"),
-      "nullaryMethodUsedAsCandidate" -> List("Found multiple values of type [A]: [List(foo, a)]"),
       "wireWithTwoParamsLists" -> List("Found:    Main.A => Main.B => Main.Test.C", "Required: Any => Main.Test.C"),
       "wireRecEmptyString" -> List(valueNotFound("String"))
     ),
