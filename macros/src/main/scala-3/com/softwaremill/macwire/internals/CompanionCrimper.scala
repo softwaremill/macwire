@@ -48,8 +48,8 @@ private[macwire] class CompanionCrimper [Q <: Quotes, T: Type](using val q: Q)(d
     applyMethod: Term <- applySelect
   } yield pl.foldLeft(applyMethod)((acc: Term, args: List[Term]) => Apply(acc, args))
 
-    private def paramType(param: Symbol): TypeRepr = {
-//FIXME
+  private def paramType(param: Symbol): TypeRepr = {
+    //FIXME
     Ref(param).tpe.widen
   }
 

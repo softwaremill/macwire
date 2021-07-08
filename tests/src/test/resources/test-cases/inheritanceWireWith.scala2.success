@@ -1,7 +1,12 @@
 case class A()
 case class B()
 
-object Test {
+trait BProvider {
+    lazy val b: B = wire[B]
+}
+
+object Test extends BProvider {
+
     case class C(a: A, b: B, s: String)
 
     object C {
@@ -12,8 +17,6 @@ object Test {
     }
 
     lazy val a: A = wire[A]
-    lazy val b: B = wire[B]
-
     lazy val c: C = wireWith(C.factory _)
 }
 

@@ -1,0 +1,24 @@
+
+case class A()
+case class B(a: A)
+
+object Test {
+
+  val someA = Some(A())
+
+  def build(opt: Option[A]): Option[B] = {
+    opt.map { a => wire[B] }
+  }
+
+  // equivalent with a for
+  def forBuild(opt: Option[A]): Option[B] = {
+    for (a <- opt) yield {
+      wire[B]
+    }
+  }
+
+  lazy val ab: Option[(A,B)] = Some(A(),B(A()))
+}
+
+require(Test.build(Test.someA).get.a eq Test.someA.get)
+require(Test.forBuild(Test.someA).get.a eq Test.someA.get)

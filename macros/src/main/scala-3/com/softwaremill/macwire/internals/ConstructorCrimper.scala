@@ -6,22 +6,19 @@ import scala.annotation.Annotation
 private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](using val q: Q)(dependencyResolver: DependencyResolver[q.type, T], log: Logger) {
   import q.reflect.*
 
-  // lazy val typeCheckUtil = new TypeCheckUtil[c.type](c, log)
-
   lazy val targetType = TypeRepr.of[T]
 
   // We need to get the "real" type in case the type parameter is a type alias - then it cannot
   // be directly instantiated
   lazy val targetTypeD = targetType.dealias
 
-  // lazy val classOfT: Expr[Class[T]] = c.Expr[Class[T]](q"classOf[$targetType]")
-
   private def isAccessibleConstructor(s: Symbol) = s.isClassConstructor && !(s.flags is Flags.Private) && !(s.flags is Flags.Protected)
+  
   lazy val publicConstructors: Iterable[Symbol] = {
     val ctors = targetType.typeSymbol.declarations
       .filter(isAccessibleConstructor)
       .filterNot(isPhantomConstructor)
-    // log.withBlock(s"There are ${ctors.size} eligible constructors" ) { ctors.foreach(c => log(showConstructor(c))) }
+    log.withBlock(s"There are ${ctors.size} eligible constructors" ) { ctors.foreach(c => log(showConstructor(c))) }
     ctors
   }
 
@@ -45,17 +42,11 @@ private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](using val q: Q)(
     ctor
   }
 
-  //TODO
-  // lazy val constructorParamLists: Option[List[List[Symbol]]] = constructor.map(_.termParamss.map(_.params.filterNot(_.headOption.exists(_.isImplicit))))
   lazy val constructorParamLists: Option[List[List[Symbol]]] = constructor.map(_.paramSymss)
 
   lazy val constructorArgs: Option[List[List[Term]]] = log.withBlock("Looking for targetConstructor arguments") {
-    constructorParamLists.map(wireConstructorParams)
+    constructorParamLists.map(wireConstructorParamsWithImplicitLookups)
   }
-
-  // lazy val constructorArgsWithImplicitLookups: Option[List[List[Tree]]] = log.withBlock("Looking for targetConstructor arguments with implicit lookups") {
-  //   constructor.map(_.asMethod.paramLists).map(wireConstructorParamsWithImplicitLookups)
-  // }
 
   lazy val constructorTree: Option[Tree] =  log.withBlock(s"Creating Constructor Tree for $targetType"){
     for {
@@ -69,10 +60,15 @@ private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](using val q: Q)(
 
   def wireConstructorParams(paramLists: List[List[Symbol]]): List[List[Term]] = paramLists.map(_.map(p => dependencyResolver.resolve(p, /*SI-4751*/paramType(p)) ))
 
-  def wireConstructorParamsWithImplicitLookups(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.map(_.map {
-    // case i if i.isImplicit => q"implicitly[${paramType(i)}]"
-    case p => dependencyResolver.resolve(p, /*SI-4751*/ paramType(p))
-  })
+  def wireConstructorParamsWithImplicitLookups(paramLists: List[List[Symbol]]): List[List[Term]] = paramLists.map {
+    case params if params.forall(_.flags is Flags.Implicit) => params.map(resolveImplicitOrFail)
+    case params => params.map(p => dependencyResolver.resolve(p, /*SI-4751*/ paramType(p)))
+  }
+
+  private def resolveImplicitOrFail(param: Symbol): Term = Implicits.search(paramType(param)) match {
+    case iss: ImplicitSearchSuccess => iss.tree
+    case isf: ImplicitSearchFailure => report.throwError(s"Failed to resolve an implicit for [$param].")
+  }
 
   private def paramType(param: Symbol): TypeRepr = {    
     // val (sym: Symbol, tpeArgs: List[Type]) = targetTypeD match {

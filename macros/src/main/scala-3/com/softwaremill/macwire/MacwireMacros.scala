@@ -57,21 +57,19 @@ object MacwireMacros {
 
     val typeCheckUtil = new TypeCheckUtil[q.type](log)
     val dependencyResolver = DependencyResolver.throwErrorOnResolutionFailure[q.type, T](log)
-    // import typeCheckUtil.typeCheckIfNeeded
-    
+
     val (params, fun) = factory.asTerm match {
       case Inlined(_, _, Block(List(DefDef(_, List(p), _, Some(Apply(f, _)))),_)) => (p.params, f)
       case _ => report.throwError(s"Not supported factory type: [$factory]")
-      
     }
 
     val values = params.map {
       // case vd@ValDef(_, name, tpt, rhs) => dependencyResolver.resolve(vd.symbol, typeCheckIfNeeded(tpt))
       case vd@ValDef(name, tpt, rhs) => dependencyResolver.resolve(vd.symbol, tpt.tpe)
     }
-    
-    val code = Apply(fun, values).asExprOf[T]
 
+    val code = Apply(fun, values).asExprOf[T]
+    log(s"Generated code: ${code.show}")
     code
   }
 
@@ -83,10 +81,8 @@ object MacwireMacros {
 
     val instances = dependencyResolver.resolveAll(tpe)
 
-    //FIXME currently fails with "While expanding a macro, a reference to parameter n was used outside the scope where it was defined"
     val code = '{ ${ Expr.ofSeq(instances.toSeq.map(_.asExprOf[T])) }.toSet }
     
-
     log(s"Generated code: ${code.show}")
     code
   }

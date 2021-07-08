@@ -15,48 +15,42 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
     val wiredDef = Symbol.spliceOwner.owner
     val wiredOwner = wiredDef.owner
     
-    /** TODO
-    * support for multilevel enclosing class and parameters - diamondInheritance.success,implicitDepsWiredWithImplicitDefs.success, implicitDepsWiredWithImplicitVals.success
-    * support for method params - implicitDepsWiredWithImplicitValsFromMethodScope.success, functionApplication.success,anonFuncAndMethodsArgsWiredOk.success, anonFuncArgsWiredOk.success,
-    *    methodMixedOk.success, methodParamsInApplyOk.success, methodParamsOk.success, methodSingleParamOk.success, methodWithSingleImplicitParamOk.success, nestedAnonFuncsWired.success
-    *    nestedMethodsWired.success
-    * search in blocks - methodContainingValDef.success, methodWithWiredWithinIfThenElse.success, methodWithWiredWithinPatternMatch.success, 
-    **/
+    
+    def doFind(symbol: Symbol, scope: Scope): Map[Scope, List[EligibleValue]] = {
+      def handleClassDef(s: Symbol): List[EligibleValue] = 
+        (s.declaredMethods ::: s.declaredFields)
+          .filter(m => !m.fullName.startsWith("java.lang.Object") && !m.fullName.startsWith("scala.Any"))
+          .map(_.tree).collect {
+              case m: ValDef => EligibleValue(m.rhs.map(_.tpe).getOrElse(m.tpt.tpe), m)
+              case m: DefDef if m.termParamss.flatMap(_.params).isEmpty =>
+                  EligibleValue(m.rhs.map(_.tpe).getOrElse(m.returnTpt.tpe), m)
+        }
 
-    //1 - enclosing class
-    val classScopeValues = (wiredOwner.declaredMethods ::: wiredOwner.declaredFields)
-        .filter(m => !m.fullName.startsWith("java.lang.Object") && !m.fullName.startsWith("scala.Any"))
-        .map(_.tree).collect {
-            case m: ValDef => EligibleValue(m.rhs.map(_.tpe).getOrElse(m.tpt.tpe), m)
-            case m: DefDef if m.termParamss.flatMap(_.params).isEmpty =>
-                EligibleValue(m.rhs.map(_.tpe).getOrElse(m.returnTpt.tpe), m)
+      def handleDefDef(s: Symbol): List[EligibleValue] = 
+        s.tree match {
+          case DefDef(_, _, _, Some(Match(_,cases))) => report.throwError(s"Wire for deconstructed case is not supported yet")//TODO
+          case DefDef(s, lpc, tt, ot) => 
+            lpc.flatMap(_.params).collect {
+                case m: ValDef => EligibleValue(m.rhs.map(_.tpe).getOrElse(m.tpt.tpe), m)
+                case m: DefDef if m.termParamss.flatMap(_.params).isEmpty =>
+                    EligibleValue(m.rhs.map(_.tpe).getOrElse(m.returnTpt.tpe), m)
+          }
+        }
+      
+      if symbol.isNoSymbol then Map.empty[Scope, List[EligibleValue]]
+      else if symbol.isDefDef then merge(Map((scope, handleDefDef(symbol))), doFind(symbol.maybeOwner, scope))
+      else if symbol.isClassDef && !symbol.isPackageDef then Map((scope.widen, handleClassDef(symbol)))
+      else if symbol == defn.RootPackage then Map.empty
+      else if symbol == defn.RootClass then Map.empty
+      else  doFind(symbol.maybeOwner, scope.widen)
     }
 
-    //2 - imported instances 
-    //TODO
-    //it seems that import statement is missed in the tree obtained from Symbol.spliceOwner
-    //https://github.com/lampepfl/dotty/issues/12965
-    //Tests: import*.success (7)
-    val importScopeValues = List.empty[EligibleValue]
-
-    //3 - parent types
-    // val parentScopValues = (wiredOwner.memberMethods ::: wiredOwner.memberFields).filterNot((wiredOwner.declaredMethods ::: wiredOwner.declaredFields).toSet)
-    //     .filter(m => !m.fullName.startsWith("java.lang.Object") && !m.fullName.startsWith("scala.Any"))
-    //     .map(_.tree).collect {
-    //         case m: ValDef => EligibleValue(m.rhs.map(_.tpe).getOrElse(m.tpt.tpe), m)
-    //         case m: DefDef if m.termParamss.flatMap(_.params).isEmpty =>
-    //             EligibleValue(m.rhs.map(_.tpe).getOrElse(m.returnTpt.tpe), m)
-    // }
-    // https://github.com/lampepfl/dotty/discussions/12966
-    //Tests: implicitDepsWiredWithImplicitValsFromParentsScope.success, inheritance*.success(9), selfType.success, selfTypeHKT.success
-    val parentScopValues = List.empty[EligibleValue]
-
-    EligibleValues(Map(
-        Scope.Class -> classScopeValues,
-        Scope.ParentOrModule -> importScopeValues,
-        Scope.ModuleInParent -> parentScopValues
-    ))
+    EligibleValues(doFind(Symbol.spliceOwner, Scope.init))
   }
+
+  private def merge(m1: Map[Scope, List[EligibleValue]], m2: Map[Scope, List[EligibleValue]]): Map[Scope, List[EligibleValue]] = 
+    (m1.toSeq ++ m2.toSeq).groupBy(_._1).view.mapValues(_.flatMap(_._2).toList).toMap
+
 
   case class EligibleValue(tpe: TypeRepr, expr: Tree) {
     // equal trees should have equal hash codes; if trees are equal structurally they should have the same toString?
@@ -68,7 +62,10 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
     }
   }
 
-  class EligibleValues(values: Map[Scope, List[EligibleValue]]) {
+  class EligibleValues(val values: Map[Scope, List[EligibleValue]]) {
+    private lazy val maxScope = values.keys.maxOption.getOrElse(Scope.init)
+    extension (scope: Scope)
+      def isMax = scope == maxScope
 
     private def doFindInScope(tpe: TypeRepr, scope: Scope): List[Tree] = {
       for( scopedValue <- values.getOrElse(scope, Nil) if checkCandidate(target = tpe, tpt = scopedValue.tpe)) yield {
@@ -90,7 +87,7 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
       uniqueTrees(doFindInScope(tpe, scope))
     }
 
-    def findInFirstScope(tpe: TypeRepr, startingWith: Scope = Scope.Local): Iterable[Tree] = {
+    def findInFirstScope(tpe: TypeRepr, startingWith: Scope = Scope.init): Iterable[Tree] = {
       @tailrec
       def forScope(scope: Scope): Iterable[Tree] = {
         findInScope(tpe, scope) match {
@@ -110,7 +107,7 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
         val newAcc = doFindInScope(tpe, scope) ++ acc
         if( !scope.isMax ) accInScope(scope.widen, newAcc) else newAcc
       }
-      uniqueTrees(accInScope(Scope.Local, Nil))
+      uniqueTrees(accInScope(Scope.init, Nil))
     }
   }
 
@@ -121,11 +118,10 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
 }
 
 object EligibleValuesFinder {
-  abstract class Scope private(val value: Int) extends Ordered[Scope] {
+  case class Scope(val value: Int) extends Ordered[Scope] {
     /** @return the next Scope until Max */
-    def widen: Scope
+    def widen: Scope = copy(value = this.value + 1)
 
-    def isMax: Boolean = widen == this
     override def compare(that: Scope): Int = this.value.compare(that.value)
     override def equals(other: Any): Boolean = other match {
       case otherScope: Scope => this.value == otherScope.value
@@ -137,25 +133,9 @@ object EligibleValuesFinder {
   object Scope extends Ordering[Scope] {
 
     /** The smallest Scope */
-    case object Local extends Scope(1) {
-      def widen: Scope = Class
-    }
-    case object Class extends Scope(2) {
-      def widen: Scope = ParentOrModule
-    }
-    case object ParentOrModule extends Scope(3) {
-      def widen: Scope = ModuleInParent
-    }
-    case object ModuleInParent extends Scope(4) {
-      def widen: Scope = ModuleInParent
-    }
-
-    /** A special scope for values that are located in a block after the wire call
-      * and therefore not reachable. */
-    case object LocalForward extends Scope(9) {
-      def widen: Scope = LocalForward
-    }
+    val init = Scope(1) 
 
     override def compare(a: Scope, b: Scope): Int = a.compare(b)
   }
+
 }
