@@ -3,7 +3,7 @@ import com.softwaremill.UpdateVersionInDocs
 import sbt._
 import sbt.Keys._
 
-val scala2 = Seq("2.11.12", "2.12.11", "2.13.2")
+val scala2 = Seq("2.12.11", "2.13.2")
 val scala3 = "3.0.1-RC1"
 val scala2And3Versions = scala2 :+ scala3
 
@@ -42,7 +42,7 @@ val versionSpecificScalaSources = {
 val commonSettings = commonSmlBuildSettings ++ ossPublishSettings ++ Seq(
   organization := "com.softwaremill.macwire",
   version := "2.3.8",
-  // crossScalaVersions := Seq("2.11.12", scalaVersion.value, "2.13.2"),
+  // crossScalaVersions := scala2 :+ scala3,
   // Sonatype OSS deployment
   publishTo := {
     val nexus = "https://oss.sonatype.org/"
