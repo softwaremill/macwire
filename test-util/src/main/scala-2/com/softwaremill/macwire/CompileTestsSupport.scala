@@ -6,7 +6,11 @@ trait CompileTestsSupport extends BaseCompileTestsSupport {
   override val ignoreSuffixes: List[String] = List(".scala3")
 
   override def addTest(testName: String, ignored: Boolean, expectedFailures: ExpectedFailures, expectedWarningsFragments: List[String], imports: String = GlobalImports) = {
-     testName should (if (expectedFailures.isEmpty) "compile & run" else "cause a compile error") in {
+    behavior of testName
+     val description = (if (expectedFailures.isEmpty) "compile & run" else "cause a compile error")
+     def op(testFun: => Any)  = if (ignored) { ignore should description in testFun } else { it should description in testFun }
+     
+     op { 
        import scala.reflect.runtime.universe
        val cm = universe.runtimeMirror(getClass.getClassLoader)
 

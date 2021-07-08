@@ -34,11 +34,14 @@ private [macwire] trait BaseCompileTestsSupport extends AnyFlatSpec with Matcher
 
      // add the tests
      successNames.map(isIgnoredWithName).foreach { case (name, ignored) => addTest(name + ".success", ignored, Nil, Nil) }
-     warningNames.map(isIgnoredWithName).foreach { case (name, ignored) =>  addTest(name + ".warning", ignored, Nil, if(ignored) Nil else expectedWarningsMap.getOrElse(name,
-       sys.error(s"Cannot find expected warning for $name"))) }
-     failureNames.map(isIgnoredWithName).foreach { case (name, ignored) => addTest(name + ".failure", ignored, if(ignored) Nil else expectedFailuresMap.getOrElse(name,
-       sys.error(s"Cannot find expected failures for $name")), Nil ) }
+     warningNames.map(isIgnoredWithName).foreach { case (name, ignored) =>  addTest(name + ".warning", ignored, Nil, 
+      if(ignored) Nil else findOrElseFail(expectedWarningsMap, name, s"Cannot find expected warning for $name")) }
+     failureNames.map(isIgnoredWithName).foreach { case (name, ignored) => addTest(name + ".failure", ignored, 
+     if(ignored) Nil else  findOrElseFail(expectedFailuresMap, name, s"Cannot find expected failures for $name"), Nil) }
    }
+
+   def findOrElseFail(m: Map[String, List[String]], testName: String, errMsg: String) = 
+    m.find { case (name, _) => testName.startsWith(name) }.getOrElse(sys.error(errMsg))._2
 
    private def checkNoDuplicatedExpectation(expectationList: List[(String, ExpectedFailures)],
                                             expectationMap: Map[String, ExpectedFailures]): Unit = {
@@ -49,7 +52,7 @@ private [macwire] trait BaseCompileTestsSupport extends AnyFlatSpec with Matcher
    }
 
    private def checkEachExpectationMatchATestCase(expectations: List[(String, ExpectedFailures)], testCaseNames: List[String]): Unit = {
-     val missingFileNames = expectations.map(_._1).filter { name => !testCaseNames.contains(name) }
+     val missingFileNames = expectations.map(_._1).filter { name => !testCaseNames.exists(_.startsWith(name)) }
      if( missingFileNames.nonEmpty ) {
        sys.error("You have defined expectations that are not matched by a test-case file:\n- " +
          missingFileNames.mkString("\n- "))
