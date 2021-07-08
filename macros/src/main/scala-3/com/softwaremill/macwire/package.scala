@@ -5,7 +5,6 @@ package object macwire {
 
   inline def wireSet[T]: Set[T] = ${ MacwireMacros.wireSet_impl[T] }
 
-  //TESTS: wireWith.success
   inline def wireWith[RES](inline factory: () => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }
   inline def wireWith[A,RES](inline factory: (A) => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }
   inline def wireWith[A,B,RES](inline factory: (A,B) => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }

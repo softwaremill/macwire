@@ -17,12 +17,7 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
     
     
     def doFind(symbol: Symbol, scope: Scope): Map[Scope, List[EligibleValue]] = {
-      // println(s"WORKING ON SYMBOL [$symbol] in scope [$scope]")
-      // println(s"WORKING ON TREE [${if symbol.isPackageDef then symbol.toString else symbol.tree}] ")
-      // println(s"WORKING ON CODE [${if symbol.isPackageDef then symbol.toString else symbol.tree.show}]")
-      // println(s"\n\n\n")
-
-      def handleClassDef(s: Symbol, scope: Scope): List[EligibleValue] = 
+      def handleClassDef(s: Symbol): List[EligibleValue] = 
         (s.declaredMethods ::: s.declaredFields)
           .filter(m => !m.fullName.startsWith("java.lang.Object") && !m.fullName.startsWith("scala.Any"))
           .map(_.tree).collect {
@@ -31,11 +26,10 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
                   EligibleValue(m.rhs.map(_.tpe).getOrElse(m.returnTpt.tpe), m)
         }
 
-      def handleDefDef(s: Symbol, scope: Scope): List[EligibleValue] = 
+      def handleDefDef(s: Symbol): List[EligibleValue] = 
         s.tree match {
           case DefDef(_, _, _, Some(Match(_,cases))) => report.throwError(s"Wire for deconstructed case is not supported yet")//TODO
           case DefDef(s, lpc, tt, ot) => 
-            // println(s"S: [$s], LPC: [${lpc.mkString(", ")}], tt: [$tt] ot: [$ot]")
             lpc.flatMap(_.params).collect {
                 case m: ValDef => EligibleValue(m.rhs.map(_.tpe).getOrElse(m.tpt.tpe), m)
                 case m: DefDef if m.termParamss.flatMap(_.params).isEmpty =>
@@ -44,76 +38,19 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
         }
       
       if symbol.isNoSymbol then Map.empty[Scope, List[EligibleValue]]
-      else if symbol.isDefDef then Map((scope, handleDefDef(symbol, scope))) ++ doFind(symbol.maybeOwner, scope.widen)
-      else if symbol.isClassDef && !symbol.isPackageDef then Map((scope, handleClassDef(symbol, scope))) ++ doFind(symbol.maybeOwner, scope.widen)
+      else if symbol.isDefDef then merge(Map((scope, handleDefDef(symbol))), doFind(symbol.maybeOwner, scope))
+      else if symbol.isClassDef && !symbol.isPackageDef then Map((scope.widen, handleClassDef(symbol)))
       else if symbol == defn.RootPackage then Map.empty
       else if symbol == defn.RootClass then Map.empty
-      else { 
-        // println(s"Unsupported symbol [$symbol]") 
-        doFind(symbol.maybeOwner, scope.widen)
-      }
+      else  doFind(symbol.maybeOwner, scope.widen)
     }
-      // symbol.
-    /** TODO
-    * support for multilevel enclosing class and parameters - diamondInheritance.success,implicitDepsWiredWithImplicitDefs.success, implicitDepsWiredWithImplicitVals.success
-    * support for method params - implicitDepsWiredWithImplicitValsFromMethodScope.success, functionApplication.success,anonFuncAndMethodsArgsWiredOk.success, anonFuncArgsWiredOk.success,
-    *    methodMixedOk.success, methodParamsInApplyOk.success, methodParamsOk.success, methodSingleParamOk.success, methodWithSingleImplicitParamOk.success, nestedAnonFuncsWired.success
-    *    nestedMethodsWired.success
-    * search in blocks - methodContainingValDef.success, methodWithWiredWithinIfThenElse.success, methodWithWiredWithinPatternMatch.success, 
-    **/
 
-    //1 - enclosing class    
-    // println(s"WO: [$wiredOwner]")
-    // val classScopeValues = (wiredOwner.declaredMethods ::: wiredOwner.declaredFields)
-    //     .filter(m => !m.fullName.startsWith("java.lang.Object") && !m.fullName.startsWith("scala.Any"))
-    //     .map(_.tree).collect {
-    //         case m: ValDef => EligibleValue(m.rhs.map(_.tpe).getOrElse(m.tpt.tpe), m)
-    //         case m: DefDef if m.termParamss.flatMap(_.params).isEmpty =>
-    //             EligibleValue(m.rhs.map(_.tpe).getOrElse(m.returnTpt.tpe), m)
-    // }
-
-    // //2 - imported instances 
-    // //TODO
-    // //it seems that import statement is missed in the tree obtained from Symbol.spliceOwner
-    // //https://github.com/lampepfl/dotty/issues/12965
-    // //Tests: import*.success (7)
-    // val importScopeValues = List.empty[EligibleValue]
-
-    // //3 - params
-    // def findParamsRec(s: Symbol): List[EligibleValue] = s.tree match {
-    //   case DefDef(_, lpc, _, _) => lpc.flatMap(_.params).collect {
-    //         case m: ValDef => EligibleValue(m.rhs.map(_.tpe).getOrElse(m.tpt.tpe), m)
-    //         case m: DefDef if m.termParamss.flatMap(_.params).isEmpty =>
-    //             EligibleValue(m.rhs.map(_.tpe).getOrElse(m.returnTpt.tpe), m)
-    //   } ::: findParamsRec(s.owner)
-    //   case _ => List.empty[EligibleValue]
-    // }
-
-    // val methodParamsScopeValues = findParamsRec(wiredDef)
-
-    // // val params = List.empty[EligibleValue]
-    // //4 - parent types
-    // // val parentScopValues = (wiredOwner.memberMethods ::: wiredOwner.memberFields).filterNot((wiredOwner.declaredMethods ::: wiredOwner.declaredFields).toSet)
-    // //     .filter(m => !m.fullName.startsWith("java.lang.Object") && !m.fullName.startsWith("scala.Any"))
-    // //     .map(_.tree).collect {
-    // //         case m: ValDef => EligibleValue(m.rhs.map(_.tpe).getOrElse(m.tpt.tpe), m)
-    // //         case m: DefDef if m.termParamss.flatMap(_.params).isEmpty =>
-    // //             EligibleValue(m.rhs.map(_.tpe).getOrElse(m.returnTpt.tpe), m)
-    // // }
-    // // https://github.com/lampepfl/dotty/discussions/12966
-    // //Tests: implicitDepsWiredWithImplicitValsFromParentsScope.success, inheritance*.success(9), selfType.success, selfTypeHKT.success
-    // val parentScopValues = List.empty[EligibleValue]
-
-    // val a = EligibleValues(Map(
-    //     Scope.init -> classScopeValues,
-    //     Scope(2) -> (methodParamsScopeValues ++ importScopeValues),
-    //     Scope(3) -> parentScopValues
-    // ))
-
-    val a = EligibleValues(doFind(Symbol.spliceOwner, Scope.init))
-    // println(s"EV: [${a.values.map(b => (b._1, b._2.mkString(", "))).mkString(", ")}]")
-    a
+    EligibleValues(doFind(Symbol.spliceOwner, Scope.init))
   }
+
+  private def merge(m1: Map[Scope, List[EligibleValue]], m2: Map[Scope, List[EligibleValue]]): Map[Scope, List[EligibleValue]] = 
+    (m1.toSeq ++ m2.toSeq).groupBy(_._1).view.mapValues(_.flatMap(_._2).toList).toMap
+
 
   case class EligibleValue(tpe: TypeRepr, expr: Tree) {
     // equal trees should have equal hash codes; if trees are equal structurally they should have the same toString?
@@ -131,14 +68,7 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
       def isMax = scope == maxScope
 
     private def doFindInScope(tpe: TypeRepr, scope: Scope): List[Tree] = {
-//       println("\n\n\n\n")
-//       println(s"ScopedValues [${values.map(b => (b._1, b._2.mkString(", "))).mkString(", ")}]")
-// println("\n\n\n\n")
-      for {
-        scopedValue <- values.getOrElse(scope, Nil) 
-        // _ = println(s"ScopedValue [${scopedValue}]")
-        if checkCandidate(target = tpe, tpt = scopedValue.tpe)
-      } yield {
+      for( scopedValue <- values.getOrElse(scope, Nil) if checkCandidate(target = tpe, tpt = scopedValue.tpe)) yield {
         scopedValue.expr
       }
     }
@@ -168,9 +98,7 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
             exprs
         }
       }
-      val a = forScope(startingWith)
-      // println(s"FIFS for [$tpe]: [${a.mkString(", ")}]")
-      a
+      forScope(startingWith)
     }
 
     def findInAllScope(tpe: TypeRepr): Iterable[Tree] = {
