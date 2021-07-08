@@ -1,6 +1,7 @@
 package com.softwaremill.macwire.scopes
 
-import org.scalatest.{Matchers, FlatSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.flatspec.AnyFlatSpec
 
 /*
 Alternative syntax:
@@ -27,7 +28,7 @@ but
 - can you do macro inside a macro?
 
 */
-class ThreadLocalScopeTest extends FlatSpec with Matchers {
+class ThreadLocalScopeTest extends AnyFlatSpec with Matchers {
   it should "store object values per-storage" in {
     // Given
     val storage1 = new collection.mutable.HashMap[String, Any]()

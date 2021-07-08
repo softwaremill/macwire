@@ -1,9 +1,11 @@
 language: scala
 jdk:
   - openjdk8
+  - openjdk11
+  - openjdk17
 scala:
-   - 2.12.11
-   - 2.13.2
+   - 2.12.14
+   - 2.13.6
 script:
    - sbt ++$TRAVIS_SCALA_VERSION test
 cache:
