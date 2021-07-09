@@ -13,12 +13,15 @@ object MacwireMacros {
   def wireRec_impl[T: c.WeakTypeTag](c: blackbox.Context): c.Expr[T] = {
     import c.universe._
 
-    // FIXME for some reason `TypeRepr.of[String].typeSymbol.owner` and `defn.JavaLangPackage` have different hash codes 
-    def isWireable(tpe: Type): Boolean = true
+    def isWireable(tpe: Type): Boolean = {
+      val name = tpe.typeSymbol.fullName
+      
+      !name.startsWith("java.lang.") && !name.startsWith("scala.")  
+    }
     
     val dependencyResolver = new DependencyResolver[c.type, Type, Tree](c, log)(tpe => 
       if (!isWireable(tpe)) c.abort(c.enclosingPosition, s"Cannot find a value of type: [${tpe}]")
-      else wireRec_impl(c)(???).tree
+      else c.Expr[T](q"wireRec[$tpe]").tree
     )
     
     wire(c)(dependencyResolver)
