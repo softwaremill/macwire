@@ -1,18 +1,18 @@
 package com.softwaremill.macwire.akkasupport.internals
 
 import akka.actor.{ActorRef, ActorRefFactory, IndirectActorProducer, Props}
-import com.softwaremill.macwire.internals.{ConstructorCrimper, Logger}
+import com.softwaremill.macwire.internals.{ConstructorCrimper, Logger, DependencyResolver}
 
 import scala.reflect.macros.blackbox
 
 private[macwire] final class Crimper[C <: blackbox.Context, T: C#WeakTypeTag](val c: C, log: Logger) {
   import c.universe._
-
+  lazy val dependencyResolver = DependencyResolver.throwErrorOnResolutionFailure[c.type, Type, Tree](c, log)
   lazy val cc = new ConstructorCrimper[c.type, T](c, new Logger)(implicitly[c.type#WeakTypeTag[T]])
 
   lazy val targetType: Type = cc.targetType
 
-  lazy val args: List[Tree] = cc.constructorArgsWithImplicitLookups
+  lazy val args: List[Tree] = cc.constructorArgsWithImplicitLookups(dependencyResolver)
     .getOrElse(c.abort(c.enclosingPosition, s"Cannot find a public constructor for [$targetType]"))
     .flatten
 
@@ -25,7 +25,7 @@ private[macwire] final class Crimper[C <: blackbox.Context, T: C#WeakTypeTag](va
 
   lazy val actorRefFactoryTree: Tree = log.withBlock("Looking for ActorRefFactory"){
     val actorRefType = typeOf[ActorRefFactory]
-    val tree = cc.dependencyResolver.resolve(actorRefType.typeSymbol, actorRefType)
+    val tree = dependencyResolver.resolve(actorRefType.typeSymbol, actorRefType)
     log(s"Found ${showCode(tree)}")
     tree
   }

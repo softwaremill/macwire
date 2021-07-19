@@ -4,8 +4,8 @@ import scala.annotation.tailrec
 import scala.reflect.macros.blackbox
 
 private[macwire] class EligibleValuesFinder[C <: blackbox.Context](val c: C, log: Logger) {
-
   import c.universe.{Scope => RScope, _}
+  
   import EligibleValuesFinder._
 
   private val typeCheckUtil = new TypeCheckUtil[c.type](c, log)
