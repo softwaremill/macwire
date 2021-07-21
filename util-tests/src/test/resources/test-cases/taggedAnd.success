@@ -5,7 +5,7 @@ trait Black
 trait Blue
 
 case class Basket(blueberry: Berry @@ Blue, blackberry: Berry @@ Black) {
-  def consume(b: Berry) {}
+  def consume(b: Berry) = {}
   consume(blueberry) // can be used as "just" berry
   consume(blackberry)
 }
