@@ -1,7 +1,6 @@
 ![MacWire](https://github.com/softwaremill/macwire/raw/master/banner.png)
 
-Table of Contents
-=================
+# Table of Contents
 
 - [Table of Contents](#table-of-contents)
 - [MacWire](#macwire)
@@ -9,6 +8,7 @@ Table of Contents
 	- [Factories](#factories)
 	- [Factory methods](#factory-methods)
 	- [`lazy val` vs. `val`](#lazy-val-vs-val)
+	- [Recursive wiring](#recursive-wiring)
 	- [Composing modules](#composing-modules)
 	- [Scopes](#scopes)
 	- [Accessing wired instances dynamically](#accessing-wired-instances-dynamically)
@@ -21,21 +21,19 @@ Table of Contents
 	- [Debugging](#debugging)
 	- [Scala.js](#scalajs)
 	- [Future development - vote!](#future-development---vote)
-	- [Activators](#activators)
 	- [Migrating from 1.x <a id="migrating"></a>](#migrating-from-1x-a-id%22migrating%22a)
 	- [Play 2.4.x <a id="play24x"></a>](#play-24x-a-id%22play24x%22a)
 	- [Play 2.5.x <a id="play25x"></a>](#play-25x-a-id%22play25x%22a)
-  - [Scala3 support](#scala3-support)
+    - [Scala3 support](#scala3-support)
 
-MacWire
-=======
+# MacWire
 
 [![Build Status](https://travis-ci.org/adamw/macwire.svg?branch=master)](https://travis-ci.org/adamw/macwire)
 [![Join the chat at https://gitter.im/adamw/macwire](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/adamw/macwire?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.softwaremill.macwire/macros_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.softwaremill.macwire/macros_2.12)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.softwaremill.macwire/macros_2.13/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.softwaremill.macwire/macros_2.13)
 
 MacWire generates `new` instance creation code of given classes, using values in the enclosing type for constructor
-parameters, with the help of [Scala Macros](http://scalamacros.org/).
+parameters, with the help of Scala Macros.
 
 For a general introduction to DI in Scala, take a look at the [Guide to DI in Scala](http://di-in-scala.github.io/),
 which also features MacWire.
@@ -101,12 +99,7 @@ For more motivation behind the project see also these blogs:
 * [MacWire 0.5: Interceptors](http://www.warski.org/blog/2013/10/macwire-0-5-interceptors/)
 * [Using Scala traits as modules, or the "Thin Cake" Pattern](http://www.warski.org/blog/2014/02/using-scala-traits-as-modules-or-the-thin-cake-pattern/)
 
-You can also try MacWire through [Typesafe Activator](http://typesafe.com/activator/template/macwire-activator).
-
-A similar project for Java is [Dagger](https://github.com/square/dagger).
-
-How wiring works
-----------------
+## How wiring works
 
 For each constructor parameter of the given class, MacWire tries to find a value [conforming](http://www.scala-lang.org/files/archive/spec/2.11/03-types.html#conformance) to the parameter's
 type in the enclosing method and trait/class/object:
@@ -127,8 +120,7 @@ A compile-time error occurs if:
 
 The generated code is then once again type-checked by the Scala compiler.
 
-Factories
----------
+## Factories
 
 A factory is simply a method. The constructor of the wired class can contain parameters both from
 the factory (method) parameters, and from the enclosing/super type(s).
@@ -161,8 +153,7 @@ trait TaxModule {
 }
 ````
 
-Factory methods
----------------
+## Factory methods
 
 You can also wire an object using a factory method, instead of a constructor. For that, use `wireWith` instead of
 `wire`. For example:
@@ -181,14 +172,44 @@ trait MyModule {
 }
 ````
 
-`lazy val` vs. `val`
---------------------
+## `lazy val` vs. `val`
 
 It is safer to use `lazy val`s, as when using `val`, if a value is forward-referenced, it's value during initialization
 will be `null`. With `lazy val` the correct order of initialization is resolved by Scala.
 
-Composing modules
------------------
+## Recursive wiring
+
+When using `wire` and a value for a parameter can't be found, an error is reported. `wireRec` takes a different 
+approach - it tries to recursively create an instance, using normal wiring rules. This allows to explicitly wire
+only those objects, which are referenced from the code, skipping helper or internal ones.
+
+The previous example becomes:
+
+````scala
+class DatabaseAccess()
+class SecurityFilter()
+class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
+class UserStatusReader(userFinder: UserFinder)
+
+trait UserModule {
+    import com.softwaremill.macwire._
+
+    lazy val theUserStatusReader = wireRec[UserStatusReader]
+}
+````
+
+and will generate:
+
+````scala
+trait UserModule {
+    lazy val theUserStatusReader = new UserStatusReader(
+		new UserFinder(new DatabaseAccess(), new SecurityFilter()))
+}
+````
+
+This feature is inspired by @yakivy's work on [jam](https://github.com/yakivy/jam).
+
+## Composing modules
 
 Modules (traits or classes containing parts of the object graph) can be combined using inheritance or composition.
 The inheritance case is straightforward, as `wire` simply looks for values in parent traits/classes. With composition,
@@ -227,8 +248,7 @@ class SocialModule(userModule: UserModule) {
 **Warning**: the `@Module` annotation is an experimental feature, if you have any feedback regarding its usage, let
 us know!
 
-Scopes
-------
+## Scopes
 
 There are two "built-in" scopes, depending on how the dependency is defined:
 * singleton: `lazy val` / `val`
@@ -272,8 +292,7 @@ You can run the example with `sbt examples-scalatra/run` and going to [http://lo
 Note that the `proxy` subproject does not depend on MacWire core, and can be used stand-alone with manual wiring or any other
 frameworks.
 
-Accessing wired instances dynamically
--------------------------------------
+## Accessing wired instances dynamically
 
 To integrate with some frameworks (e.g. [Play 2](http://www.playframework.com/)) or to create instances of classes
 which names are only known at run-time (e.g. plugins) it is necessary to access the wired instances dynamically.
@@ -321,8 +340,7 @@ wired.lookup(classOf[DatabaseConnector])
 wired.wireClassInstanceByName("com.softwaremill.AuthenticationPlugin")
 ````
 
-Interceptors
-------------
+## Interceptors
 
 MacWire contains an implementation of interceptors, which can be applied to class instances in the modules.
 Similarly to scopes, the `proxy` subproject defines an `Interceptor` trait, which has only one method: `apply`.
@@ -374,8 +392,7 @@ For more general AOP, e.g. if you want to apply an interceptor to all methods ma
 you should use [AspectJ](http://eclipse.org/aspectj/) or an equivalent library. The interceptors that are implemented
 in MacWire correspond to annotation-based interceptors in Java.
 
-Qualifiers
-----------
+## Qualifiers
 
 Sometimes you have multiple objects of the same type that you want to use during wiring. Macwire needs to have some
 way of telling the instances apart. As with other things, the answer is: types! Even when not using `wire`, it may
@@ -420,8 +437,7 @@ lazy val blackblueberry = wire[Berry].taggedWith[Black].andTaggedWith[Blue]
 
 The resulting value has type `Berry @ (Black with Blue)` and can be used both as a blackberry and as a blueberry.
 
-Multi Wiring (wireSet)
-----------
+## Multi Wiring (wireSet)
 
 Using `wireSet` you can obtain a set of multiple instances of the same type. This is done without constructing the set explicitly. All instances of the same type which are found by MacWire are used to construct the set.
 
@@ -444,8 +460,7 @@ trait RockBandModule {
 }
 ```
 
-Limitations
------------
+## Limitations
 
 When:
 
@@ -479,8 +494,7 @@ super traits/classes.
 Note that the type ascription may be a subtype of the wired type. This can be useful if you want to expose e.g. a trait
 that the wired class extends, instead of the full implementation.
 
-Akka integration
-----------------
+## Akka integration
 
 Macwire provides wiring suport for [akka](http://akka.io) through the `macrosAkka` module.
 [Here](https://github.com/adamw/macwire/blob/master/macrosAkkaTests/src/test/scala/com/softwaremill/macwire/akkasupport/demo/Demo.scala)
@@ -610,9 +624,7 @@ object UserFinderActor {
 val theUserFinder = wireActorWith(UserFinderActor.get _)("userFinder")
 ````
 
-
-Installation, using with SBT
-----------------------------
+## Installation, using with SBT
 
 The jars are deployed to [Sonatype's OSS repository](https://oss.sonatype.org/content/repositories/snapshots/com/softwaremill/macwire/).
 To use MacWire in your project, add a dependency:
@@ -627,24 +639,14 @@ libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.3.7"
 libraryDependencies += "com.softwaremill.macwire" %% "proxy" % "2.3.7"
 ````
 
+MacWire is available for Scala 2.12, 2.13, 3 on the JVM and JS.
+
 The `macros` subproject contains only code which is used at compile-time, hence the `provided` scope.
 
 The `util` subproject contains tagging, `Wired` and the `@Module` annotation; if you don't use these features, you don't
 need to include this dependency.
 
 The `proxy` subproject contains interceptors and scopes, and has a dependency on `javassist`.
-
-To use the snapshot version:
-
-````scala
-resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
-
-libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.3.7-SNAPSHOT" % "provided"
-
-libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.3.7-SNAPSHOT"
-````
-
-Currently 2.x supports Scala 2.12 and 2.13, on the JVM and JS.
 
 Older 1.x release for Scala 2.10 and 2.11:
 
@@ -654,35 +656,23 @@ libraryDependencies += "com.softwaremill.macwire" %% "macros" % "1.0.7"
 libraryDependencies += "com.softwaremill.macwire" %% "runtime" % "1.0.7"
 ````
 
-Debugging
----------
+## Debugging
 
 To print debugging information on what MacWire does when looking for values, and what code is generated, set the
 `macwire.debug` system property. E.g. with SBT, just add a `System.setProperty("macwire.debug", "")` line to your
 build file.
 
-Scala.js
---------
+## Scala.js
 
 Macwire also works with [Scala.js](http://www.scala-js.org/). For an example, see here:
 [Macwire+Scala.js example](https://github.com/adamw/macwire/tree/master/examples/scalajs).
 
-Future development - vote!
---------------------------
+## Future development - vote!
 
 Take a look at the [available issues](https://github.com/adamw/macwire/issues). If you'd like to see one developed
 please vote on it. Or maybe you'll attempt to create a pull request?
 
-Activators
-----------
-
-There are two Typesafe Activators which can help you to get started with Scala, Dependency Injection and Macwire:
-
-* [No-framework Dependency Injection with MacWire and Akka Activator](https://typesafe.com/activator/template/macwire-akka-activator)
-* [No-framework Dependency Injection with MacWire and Play Activator](https://typesafe.com/activator/template/macwire-activator)
-
-Migrating from 1.x <a id="migrating"></a>
-------------------
+## Migrating from 1.x <a id="migrating"></a>
 
 * changed how code is split across modules. You'll need to depend on `util` to get tagging & `Wired`, and `proxy`
 to get interceptors and scopes
@@ -691,8 +681,7 @@ to get interceptors and scopes
 * implicit parameters aren't handled by `wire` at all (they used to be subject to the same lookup procedure as normal
 parameters + implicit lookup)
 
-Play 2.4.x <a id="play24x"></a>
---------
+## Play 2.4.x <a id="play24x"></a>
 
 In Play 2.4.x, you can no longer use getControllerInstance in GlobalSettings for injection. Play has a new pattern for injecting controllers. You must extend ApplicationLoader, from there you can mix in your modules.
 
@@ -740,8 +729,7 @@ Reference Play docs for more information:
 * [ScalaCompileTimeDependencyInjection](https://www.playframework.com/documentation/2.4.x/ScalaCompileTimeDependencyInjection)
 
 
-Play 2.5.x <a id="play25x"></a>
---------
+## Play 2.5.x <a id="play25x"></a>
 
 For Play 2.5.x, you must do the same as for Play 2.4.x, except the `Logger` configuration.
 
@@ -758,20 +746,17 @@ class AppApplicationLoader extends ApplicationLoader {
 }
 ````
 
-Scala3 support
---------
-The Scala3 version is meant to be compatible with Scala2 where possible. Currently there is a few missing features:
-* wire from parent scope https://github.com/lampepfl/dotty/issues/13105
-* wire from imports https://github.com/lampepfl/dotty/issues/12965
-* wire in pattern matching
-* `wiredInModule` 
-* `@Module`
+## Scala3 support
 
-For full list of incompatibilities take a look at `tests/src/test/resources/test-cases` and `util-tests/src/test/resources/test-cases` 
+The Scala 3 version is written to be compatible with Scala 2 where possible. Currently there are a few missing features:
 
+* [wire from parent scope](https://github.com/lampepfl/dotty/issues/13105)
+* [wire from imports](https://github.com/lampepfl/dotty/issues/12965)
+* [wire in pattern matching](https://github.com/softwaremill/macwire/issues/170)
+* [`wiredInModule`](https://github.com/softwaremill/macwire/issues/171) 
+* [`@Module`](https://github.com/softwaremill/macwire/issues/172)
 
-
-There's also a [G8 template available](https://github.com/lloydmeta/ctdi-play.g8) which can be used with `sbt new`.
+For full list of incompatibilities take a look at `tests/src/test/resources/test-cases` and `util-tests/src/test/resources/test-cases` .
 
 ## Commercial Support
 
