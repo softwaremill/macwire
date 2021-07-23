@@ -61,8 +61,8 @@ val testSettings = commonSettings ++ Seq(
 
 val tagging = "com.softwaremill.common" %% "tagging" % "2.3.1"
 val scalatest = "org.scalatest" %% "scalatest" % "3.2.9"
-val javassist = "org.javassist" % "javassist" % "3.20.0-GA"
-val akkaActor = "com.typesafe.akka" %% "akka-actor" % "2.5.23"
+val javassist = "org.javassist" % "javassist" % "3.28.0-GA"
+val akkaActor = "com.typesafe.akka" %% "akka-actor" % "2.6.15"
 val javaxInject = "javax.inject" % "javax.inject" % "1"
 
 lazy val root = project
