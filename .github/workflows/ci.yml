@@ -16,11 +16,11 @@ jobs:
       fail-fast: false
     steps:
     - name: Set environment variables for Java 8
-      if: ${{matrix.java}} == '8'
+      if: ${{ matrix.java }} == '8'
       run: echo 'JAVA_OPTS="-Xmx5G"' >> $GITHUB_ENV
     - name: Set environment variables for Java 9+
-      if: ${{matrix.java}} != '8'
-      run: echo 'JAVA_OPTS="--add-opens java.base/java.lang=ALL-UNNAMED"' >> $GITHUB_ENV
+      if: ${{ matrix.java }} != '8'
+      run: echo 'JAVA_OPTS="-Xmx5G --add-opens java.base/java.lang=ALL-UNNAMED"' >> $GITHUB_ENV
     - name: Checkout
       uses: actions/checkout@v2
     - name: Set up JDK
