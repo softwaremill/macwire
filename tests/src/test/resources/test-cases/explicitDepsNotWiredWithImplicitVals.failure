@@ -1,7 +1,7 @@
 #include commonSimpleClasses
 
-implicit val a = new A()
-implicit val b = new B()
+implicit val a: A = new A()
+implicit val b: B = new B()
 
 object Test  {
   val c = wire[C]

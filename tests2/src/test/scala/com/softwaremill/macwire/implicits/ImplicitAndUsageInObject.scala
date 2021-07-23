@@ -7,6 +7,6 @@ object ImplicitAndUsageInObject {
   case class B()
   case class A()(implicit val b: B)
 
-  implicit val b = new B
+  implicit val b: B = new B
   val a = wire[A]
 }

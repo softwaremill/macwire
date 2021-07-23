@@ -7,7 +7,7 @@ object Module {
   // method's parameter 'a' will shadow def 'a'.
   def a(outerA: A) = {
     def innerA(innerA: A): C = wire[C]
-    b _
+    (aa: A) => b 
   }
 }
 

@@ -1,0 +1,10 @@
+#include commonClassesWithImplicitDependencies
+
+object Module {
+  def someMethod(implicit implicitDependency: Dependency) = wire[Service]
+}
+implicit val dependency: Dependency = new Dependency()
+
+val service = Module.someMethod
+
+require(service.dependency eq dependency)

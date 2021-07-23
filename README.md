@@ -25,8 +25,7 @@ Table of Contents
 	- [Migrating from 1.x <a id="migrating"></a>](#migrating-from-1x-a-id%22migrating%22a)
 	- [Play 2.4.x <a id="play24x"></a>](#play-24x-a-id%22play24x%22a)
 	- [Play 2.5.x <a id="play25x"></a>](#play-25x-a-id%22play25x%22a)
-
-**Scala3 support?** See [this issue](https://github.com/softwaremill/macwire/issues/159)
+  - [Scala3 support](#scala3-support)
 
 MacWire
 =======
@@ -758,6 +757,19 @@ class AppApplicationLoader extends ApplicationLoader {
   }
 }
 ````
+
+Scala3 support
+--------
+The Scala3 version is meant to be compatible with Scala2 where possible. Currently there is a few missing features:
+* wire from parent scope https://github.com/lampepfl/dotty/issues/13105
+* wire from imports https://github.com/lampepfl/dotty/issues/12965
+* wire in pattern matching
+* `wiredInModule` 
+* `@Module`
+
+For full list of incompatibilities take a look at `tests/src/test/resources/test-cases` and `util-tests/src/test/resources/test-cases` 
+
+
 
 There's also a [G8 template available](https://github.com/lloydmeta/ctdi-play.g8) which can be used with `sbt new`.
 

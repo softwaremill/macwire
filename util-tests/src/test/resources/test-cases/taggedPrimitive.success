@@ -4,7 +4,7 @@ trait Usd
 trait Pln
 
 case class Money(usd: Int @@ Usd, pln: Int @@ Pln) {
-  def consume(a : Int) {}
+  def consume(a : Int) = {}
   consume(usd)
   consume(pln)
 }

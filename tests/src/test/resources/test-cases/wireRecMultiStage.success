@@ -1,0 +1,12 @@
+case class A()
+case class B()
+case class C(a: A, b: B)
+case class D(a: A, c: C)
+case class E(c: C, d: D)
+
+object Test {
+    lazy val e: E = wireRec[E]
+    
+    require(e.c.a == A())
+    require(e.c == e.d.c)
+}

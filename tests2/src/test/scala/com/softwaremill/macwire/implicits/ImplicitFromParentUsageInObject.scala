@@ -8,7 +8,7 @@ object ImplicitFromParentUsageInObject {
   case class A()(implicit val b: B)
 
   trait Parent {
-    implicit val b = new B
+    implicit val b: B = new B
   }
 
   trait Child extends Parent {

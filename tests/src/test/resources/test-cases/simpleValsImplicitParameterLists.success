@@ -3,7 +3,7 @@
 case class F(a: A)(implicit val b: B)
 
 object Implicits {
-    implicit val theB = wire[B]
+    implicit val theB: B = wire[B]
 }
 
 trait Test {

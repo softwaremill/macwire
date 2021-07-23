@@ -41,7 +41,7 @@ class ProxyingInterceptorTest extends AnyFlatSpec with Matchers {
     var a = 0
     var b = 1
 
-    def methodA() {
+    def methodA() = {
       a += 1
       println("A is: " + a)
     }

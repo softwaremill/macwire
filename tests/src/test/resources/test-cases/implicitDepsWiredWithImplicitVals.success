@@ -1,6 +1,6 @@
 #include commonClassesWithImplicitDependencies
 
-implicit val dependency = new Dependency
+implicit val dependency: Dependency = new Dependency
 
 object Test  {
   val service = wire[Service]
