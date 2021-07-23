@@ -9,7 +9,7 @@ val scala2_12 = "2.12.13"
 val scala2_13 = "2.13.6"
 
 val scala2 = List(scala2_12, scala2_13)
-val scala3 = "3.0.1-RC1"
+val scala3 = "3.0.1"
 
 val scala2And3Versions = scala2 :+ scala3
 
@@ -71,15 +71,15 @@ lazy val root = project
   .settings(name := "macwire", publishArtifact := false)
   .aggregate(
     List(
-    util,
-    macros,
-    proxy,
-    tests,
-    tests2,
-    testUtil,
-    utilTests,
-    macrosAkka,
-    macrosAkkaTests
+      util,
+      macros,
+      proxy,
+      tests,
+      tests2,
+      testUtil,
+      utilTests,
+      macrosAkka,
+      macrosAkkaTests
     ).flatMap(_.projectRefs): _*
   )
 
