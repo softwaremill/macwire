@@ -47,7 +47,7 @@ val versionSpecificScalaSources = {
 
 val commonSettings = commonSmlBuildSettings ++ ossPublishSettings ++ Seq(
   organization := "com.softwaremill.macwire",
-  ideSkipProject := (scalaVersion.value == scala2_12) || thisProjectRef.value.project.contains("JS"),
+  ideSkipProject := (scalaVersion.value != scala2_13) || thisProjectRef.value.project.contains("JS"),
   scalacOptions ~= (_.filterNot(Set("-Wconf:cat=other-match-analysis:error"))) // doesn't play well with macros
 )
 
@@ -104,7 +104,11 @@ lazy val macros = projectMatrix
 lazy val proxy = projectMatrix
   .in(file("proxy"))
   .settings(commonSettings)
-  .settings(libraryDependencies ++= Seq(javassist, scalatest % Test))
+  .settings(
+    libraryDependencies ++= Seq(javassist, scalatest % Test),
+    compileOrder := CompileOrder.JavaThenScala,
+    javaOptions += "--add-opens java.base/java.lang=ALL-UNNAMED"
+  )
   .dependsOn(macros % Test)
   .jvmPlatform(scalaVersions = scala2And3Versions)
 
