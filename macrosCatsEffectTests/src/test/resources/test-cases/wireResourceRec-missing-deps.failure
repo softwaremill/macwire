@@ -1,0 +1,12 @@
+import cats.effect._
+
+class DatabaseAccess private ()
+class SecurityFilter private ()
+class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
+class UserStatusReader(userFinder: UserFinder)
+
+object UserModule {
+  import com.softwaremill.catseffectsupport._
+
+  val theUserStatusReader: Resource[IO, UserStatusReader] = wireResourceRec[UserStatusReader]
+}
