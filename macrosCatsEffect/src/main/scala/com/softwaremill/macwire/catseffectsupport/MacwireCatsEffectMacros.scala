@@ -4,77 +4,36 @@ package catseffectsupport
 import scala.reflect.macros.blackbox
 import cats.effect._
 import com.softwaremill.macwire.internals._
+import java.util.concurrent.atomic.AtomicLong
 
 object MacwireCatsEffectMacros {
     private val log = new Logger()
 
-    /**
-      *  wire as usual, but when we've got an instance which may be created as resource we use it, but do not acquire the resource till it's possible to delay it (till we've got all required components)
-      
-      * 
-      */
-  def wireResourceRec_impl[T](c: blackbox.Context): c.Expr[Resource[IO, T]] = {
+  def wireResourceRec_impl[T: c.WeakTypeTag, A: c.WeakTypeTag](c: blackbox.Context)(resources: c.Expr[Resource[IO, Any]]*): c.Expr[A] = {
     import c.universe._
-    implicit val wttp = weakTypeTag[Resource[IO, T]]
+    val targetType = implicitly[c.WeakTypeTag[T]]
+    lazy val typeCheckUtil = new TypeCheckUtil[c.type](c, log)
 
-    def isWireable(tpe: Type): Boolean = {
-      val name = tpe.typeSymbol.fullName
-      
-      !name.startsWith("java.lang.") && !name.startsWith("scala.") 
+    val rr = resources.map { er => 
+      val name = Ident(TermName(c.freshName()))
+      val resourceType = typeCheckUtil.typeCheckIfNeeded(er.tree).typeArgs(1)//FIXME
+      (er, name, resourceType)
     }
-
-    def isResource(tpe: Type): Boolean = {
-      val name = tpe.typeSymbol.fullName
-      
-      !name.startsWith("cats.Resource.")
+    
+    val code = rr.foldRight(MacwireMacros.wire[T](c)(new DependencyResolver2[c.type, Type, Tree](c, log)(rr.map(t => (t._3, t._2)).toMap)).tree) { case ((er, name, tpe), acc) => 
+      println(s"FRESH NAME [$name]")
+      q"$er.map(($name: $tpe) => $acc)"
     }
-
-    val dependencyResolver = new DependencyResolver[c.type, Type, Tree](c, log)(tpe => 
-      if(isResource(tpe)) c.Expr[T](q"wireResourceRec[$tpe]").tree
-      else if (!isWireable(tpe)) c.abort(c.enclosingPosition, s"Cannot find a value of type: [${tpe}]")
-      else c.Expr[T](q"wireResourceRec[cats.Resource[cats.effect.IO, $tpe]]").tree
-    )
-
-    val constructorCrimper = new ConstructorCrimper[c.type,  Resource[IO, T]](c, log)    
-    val companionCrimper = new CompanionCrimper[c.type, Resource[IO, T]](c, log)
-
-    lazy val targetType = companionCrimper.targetType.toString
-
-    val code: Tree = (companionCrimper.applyTree(dependencyResolver) orElse constructorCrimper.constructorTree(dependencyResolver)) getOrElse
-      c.abort(c.enclosingPosition, "Err")
-    println(s"Generated code: ${showCode(code)}, ${showRaw(code)}")
-    c.Expr(code)
-  
+    println(s"CODE: [$code]")
+    c.Expr[A](code)
   }
-
-  def wireResource[T: c.WeakTypeTag](c: blackbox.Context)(dependencyResolver: DependencyResolver[c.type, c.universe.Type, c.universe.Tree]): c.Expr[T] = {
+//FIXME 
+  class DependencyResolver2[C <: blackbox.Context, TypeC <: C#Type, TreeC <: C#Tree](override val c: C, debug: Logger)(values: Map[TypeC, TreeC]) extends DependencyResolver[C, TypeC, TreeC](c, debug)(t => c.abort(c.enclosingPosition, s"Cannot find a value of type: [$t]")) {
     import c.universe._
 
-    val constructorCrimper = new ConstructorCrimper[c.type, T](c, log)
-    val companionCrimper = new CompanionCrimper[c.type, T](c, log)
-
-    lazy val targetType = companionCrimper.targetType.toString
-    lazy val whatWasWrong: String = {
-      if (constructorCrimper.constructor.isEmpty && companionCrimper.companionType.isEmpty)
-        s"Cannot find a public constructor nor a companion object for [$targetType]"
-      else if (companionCrimper.applies.isDefined && companionCrimper.applies.get.isEmpty)
-        s"Companion object for [$targetType] has no apply methods constructing target type."
-      else if (companionCrimper.applies.isDefined && companionCrimper.applies.get.size > 1)
-        s"No public primary constructor found for $targetType and multiple matching apply methods in its companion object were found."
-      else s"Target type not supported for wiring: $targetType. Please file a bug report with your use-case."
+    override def resolve(param: Symbol, t: Type): Tree = {
+      println(s"LOOKING FOR PARAM [$param] TYPE [$t]")
+      values(t.asInstanceOf[TypeC]).asInstanceOf[Tree]
     }
-
-    val code: Tree = (constructorCrimper.constructorTree(dependencyResolver) orElse companionCrimper.applyTree(dependencyResolver)) getOrElse
-      c.abort(c.enclosingPosition, whatWasWrong)
-    log(s"Generated code: ${showCode(code)}, ${showRaw(code)}")
-    c.Expr(code)
   }
-
-
-  private def buildDependenciesGraph[T: c.WeakTypeTag](c: blackbox.Context) = {
-
-  }
-
-
-
 }
