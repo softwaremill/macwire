@@ -1,12 +1,12 @@
 import cats.effect._
 
-class DatabaseAccess private ()
-class SecurityFilter private ()
+class DatabaseAccess()
+class SecurityFilter()
 class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
-class UserStatusReader(userFinder: UserFinder)
 
 object UserModule {
-  import com.softwaremill.catseffectsupport._
+  import com.softwaremill.macwire.catseffectsupport._
 
-  val theUserStatusReader: Resource[IO, UserStatusReader] = wireResourceRec[UserStatusReader]
+  val theDatabaseAccess: Resource[IO, DatabaseAccess] = Resource.pure(new DatabaseAccess())
+  val theUserFinder: Resource[IO, UserFinder] = wireResourceRec[UserFinder](theDatabaseAccess)
 }

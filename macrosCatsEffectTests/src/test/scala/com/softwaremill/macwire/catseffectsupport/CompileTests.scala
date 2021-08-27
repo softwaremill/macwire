@@ -6,7 +6,7 @@ class CompileTests extends CompileTestsSupport {
 
   runTestsWith(
     expectedFailures = List(
-      "wireResourceRec-missing-deps" -> List("Cannot find a value of type: [UserFinder]")
+      "wireResourceRec-missing-deps" -> List("Cannot find a value of type: [SecurityFilter]")
     ),
     expectedWarnings = List()
   )

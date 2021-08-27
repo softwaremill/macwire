@@ -16,15 +16,19 @@ object MacwireCatsEffectMacros {
 
     val rr = resources.map { er => 
       val name = Ident(TermName(c.freshName()))
-      val resourceType = typeCheckUtil.typeCheckIfNeeded(er.tree).typeArgs(1)//FIXME
+      val resourceType = typeCheckUtil.typeCheckIfNeeded(er.tree).typeArgs(1)
       (er, name, resourceType)
     }
-    
-    val code = rr.foldRight(MacwireMacros.wire[T](c)(new DependencyResolver2[c.type, Type, Tree](c, log)(rr.map(t => (t._3, t._2)).toMap)).tree) { case ((er, name, tpe), acc) => 
-      println(s"FRESH NAME [$name]")
-      q"$er.map(($name: $tpe) => $acc)"
+
+    val values = rr.map(t => (t._3, t._2)).toMap
+    val dependencyResolver = new DependencyResolver2[c.type, Type, Tree](c, log)(values)
+    val generatedInstance = MacwireMacros.wire[T](c)(dependencyResolver)
+
+    val code = rr.foldRight(q"cats.effect.Resource.pure[cats.effect.IO, $targetType]($generatedInstance)") { case ((er, name, tpe), acc) => 
+      log(s"FRESH NAME [$name]")
+      q"$er.flatMap(($name: $tpe) => $acc)"
     }
-    println(s"CODE: [$code]")
+    log(s"CODE: [$code]")
     c.Expr[A](code)
   }
 //FIXME 
@@ -32,8 +36,11 @@ object MacwireCatsEffectMacros {
     import c.universe._
 
     override def resolve(param: Symbol, t: Type): Tree = {
-      println(s"LOOKING FOR PARAM [$param] TYPE [$t]")
-      values(t.asInstanceOf[TypeC]).asInstanceOf[Tree]
+      log(s"LOOKING FOR PARAM [$param] TYPE [$t]")
+      values.get(t.asInstanceOf[TypeC]) match {
+        case Some(value) => value.asInstanceOf[Tree]
+        case None => c.abort(c.enclosingPosition, s"Cannot find a value of type: [$t]")
+      }
     }
   }
 }
