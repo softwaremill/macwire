@@ -188,7 +188,7 @@ lazy val macrosAkkaTests = projectMatrix
 
 Compile / compile := {
   // Enabling debug project-wide. Can't find a better way to pass options to scalac.
-  System.setProperty("macwire.debug", "true")
+  System.setProperty("macwire.debug", "")
 
   (Compile / compile).value
 }
