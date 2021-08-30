@@ -259,10 +259,18 @@ private[macwire] class EligibleValuesFinder[C <: blackbox.Context](val c: C, log
 
       if (valIsModule || valParentIsModule) {
         log.withBlock(s"Inspecting module $tpe") {
-          val moduleExprs: List[(Tree,Tree)] = tpe.members.filter(filterMember).map { member =>
-            val tree = q"$expr.$member"
-            (tree,tree)
-          }.toList
+          val moduleExprs: List[(Tree, Tree)] = tpe.members
+            .filter(filterMember)
+            .map {
+              case member
+                  if member.isMethod &&
+                    member.asMethod.paramLists.nonEmpty &&
+                    member.asMethod.paramLists.forall(_.isEmpty) =>
+                      member.asMethod.paramLists.foldLeft(q"$expr.$member")((acc, _) => q"$acc()")
+              case member => q"$expr.$member"
+            }
+            .map(tree => (tree, tree))
+            .toList
           // the module members are put in the wider scope
           putAll(scope.widen, moduleExprs)
         }
