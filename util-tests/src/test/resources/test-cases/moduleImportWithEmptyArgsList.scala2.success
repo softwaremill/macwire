@@ -1,0 +1,16 @@
+class ClassA()
+class ClassB(val a: ClassA)
+
+class Module1 {
+  def doSomething(): Unit = ()
+  lazy val a: ClassA = wire[ClassA]
+}
+
+class Module2(m1: Module1) {
+  import m1._
+  lazy val b: ClassB = wire[ClassB]
+}
+val mod1 = wire[Module1]
+val mod2 = wire[Module2]
+
+require(mod1.a eq mod2.b.a)

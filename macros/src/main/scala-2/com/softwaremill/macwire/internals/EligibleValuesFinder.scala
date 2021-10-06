@@ -105,7 +105,17 @@ private[macwire] class EligibleValuesFinder[C <: blackbox.Context](val c: C, log
                     collect { case m if selectorNames.contains(m.name) =>
                     m -> selectorNames(m.name)
                   }
-                }).map { case (s, name) => (s, Ident(name)) }.toList
+                })
+                  .map {
+                    case (member, _)
+                      if member.isMethod &&
+                        member.asMethod.paramLists.nonEmpty &&
+                        member.asMethod.paramLists.forall(_.isEmpty) =>
+                      (member, member.asMethod.paramLists.foldLeft(q"$expr.$member")((acc, _) => q"$acc()"))
+                    case (s, name) =>
+                      (s, Ident(name))
+                  }
+                  .toList
               values.putAll(scope, filterImportMembers(importCandidates).map(t => (t,t)))
             }
           }
