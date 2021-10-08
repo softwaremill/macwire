@@ -1,15 +1,16 @@
-package com.softwaremill.macwire.internals
+package com.softwaremill.macwire
 
 import scala.reflect.macros.blackbox
+import com.softwaremill.macwire.internals._
 
-private[macwire] class ConstructorCrimper[C <: blackbox.Context, T: C#WeakTypeTag] (val c: C, log: Logger) {
+class ConstructorCrimperTypeBased[C <: blackbox.Context, TypeC <: C#Type] (val c: C, log: Logger, tpe: TypeC) {
   import c.universe._
 
   type DependencyResolverType = DependencyResolver[c.type, Type, Tree]
 
   lazy val typeCheckUtil = new TypeCheckUtil[c.type](c, log)
 
-  lazy val targetType: Type = implicitly[c.WeakTypeTag[T]].tpe
+  lazy val targetType: Type = tpe.asInstanceOf[Type]
 
   // We need to get the "real" type in case the type parameter is a type alias - then it cannot
   // be directly instantiated
