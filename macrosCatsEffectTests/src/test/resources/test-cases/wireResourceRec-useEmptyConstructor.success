@@ -1,7 +1,7 @@
 import cats.effect._
 
 class DatabaseAccess()
-class SecurityFilter(s: String)
+class SecurityFilter()
 class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
 
 object UserModule {

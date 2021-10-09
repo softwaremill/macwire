@@ -15,6 +15,8 @@ private[macwire] class ConstructorCrimper[C <: blackbox.Context, T: C#WeakTypeTa
   // be directly instantiated
   lazy val targetTypeD: Type = targetType.dealias
 
+  lazy val classOfT: c.Expr[Class[T]] = c.Expr[Class[T]](q"classOf[$targetType]")
+
   lazy val publicConstructors: Iterable[Symbol] = {
     val ctors = targetType.members
       .filter(m => m.isMethod && m.asMethod.isConstructor && m.isPublic)
