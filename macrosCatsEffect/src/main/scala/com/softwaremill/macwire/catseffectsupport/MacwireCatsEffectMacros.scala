@@ -49,18 +49,14 @@ object MacwireCatsEffectMacros {
       if (isWireable(tpe)) findResource(tpe).map(_.ident).getOrElse(go(tpe))
       else c.abort(c.enclosingPosition, s"Cannot find a value of type: [${tpe}]")
 
-    lazy val resolutionFallback2: c.Type => c.Tree = tpe =>
-      if (isWireable(tpe)) findResource(tpe).map(_.ident).getOrElse(go(tpe))
-      else c.abort(c.enclosingPosition, s"Cannot find a value of type: [${tpe}]")
-
     def go(t: Type): Tree = {
 
       val r =
-        (ConstructorCrimperTypeBased.constructorTree(c, log)(t, resolutionFallback2) orElse CompanionCrimper
+        (ConstructorCrimper.constructorTree(c, log)(t, resolutionFallback) orElse CompanionCrimper
           .applyTree(c, log)(t, resolutionFallback)) getOrElse
           c.abort(c.enclosingPosition, s"Failed for [$t]")
 
-      println(s"CONSTRUCTED [$r]")
+      log(s"Constructed [$r]")
       r
     }
 
@@ -71,7 +67,7 @@ object MacwireCatsEffectMacros {
         case (resource, acc) =>
           q"${resource.value}.flatMap((${resource.ident}: ${resource.tpe}) => $acc)"
       }
-    log(s"CODE: [$code]")
+    log(s"Code: [$code]")
 
     c.Expr[CatsResource[IO, T]](code)
   }

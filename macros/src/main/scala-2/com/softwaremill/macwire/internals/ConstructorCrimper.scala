@@ -2,12 +2,10 @@ package com.softwaremill.macwire.internals
 
 import scala.reflect.macros.blackbox
 
-private[macwire] class ConstructorCrimper[C <: blackbox.Context, T: C#WeakTypeTag] (val c: C, log: Logger) {
+private[macwire] class ConstructorCrimper[C <: blackbox.Context, T: C#WeakTypeTag](val c: C, log: Logger) {
   import c.universe._
 
   type DependencyResolverType = DependencyResolver[c.type, Type, Tree]
-
-  lazy val typeCheckUtil = new TypeCheckUtil[c.type](c, log)
 
   lazy val targetType: Type = implicitly[c.WeakTypeTag[T]].tpe
 
@@ -15,85 +13,128 @@ private[macwire] class ConstructorCrimper[C <: blackbox.Context, T: C#WeakTypeTa
   // be directly instantiated
   lazy val targetTypeD: Type = targetType.dealias
 
-  lazy val classOfT: c.Expr[Class[T]] = c.Expr[Class[T]](q"classOf[$targetType]")
+  lazy val constructor: Option[Symbol] = ConstructorCrimper.constructor(c, log)(targetType)
 
-  lazy val publicConstructors: Iterable[Symbol] = {
-    val ctors = targetType.members
-      .filter(m => m.isMethod && m.asMethod.isConstructor && m.isPublic)
-      .filterNot(isPhantomConstructor)
-    log.withBlock(s"There are ${ctors.size} eligible constructors" ) { ctors.foreach(c => log(showConstructor(c))) }
-    ctors
-  }
+  def constructorArgsWithImplicitLookups(dependencyResolver: DependencyResolverType): Option[List[List[Tree]]] =
+    log.withBlock("Looking for targetConstructor arguments with implicit lookups") {
+      constructor.map(_.asMethod.paramLists).map(wireConstructorParamsWithImplicitLookups(dependencyResolver))
+    }
 
-  lazy val primaryConstructor: Option[Symbol] = publicConstructors.find(_.asMethod.isPrimaryConstructor)
+  def constructorTree(dependencyResolver: DependencyResolverType): Option[Tree] =
+    ConstructorCrimper.constructorTree(c, log)(targetType, dependencyResolver.resolve(_, _))
 
-  lazy val injectConstructors: Iterable[Symbol] = {
-    val isInjectAnnotation = (a: Annotation) => a.toString == "javax.inject.Inject"
-    val ctors = publicConstructors.filter(_.annotations.exists(isInjectAnnotation))
-    log.withBlock(s"There are ${ctors.size} constructors annotated with @javax.inject.Inject" ) { ctors.foreach(c => log(showConstructor(c))) }
-    ctors
-  }
+  def wireConstructorParams(
+      dependencyResolver: DependencyResolverType
+  )(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.map(
+    _.map(p => dependencyResolver.resolve(p, /*SI-4751*/ ConstructorCrimper.paramType(c)(targetTypeD, p)))
+  )
 
-  lazy val injectConstructor: Option[Symbol] = if(injectConstructors.size > 1) abort(s"Ambiguous constructors annotated with @javax.inject.Inject for type [$targetType]") else injectConstructors.headOption
-
-  lazy val constructor: Option[Symbol] = log.withBlock(s"Looking for constructor for $targetType"){
-    val ctor = injectConstructor orElse primaryConstructor
-    ctor.foreach(ctor => log(s"Found ${showConstructor(ctor)}"))
-    ctor
-  }
-
-  lazy val constructorParamLists: Option[List[List[Symbol]]] = constructor.map(_.asMethod.paramLists.filterNot(_.headOption.exists(_.isImplicit)))
-
-  def constructorArgs(dependencyResolver: DependencyResolverType): Option[List[List[Tree]]] = log.withBlock("Looking for targetConstructor arguments") {
-    constructorParamLists.map(wireConstructorParams(dependencyResolver))
-  }
-
-  def constructorArgsWithImplicitLookups(dependencyResolver: DependencyResolverType): Option[List[List[Tree]]] = log.withBlock("Looking for targetConstructor arguments with implicit lookups") {
-    constructor.map(_.asMethod.paramLists).map(wireConstructorParamsWithImplicitLookups(dependencyResolver))
-  }
-
-  def constructorTree(dependencyResolver: DependencyResolverType): Option[Tree] =  log.withBlock(s"Creating Constructor Tree for $targetType"){
-    val constructionMethodTree: Tree = Select(New(Ident(targetTypeD.typeSymbol)), termNames.CONSTRUCTOR)
-    constructorArgs(dependencyResolver).map(_.foldLeft(constructionMethodTree)((acc: Tree, args: List[Tree]) => Apply(acc, args)))
-  }
-
-  def wireConstructorParams(dependencyResolver: DependencyResolverType)(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.map(_.map(p => dependencyResolver.resolve(p, /*SI-4751*/paramType(p))))
-
-  def wireConstructorParamsWithImplicitLookups(dependencyResolver: DependencyResolverType)(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.map(_.map {
-    case i if i.isImplicit => q"implicitly[${paramType(i)}]"
-    case p => dependencyResolver.resolve(p, /*SI-4751*/ paramType(p))
+  def wireConstructorParamsWithImplicitLookups(
+      dependencyResolver: DependencyResolverType
+  )(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.map(_.map {
+    case i if i.isImplicit => q"implicitly[${ConstructorCrimper.paramType(c)(targetType, i)}]"
+    case p                 => dependencyResolver.resolve(p, /*SI-4751*/ ConstructorCrimper.paramType(c)(targetTypeD, p))
   })
 
-  private def paramType(param: Symbol): Type = {
+}
+
+object ConstructorCrimper {
+  def showConstructor[C <: blackbox.Context](c: C)(s: c.Symbol): String = s.asMethod.typeSignature.toString
+
+  private def constructor[C <: blackbox.Context](c: C, log: Logger)(targetType: c.Type) = {
+    import c.universe._
+
+    /** In some cases there is one extra (phantom) constructor.
+      * This happens when extended trait has implicit param:
+      *
+      * {{{
+      *   trait A { implicit val a = ??? };
+      *   class X extends A
+      *   import scala.reflect.runtime.universe._
+      *   typeOf[X].members.filter(m => m.isMethod && m.asMethod.isConstructor && m.asMethod.isPrimaryConstructor).map(_.asMethod.fullName)
+      *
+      *  //res1: Iterable[String] = List(X.<init>, A.$init$)
+      *  }}}
+      *
+      *  The {{{A.$init$}}} is the phantom constructor and we don't want it.
+      *
+      *  In other words, if we don't filter such constructor using this function
+      *  'wireActor-12-noPublicConstructor.failure' will compile and throw exception during runtime but we want to fail it during compilation time.
+      */
+    def isPhantomConstructor(constructor: Symbol): Boolean = constructor.asMethod.fullName.endsWith("$init$")
+
+    lazy val publicConstructors: Iterable[Symbol] = {
+      val ctors = targetType.members
+        .filter(m => m.isMethod && m.asMethod.isConstructor && m.isPublic)
+        .filterNot(isPhantomConstructor)
+      log.withBlock(s"There are ${ctors.size} eligible constructors") { ctors.foreach(s => log(showConstructor(c)(s))) }
+      ctors
+    }
+
+    lazy val primaryConstructor: Option[Symbol] = publicConstructors.find(_.asMethod.isPrimaryConstructor)
+
+    lazy val injectConstructors: Iterable[Symbol] = {
+      val isInjectAnnotation = (a: Annotation) => a.toString == "javax.inject.Inject"
+      val ctors = publicConstructors.filter(_.annotations.exists(isInjectAnnotation))
+      log.withBlock(s"There are ${ctors.size} constructors annotated with @javax.inject.Inject") {
+        ctors.foreach(s => log(showConstructor(c)(s)))
+      }
+      ctors
+    }
+
+    lazy val injectConstructor: Option[Symbol] =
+      if (injectConstructors.size > 1)
+        c.abort(
+          c.enclosingPosition,
+          s"Ambiguous constructors annotated with @javax.inject.Inject for type [$targetType]"
+        )
+      else injectConstructors.headOption
+
+    log.withBlock(s"Looking for constructor for $targetType") {
+      val ctor = injectConstructor orElse primaryConstructor
+      ctor.foreach(ctor => log(s"Found ${showConstructor(c)(ctor)}"))
+      ctor
+    }
+  }
+
+  private def paramType[C <: blackbox.Context](c: C)(targetTypeD: c.Type, param: c.Symbol): c.Type = {
+    import c.universe._
+
     val (sym: Symbol, tpeArgs: List[Type]) = targetTypeD match {
       case TypeRef(_, sym, tpeArgs) => (sym, tpeArgs)
-      case t => abort(s"Target type not supported for wiring: $t. Please file a bug report with your use-case.")
+      case t =>
+        c.abort(
+          c.enclosingPosition,
+          s"Target type not supported for wiring: $t. Please file a bug report with your use-case."
+        )
     }
     val pTpe = param.typeSignature.substituteTypes(sym.asClass.typeParams, tpeArgs)
     if (param.asTerm.isByNameParam) pTpe.typeArgs.head else pTpe
   }
 
-  /**
-    * In some cases there is one extra (phantom) constructor.
-    * This happens when extended trait has implicit param:
-    *
-    * {{{
-    *   trait A { implicit val a = ??? };
-    *   class X extends A
-    *   import scala.reflect.runtime.universe._
-    *   typeOf[X].members.filter(m => m.isMethod && m.asMethod.isConstructor && m.asMethod.isPrimaryConstructor).map(_.asMethod.fullName)
-    *
-    *  //res1: Iterable[String] = List(X.<init>, A.$init$)
-    *  }}}
-    *
-    *  The {{{A.$init$}}} is the phantom constructor and we don't want it.
-    *
-    *  In other words, if we don't filter such constructor using this function
-    *  'wireActor-12-noPublicConstructor.failure' will compile and throw exception during runtime but we want to fail it during compilation time.
-    */
-  def isPhantomConstructor(constructor: Symbol): Boolean = constructor.asMethod.fullName.endsWith("$init$")
+  def constructorTree[C <: blackbox.Context](
+      c: C,
+      log: Logger
+  )(targetType: c.Type, resolver: (c.Symbol, c.Type) => c.Tree): Option[c.Tree] = {
+    import c.universe._
 
-  def showConstructor(c: Symbol): String = c.asMethod.typeSignature.toString
+    lazy val targetTypeD: Type = targetType.dealias
 
-  def abort(msg: String): Nothing = c.abort(c.enclosingPosition, msg)
+    lazy val constructor: Option[Symbol] = ConstructorCrimper.constructor(c, log)(targetType)
+
+    lazy val constructorParamLists: Option[List[List[Symbol]]] =
+      constructor.map(_.asMethod.paramLists.filterNot(_.headOption.exists(_.isImplicit)))
+
+    def constructorArgs: Option[List[List[Tree]]] = log.withBlock("Looking for targetConstructor arguments") {
+      constructorParamLists.map(wireConstructorParams(_))
+    }
+
+    def wireConstructorParams(paramLists: List[List[Symbol]]): List[List[Tree]] =
+      paramLists.map(_.map(p => resolver(p, /*SI-4751*/ paramType(c)(targetTypeD, p))))
+
+    log.withBlock(s"Creating Constructor Tree for $targetType") {
+      val constructionMethodTree: Tree = Select(New(Ident(targetTypeD.typeSymbol)), termNames.CONSTRUCTOR)
+      constructorArgs.map(_.foldLeft(constructionMethodTree)((acc: Tree, args: List[Tree]) => Apply(acc, args)))
+    }
+  }
 }
