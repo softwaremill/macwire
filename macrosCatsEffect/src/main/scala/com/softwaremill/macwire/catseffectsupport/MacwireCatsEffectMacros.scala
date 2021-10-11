@@ -8,7 +8,7 @@ import com.softwaremill.macwire.internals._
 object MacwireCatsEffectMacros {
   private val log = new Logger()
 
-  def wireResourceRec_impl[T: c.WeakTypeTag](
+  def wireApp_impl[T: c.WeakTypeTag](
       c: blackbox.Context
   )(dependencies: c.Expr[Any]*): c.Expr[CatsResource[IO, T]] = {
     import c.universe._

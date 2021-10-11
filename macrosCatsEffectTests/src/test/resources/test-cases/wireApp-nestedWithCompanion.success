@@ -14,5 +14,5 @@ object UserModule {
 
   val theDatabaseAccess: Resource[IO, DatabaseAccess] = Resource.pure(new DatabaseAccess())
   
-  val theUserStatusReader: Resource[IO, UserStatusReader] = wireResourceRec[UserStatusReader](theDatabaseAccess)
+  val theUserStatusReader: Resource[IO, UserStatusReader] = wireApp[UserStatusReader](theDatabaseAccess)
 }

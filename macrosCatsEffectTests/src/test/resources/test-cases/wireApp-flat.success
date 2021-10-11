@@ -1,12 +1,13 @@
 import cats.effect._
 
 class DatabaseAccess()
-class SecurityFilter(s: String)
+class SecurityFilter()
 class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
 
 object UserModule {
   import com.softwaremill.macwire.catseffectsupport._
 
   val theDatabaseAccess: Resource[IO, DatabaseAccess] = Resource.pure(new DatabaseAccess())
-  val theUserFinder: Resource[IO, UserFinder] = wireResourceRec[UserFinder](theDatabaseAccess)
+  val theSecurityFilter: Resource[IO, SecurityFilter] = Resource.pure(new SecurityFilter())
+  val theUserFinder: Resource[IO, UserFinder] = wireApp[UserFinder](theDatabaseAccess, theSecurityFilter)
 }
