@@ -1,16 +1,16 @@
 import cats.effect._
 
-class DatabaseAccess()
-class SecurityFilter private (databaseAccess: DatabaseAccess)
-object SecurityFilter {
-  def apply(databaseAccess: DatabaseAccess): SecurityFilter = new SecurityFilter(databaseAccess)
-}
-
-class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
-class UserStatusReader(databaseAccess: DatabaseAccess, userFinder: UserFinder)
-
 object UserModule {
   import com.softwaremill.macwire.catseffectsupport._
+
+  class DatabaseAccess()
+  class SecurityFilter private (databaseAccess: DatabaseAccess)
+  object SecurityFilter {
+    def apply(databaseAccess: DatabaseAccess): SecurityFilter = new SecurityFilter(databaseAccess)
+  }
+
+  class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
+  class UserStatusReader(databaseAccess: DatabaseAccess, userFinder: UserFinder)
 
   val theDatabaseAccess: Resource[IO, DatabaseAccess] = Resource.pure(new DatabaseAccess())
   
