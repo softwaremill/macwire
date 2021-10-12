@@ -13,11 +13,12 @@ object MacwireCatsEffectMacros {
   )(dependencies: c.Expr[Any]*): c.Expr[CatsResource[IO, T]] = {
     import c.universe._
 
+    type Resolver = (Symbol, Type) => Tree
+
     val targetType = implicitly[c.WeakTypeTag[T]]
     lazy val typeCheckUtil = new TypeCheckUtil[c.type](c, log)
 
     trait Provider {
-      def ident: Tree
       def `type`: Type
     }
 
@@ -32,14 +33,52 @@ object MacwireCatsEffectMacros {
       lazy val ident: Tree = value
     }
 
+    case class FactoryMethod(value: Tree) extends Provider {
+      val (params, fun) = value match {
+        // Function with two parameter lists (implicit parameters) (<2.13)
+        case Block(Nil, Function(p, Apply(Apply(f, _), _))) => (p, f)
+        case Block(Nil, Function(p, Apply(f, _))) => (p, f)
+        // Function with two parameter lists (implicit parameters) (>=2.13)
+        case Function(p, Apply(Apply(f, _), _)) => (p, f)
+        case Function(p, Apply(f, _)) => (p, f)
+        // Other types not supported
+        case _ => c.abort(c.enclosingPosition, s"Not supported factory type: [$value]")
+      }
+
+      lazy val `type`: Type = fun.symbol.asMethod.returnType
+
+      def applyWith(resolver: Resolver): Tree = {
+        val values = params.map {
+          case vd@ValDef(_, name, tpt, rhs) => resolver(vd.symbol, typeCheckUtil.typeCheckIfNeeded(tpt))
+        }
+
+        q"$fun(..$values)"
+      }
+
+      
+    }
+
     def isResource(expr: Expr[Any]): Boolean = {
       val checkedType = typeCheckUtil.typeCheckIfNeeded(expr.tree)
 
       checkedType.typeSymbol.fullName.startsWith("cats.effect.kernel.Resource") && checkedType.typeArgs.size == 2
     }
     
+    def isFactoryMethod(expr: Expr[Any]): Boolean = expr.tree match {
+        // Function with two parameter lists (implicit parameters) (<2.13)
+        case Block(Nil, Function(p, Apply(Apply(f, _), _))) => true
+        case Block(Nil, Function(p, Apply(f, _))) => true
+        // Function with two parameter lists (implicit parameters) (>=2.13)
+        case Function(p, Apply(Apply(f, _), _)) => true
+        case Function(p, Apply(f, _)) => true
+        // Other types not supported
+        case _ => false
+      }
+
+
     val resourcesExprs = dependencies.filter(isResource)
-    val instancesExprs = dependencies.filterNot(isResource)
+    val factoryMethodsExprs = dependencies.filter(isFactoryMethod)
+    val instancesExprs = dependencies.diff(resourcesExprs).diff(factoryMethodsExprs)
 
     val resources = resourcesExprs
       .map(expr => Resource(expr.tree))
@@ -51,12 +90,20 @@ object MacwireCatsEffectMacros {
     .map(i => (i.`type`, i))
     .toMap
 
+    val factoryMethods = factoryMethodsExprs
+    .map(expr => FactoryMethod(expr.tree))
+    .map(i => (i.`type`, i))
+    .toMap
+
+    log(s"exprs: s[${dependencies.mkString(", ")}]")
     log(s"resources: [${resources.mkString(", ")}]")
     log(s"instances: [${instances.mkString(", ")}]")
+    log(s"factory methods: [${factoryMethods.mkString(", ")}]")
 
     def findInstance(t: Type): Option[Instance] = instances.get(t)
 
     def findResource(t: Type): Option[Resource] = resources.get(t)
+    def findFactoryMethod(t: Type): Option[FactoryMethod] = factoryMethods.get(t)
 
     def isWireable(tpe: Type): Boolean = {
       val name = tpe.typeSymbol.fullName
@@ -64,10 +111,10 @@ object MacwireCatsEffectMacros {
       !name.startsWith("java.lang.") && !name.startsWith("scala.")
     }
 
-    def findeProvider(tpe: Type): Option[Provider] = findInstance(tpe).orElse(findResource(tpe))
+    def findeProvider(tpe: Type): Option[Tree] = findInstance(tpe).map(_.ident).orElse(findResource(tpe).map(_.ident)).orElse(findFactoryMethod(tpe).map(_.applyWith(resolutionWithFallback)))
 
     lazy val resolutionWithFallback: (Symbol, Type) => Tree = (_, tpe) =>
-      if (isWireable(tpe)) findeProvider(tpe).map(_.ident).getOrElse(go(tpe))
+      if (isWireable(tpe)) findeProvider(tpe).getOrElse(go(tpe))
       else c.abort(c.enclosingPosition, s"Cannot find a value of type: [${tpe}]")
 
     def go(t: Type): Tree = {
