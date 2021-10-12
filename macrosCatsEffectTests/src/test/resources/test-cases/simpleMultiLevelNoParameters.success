@@ -1,0 +1,20 @@
+import com.softwaremill.macwire.catseffectsupport._
+
+#include commonSimpleClasses
+import cats.effect._
+
+trait Test {
+  def theE: Resource[IO, E] = wireApp[E]()
+}
+
+val t = new Test {}
+
+val theE: E = {
+  import cats.effect.unsafe.implicits.global
+  t.theE.allocated.unsafeRunSync()._1
+}
+
+require(theE.a != null)
+require(theE.c != null)
+require(theE.c.a != null)
+require(theE.c.b != null)
