@@ -6,7 +6,7 @@ class CompileTests extends CompileTestsSupport {
 
   runTestsWith(
     expectedFailures = List(
-      "wireApp-missing-deps" -> List("Cannot find a value of type: [String]")
+      "resourceMissingDeps" -> List("Cannot find a value of type: [String]")
     ),
     expectedWarnings = List()
   )
