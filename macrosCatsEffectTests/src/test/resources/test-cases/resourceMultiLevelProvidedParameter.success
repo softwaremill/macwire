@@ -6,7 +6,7 @@ import cats.effect._
 val allocated = scala.collection.mutable.ListBuffer[String]()
 
 object Test {
-  val theA: Resource[IO, A] = Resource.make(IO { allocated.addOne("A"); A() })(_ => IO.unit)
+  val theA: Resource[IO, A] = Resource.make(IO { allocated.append("A"); A() })(_ => IO.unit)
   val theE: Resource[IO, E] = wireApp[E](theA)
 }
 

@@ -6,7 +6,7 @@ import cats.effect._
 val factoryParams = scala.collection.mutable.ListBuffer[B]()
 
 object Test {
-  def theA(b: B): A = { factoryParams.addOne(b); A() }
+  def theA(b: B): Resource[IO, A] = { factoryParams.append(b); Resource.pure(A()) }
   val theB: Resource[IO, B] = Resource.pure(B())
   val theC: Resource[IO, C] = wireApp[C](theA _, theB)
 }
