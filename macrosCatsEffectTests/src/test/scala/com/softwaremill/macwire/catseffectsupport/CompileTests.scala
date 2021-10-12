@@ -6,7 +6,8 @@ class CompileTests extends CompileTestsSupport {
 
   runTestsWith(
     expectedFailures = List(
-      "resourceMissingDeps" -> List("Cannot find a value of type: [String]")
+      "simpleMissingDeps" -> List("Cannot find a value of type: [String], path: B.s"),
+      "simpleMissingDepsMultiLevel" -> List("Cannot find a value of type: [String], path: C.b.a.s")
     ),
     expectedWarnings = List()
   )
