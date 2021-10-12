@@ -16,26 +16,45 @@ object MacwireCatsEffectMacros {
     val targetType = implicitly[c.WeakTypeTag[T]]
     lazy val typeCheckUtil = new TypeCheckUtil[c.type](c, log)
 
-    case class Resource(value: Tree) {
-      lazy val resourceType = typeCheckUtil.typeCheckIfNeeded(value).typeArgs(1)
-      lazy val ident = Ident(TermName(c.freshName()))
+    trait Provider {
+      def ident: Tree
+      def `type`: Type
+    }
+
+    case class Resource(value: Tree) extends Provider {
+      val `type`: Type = typeCheckUtil.typeCheckIfNeeded(value).typeArgs(1)
+      val ident: Tree = Ident(TermName(c.freshName()))
       lazy val tpe = typeCheckUtil.typeCheckIfNeeded(value)
     }
 
-    val resources = dependencies
-      .map { expr =>
-        val checkedType = typeCheckUtil.typeCheckIfNeeded(expr.tree)
+    case class Instance(value: Tree) extends Provider {
+      lazy val `type`: Type = typeCheckUtil.typeCheckIfNeeded(value)
+      lazy val ident: Tree = value
+    }
 
-        if (!checkedType.typeSymbol.fullName.startsWith("cats.effect.kernel.Resource"))
-          c.abort(c.enclosingPosition, s"Unsupported resource type [$checkedType].")
-        else if (checkedType.typeArgs.size != 2)
-          c.abort(c.enclosingPosition, s"Expected 2 type args, but found [${checkedType.typeArgs.size}].")
-        else Resource(expr.tree)
-      }
-      .map(r => (r.resourceType, r))
+    def isResource(expr: Expr[Any]): Boolean = {
+      val checkedType = typeCheckUtil.typeCheckIfNeeded(expr.tree)
+
+      checkedType.typeSymbol.fullName.startsWith("cats.effect.kernel.Resource") && checkedType.typeArgs.size == 2
+    }
+    
+    val resourcesExprs = dependencies.filter(isResource)
+    val instancesExprs = dependencies.filterNot(isResource)
+
+    val resources = resourcesExprs
+      .map(expr => Resource(expr.tree))
+      .map(r => (r.`type`, r))
       .toMap
 
-    log(s"RESOURCES: [${resources.mkString(", ")}]")
+    val instances = instancesExprs
+    .map(expr => Instance(expr.tree))
+    .map(i => (i.`type`, i))
+    .toMap
+
+    log(s"resources: [${resources.mkString(", ")}]")
+    log(s"instances: [${instances.mkString(", ")}]")
+
+    def findInstance(t: Type): Option[Instance] = instances.get(t)
 
     def findResource(t: Type): Option[Resource] = resources.get(t)
 
@@ -45,15 +64,17 @@ object MacwireCatsEffectMacros {
       !name.startsWith("java.lang.") && !name.startsWith("scala.")
     }
 
-    lazy val resolutionFallback: (c.Symbol, c.Type) => c.Tree = (_, tpe) =>
-      if (isWireable(tpe)) findResource(tpe).map(_.ident).getOrElse(go(tpe))
+    def findeProvider(tpe: Type): Option[Provider] = findInstance(tpe).orElse(findResource(tpe))
+
+    lazy val resolutionWithFallback: (Symbol, Type) => Tree = (_, tpe) =>
+      if (isWireable(tpe)) findeProvider(tpe).map(_.ident).getOrElse(go(tpe))
       else c.abort(c.enclosingPosition, s"Cannot find a value of type: [${tpe}]")
 
     def go(t: Type): Tree = {
 
       val r =
-        (ConstructorCrimper.constructorTree(c, log)(t, resolutionFallback) orElse CompanionCrimper
-          .applyTree(c, log)(t, resolutionFallback)) getOrElse
+        (ConstructorCrimper.constructorTree(c, log)(t, resolutionWithFallback) orElse CompanionCrimper
+          .applyTree(c, log)(t, resolutionWithFallback)) getOrElse
           c.abort(c.enclosingPosition, s"Failed for [$t]")
 
       log(s"Constructed [$r]")
