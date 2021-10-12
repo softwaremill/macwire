@@ -5,7 +5,7 @@ import cats.effect._
 
 trait Test {
   val theA: A = A()
-  def theE: Resource[IO, E] = wireApp[E](a)
+  def theE: Resource[IO, E] = wireApp[E](theA)
 }
 
 val t = new Test {}
