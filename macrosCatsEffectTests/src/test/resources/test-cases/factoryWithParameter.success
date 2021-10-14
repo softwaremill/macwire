@@ -7,7 +7,7 @@ val created = scala.collection.mutable.Set[String]()
 
 object Test {
   def theA(b: B): A = { created.add(s"A using $b"); A() }
-  val theC: Resource[IO, C] = wireApp[C](theA _)
+  val theC: Resource[IO, C] = autowire[C](theA _)
 }
 
 val theC: C = {

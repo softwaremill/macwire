@@ -4,7 +4,7 @@ import com.softwaremill.macwire.catseffectsupport._
 import cats.effect._
 
 trait Test {
-  def theA: Resource[IO, A] = wireApp[A]()
+  def theA: Resource[IO, A] = autowire[A]()
 }
 
 val t = new Test {}

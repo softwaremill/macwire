@@ -9,7 +9,7 @@ class C(val a: A, val b: B)
 class E(val a: A, val c: C)
 
 trait Test {
-  def theE: Resource[IO, E] = wireApp[E]()
+  def theE: Resource[IO, E] = autowire[E]()
 }
 
 val t = new Test {}

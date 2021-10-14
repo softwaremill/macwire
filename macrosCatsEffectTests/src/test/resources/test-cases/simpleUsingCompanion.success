@@ -8,7 +8,7 @@ object Test {
     def apply(a: A): B = new B(a)
   }
 
-  val theB: Resource[IO, B] = wireApp[B]()
+  val theB: Resource[IO, B] = autowire[B]()
 }
 
 require(Test.theB != null)

@@ -8,7 +8,7 @@ val factoryParams = scala.collection.mutable.ListBuffer[B]()
 object Test {
   def theA(b: B): Resource[IO, A] = { factoryParams.append(b); Resource.pure(A()) }
   val theB: Resource[IO, B] = Resource.pure(B())
-  val theC: Resource[IO, C] = wireApp[C](theA _, theB)
+  val theC: Resource[IO, C] = autowire[C](theA _, theB)
 }
 
 val theC: C = {

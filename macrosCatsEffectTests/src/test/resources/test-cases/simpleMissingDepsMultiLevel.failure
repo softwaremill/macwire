@@ -6,5 +6,5 @@ class B(a: A)
 class C(b: B)
 
 object Test {
-  val theC: Resource[IO, C] = wireApp[C]()
+  val theC: Resource[IO, C] = autowire[C]()
 }

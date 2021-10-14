@@ -8,7 +8,7 @@ val allocated = scala.collection.mutable.Set[String]()
 object Test {
   val theA: IO[A] = IO { allocated.add("A"); A() }
   val theB: IO[B] = IO { allocated.add("B"); B() }
-  val theC: Resource[IO, C] = wireApp[C](theA, theB)
+  val theC: Resource[IO, C] = autowire[C](theA, theB)
 }
 
 val theC: C = {
