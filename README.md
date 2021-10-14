@@ -216,7 +216,8 @@ In case you need to build an instance from some particular instances and factory
 `autowire` takes as an argument a list which may contain:
 * instances (e.g. `new A()`)
 * factory methods (e.g. `C.create _`)
-* cats.effect.Resource (e.g. `cats.effect.Resource[IO](new A())`)
+* cats.effect.Resource (e.g. `cats.effect.Resource[IO].pure(new A())`)
+* cats.effect.IO (e.g. `cats.effect.IO.pure(new A())`)
 Based on the given list it creates a set of available instances and performs `wireRec` bypassing the instances search phase. The result of the wiring is always wrapped in `cats.effect.Resource`. For example:
 
 ```Scala
