@@ -1,0 +1,27 @@
+import com.softwaremill.macwire.auto.catssupport._
+
+import cats.effect._
+
+class A()
+class B()
+class C(val a: A, val b: B)
+
+class E(val a: A, val c: C)
+
+trait Test {
+  def theE: Resource[IO, E] = autowire[E]()
+}
+
+val t = new Test {}
+
+val theE: E = {
+  import cats.effect.unsafe.implicits.global
+  t.theE.allocated.unsafeRunSync()._1
+}
+
+require(theE.a != null)
+require(theE.c != null)
+require(theE.c.a != null)
+require(theE.c.b != null)
+
+require(theE.a != theE.c.a)

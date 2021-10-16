@@ -1,0 +1,10 @@
+import com.softwaremill.macwire.auto.catssupport._
+import cats.effect._
+
+class A(s: String)
+class B(a: A)
+class C(b: B)
+
+object Test {
+  val theC: Resource[IO, C] = autowire[C]()
+}

@@ -82,8 +82,8 @@ lazy val root = project
       utilTests,
       macrosAkka,
       macrosAkkaTests,
-      macrosCatsEffect,
-      macrosCatsEffectTests
+      macrosAutoCats,
+      macrosAutoCatsTests
     ).flatMap(_.projectRefs): _*
   )
 
@@ -171,19 +171,19 @@ lazy val macrosAkkaTests = projectMatrix
   .dependsOn(macrosAkka, testUtil)
   .jvmPlatform(scalaVersions = scala2)
 
-  lazy val macrosCatsEffect = projectMatrix
-  .in(file("macrosCatsEffect"))
+  lazy val macrosAutoCats = projectMatrix
+  .in(file("macrosAutoCats"))
   .settings(commonSettings)
   .settings(libraryDependencies ++= Seq(catsEffect, cats))
   .dependsOn(macros)
   .jvmPlatform(scalaVersions = scala2)
   .jsPlatform(scalaVersions = scala2)
 
-  lazy val macrosCatsEffectTests = projectMatrix
-  .in(file("macrosCatsEffectTests"))
+  lazy val macrosAutoCatsTests = projectMatrix
+  .in(file("macrosAutoCatsTests"))
   .settings(testSettings)
   .settings(libraryDependencies ++= Seq(scalatest, catsEffect))
-  .dependsOn(macrosCatsEffect, testUtil)
+  .dependsOn(macrosAutoCats, testUtil)
   .jvmPlatform(scalaVersions = scala2)
 
 Compile / compile := {

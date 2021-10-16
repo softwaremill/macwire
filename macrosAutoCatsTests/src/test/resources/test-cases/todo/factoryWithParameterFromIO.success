@@ -1,0 +1,23 @@
+import com.softwaremill.macwire.auto.catssupport._
+
+#include commonSimpleClasses
+import cats.effect._
+
+val factoryParams = scala.collection.mutable.ListBuffer[B]()
+
+object Test {
+  def theA(b: B): IO[A] = { factoryParams.append(b); IO.pure(A()) }
+  val theB: Resource[IO, B] = Resource.pure(B())
+  val theC: Resource[IO, C] = autowire[C](theA _, theB)
+}
+
+val theC: C = {
+  import cats.effect.unsafe.implicits.global
+  Test.theC.allocated.unsafeRunSync()._1
+}
+
+require(theC.a != null)
+require(theC.b != null)
+
+require(factoryParams.length == 1)
+require(factoryParams.head eq theC.b)
