@@ -214,7 +214,7 @@ This feature is inspired by @yakivy's work on [jam](https://github.com/yakivy/ja
 In case you need to build an instance from some particular instances and factory methods it's recommended to use `autowire`. This feature is intended to interpolate with fp libraries (currently we support `cats`).
 
 `autowire` takes as an argument a list which may contain:
-* instances (e.g. `new A()`)
+* values (e.g. `new A()`)
 * factory methods (e.g. `C.create _`)
 * cats.effect.Resource (e.g. `cats.effect.Resource[IO].pure(new A())`)
 * cats.effect.IO (e.g. `cats.effect.IO.pure(new A())`)
