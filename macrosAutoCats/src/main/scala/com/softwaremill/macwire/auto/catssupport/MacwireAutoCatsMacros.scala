@@ -111,10 +111,12 @@ object MacwireCatsEffectMacros {
     log(s"instances: [${instances.mkString(", ")}]")
     log(s"factory methods: [${factoryMethods.mkString(", ")}]")
 
-    def findInstance(t: Type): Option[Instance] = instances.get(t)
+    def doFind[T <: Provider](values: Map[Type, T])(tpe: Type): Option[T] = values.find {case (t, _) => t <:< tpe}.map(_._2)
 
-    def findResource(t: Type): Option[Resource] = resources.get(t)
-    def findFactoryMethod(t: Type): Option[FactoryMethod] = factoryMethods.get(t)
+    def findInstance(t: Type): Option[Instance] = doFind(instances)(t)
+
+    def findResource(t: Type): Option[Resource] = doFind(resources)(t)
+    def findFactoryMethod(t: Type): Option[FactoryMethod] = doFind(factoryMethods)(t)
 
     def isWireable(tpe: Type): Boolean = {
       val name = tpe.typeSymbol.fullName
