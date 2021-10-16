@@ -182,7 +182,7 @@ lazy val macrosAkkaTests = projectMatrix
   lazy val macrosAutoCatsTests = projectMatrix
   .in(file("macrosAutoCatsTests"))
   .settings(testSettings)
-  .settings(libraryDependencies ++= Seq(scalatest, catsEffect))
+  .settings(libraryDependencies ++= Seq(scalatest, catsEffect, tagging))
   .dependsOn(macrosAutoCats, testUtil)
   .jvmPlatform(scalaVersions = scala2)
 
