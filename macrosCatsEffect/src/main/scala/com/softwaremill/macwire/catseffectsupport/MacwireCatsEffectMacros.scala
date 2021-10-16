@@ -123,13 +123,13 @@ object MacwireCatsEffectMacros {
       !name.startsWith("java.lang.") && !name.startsWith("scala.")
     }
 
-    def findeProvider(tpe: Type): Option[Tree] = findInstance(tpe)
+    def findProvider(tpe: Type): Option[Tree] = findInstance(tpe)
       .map(_.ident)
       .orElse(findResource(tpe).map(_.ident))
       .orElse(findFactoryMethod(tpe).map(_.applyWith(resolutionWithFallback)))
 
     lazy val resolutionWithFallback: (Symbol, Type) => Tree = (_, tpe) =>
-      if (isWireable(tpe)) findeProvider(tpe).getOrElse(go(tpe))
+      if (isWireable(tpe)) findProvider(tpe).getOrElse(go(tpe))
       else c.abort(c.enclosingPosition, s"Cannot find a value of type: [${tpe}]")
 
     def go(t: Type): Tree = {
