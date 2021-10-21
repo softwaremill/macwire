@@ -25,7 +25,7 @@ private[macwire] class TypeCheckUtil[Q <: Quotes](log: Logger)(using val q: Q) {
 //       // Disabling macros, to avoid an infinite loop.
 //       // Duplicating the tree, to not modify the original.
 //       val calculatedType = c.typecheck(tree.duplicate, silent = true, withMacrosDisabled = true).tpe
-      
+
 //       // In case of abstract definitions, when we check the tree (not the rhs), the result is in expr.tpe. Otherwise,
 //       // it's in calculatedType.
 //       val result = if (expr.tpe == null) calculatedType else expr.tpe

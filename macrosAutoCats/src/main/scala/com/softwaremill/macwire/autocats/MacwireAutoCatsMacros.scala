@@ -111,7 +111,8 @@ object MacwireCatsEffectMacros {
     log(s"instances: [${instances.mkString(", ")}]")
     log(s"factory methods: [${factoryMethods.mkString(", ")}]")
 
-    def doFind[T <: Provider](values: Map[Type, T])(tpe: Type): Option[T] = values.find {case (t, _) => t <:< tpe}.map(_._2)
+    def doFind[T <: Provider](values: Map[Type, T])(tpe: Type): Option[T] =
+      values.find { case (t, _) => t <:< tpe }.map(_._2)
 
     def findInstance(t: Type): Option[Instance] = doFind(instances)(t)
 

@@ -5,55 +5,62 @@ import scala.tools.reflect.ToolBoxError
 trait CompileTestsSupport extends BaseCompileTestsSupport {
   override val ignoreSuffixes: List[String] = List(".scala3")
 
-  override def addTest(testName: String, ignored: Boolean, expectedFailures: ExpectedFailures, expectedWarningsFragments: List[String], imports: String = GlobalImports) = {
+  override def addTest(
+      testName: String,
+      ignored: Boolean,
+      expectedFailures: ExpectedFailures,
+      expectedWarningsFragments: List[String],
+      imports: String = GlobalImports
+  ) = {
     behavior of testName
-     val description = (if (expectedFailures.isEmpty) "compile & run" else "cause a compile error")
-     def op(testFun: => Any)  = if (ignored) { ignore should description in testFun } else { it should description in testFun }
-     
-     op { 
-       import scala.reflect.runtime.universe
-       val cm = universe.runtimeMirror(getClass.getClassLoader)
+    val description = (if (expectedFailures.isEmpty) "compile & run" else "cause a compile error")
+    def op(testFun: => Any) = if (ignored) { ignore should description in testFun }
+    else { it should description in testFun }
 
-       import scala.tools.reflect.ToolBox
-       val tb = cm.mkToolBox()
+    op {
+      import scala.reflect.runtime.universe
+      val cm = universe.runtimeMirror(getClass.getClassLoader)
 
-       val source = loadTest("/test-cases/" + testName, imports)
+      import scala.tools.reflect.ToolBox
+      val tb = cm.mkToolBox()
 
-       try {
-         tb.eval(tb.parse(source))
-         if (expectedFailures.nonEmpty) {
-           fail(s"Expected the following compile errors: $expectedFailures")
-         }
-         val warnings = tb.frontEnd.infos.filter(_.severity == tb.frontEnd.WARNING).map(_.msg).toList
-         lazy val warningsString = "\n - " + warnings.mkString("\n - ")
-         (warnings, expectedWarningsFragments) match {
-           case (Nil, Nil)  => () // ok
-           case (_,   Nil)  => fail(s"Expected compilation to have no warning, but got:" + warningsString )
-           case (Nil, _)    => fail(s"Expected the following compile warnings fragments: $expectedWarningsFragments")
-           case (one :: Nil, _)    => expectedWarningsFragments.foreach(expectedWarning => one should include (expectedWarning))
-           case (_, _) => fail(s"More than one warning found:" + warningsString)
-         }
-         if (tb.frontEnd.hasWarnings) {
+      val source = loadTest("/test-cases/" + testName, imports)
 
-           if (expectedWarningsFragments.isEmpty) {
-             fail(s"Expected compilation to have no warning, but got:\n - " + warnings.mkString("\n - ") )
-           } else {
-           }
-         } else if (expectedWarningsFragments.nonEmpty) {
-           fail(s"Expected the following compile warnings: $expectedWarningsFragments")
-         }
-       } catch {
-         case e: ToolBoxError => {
-           if (expectedFailures.isEmpty) {
-             fail(s"Expected compilation & evaluation to be successful, but got an error: ${e.message}", e)
-           } else {
-             expectedFailures.foreach(expectedError => e.message should include (expectedError))
-           }
-         }
-       }
-     }
-   }
+      try {
+        tb.eval(tb.parse(source))
+        if (expectedFailures.nonEmpty) {
+          fail(s"Expected the following compile errors: $expectedFailures")
+        }
+        val warnings = tb.frontEnd.infos.filter(_.severity == tb.frontEnd.WARNING).map(_.msg).toList
+        lazy val warningsString = "\n - " + warnings.mkString("\n - ")
+        (warnings, expectedWarningsFragments) match {
+          case (Nil, Nil) => () // ok
+          case (_, Nil)   => fail(s"Expected compilation to have no warning, but got:" + warningsString)
+          case (Nil, _)   => fail(s"Expected the following compile warnings fragments: $expectedWarningsFragments")
+          case (one :: Nil, _) =>
+            expectedWarningsFragments.foreach(expectedWarning => one should include(expectedWarning))
+          case (_, _) => fail(s"More than one warning found:" + warningsString)
+        }
+        if (tb.frontEnd.hasWarnings) {
 
-   private def loadTest(name: String, imports: String) = imports + resolveDirectives(loadResource(name)) + EmptyResult
+          if (expectedWarningsFragments.isEmpty) {
+            fail(s"Expected compilation to have no warning, but got:\n - " + warnings.mkString("\n - "))
+          } else {}
+        } else if (expectedWarningsFragments.nonEmpty) {
+          fail(s"Expected the following compile warnings: $expectedWarningsFragments")
+        }
+      } catch {
+        case e: ToolBoxError => {
+          if (expectedFailures.isEmpty) {
+            fail(s"Expected compilation & evaluation to be successful, but got an error: ${e.message}", e)
+          } else {
+            expectedFailures.foreach(expectedError => e.message should include(expectedError))
+          }
+        }
+      }
+    }
+  }
 
- }
+  private def loadTest(name: String, imports: String) = imports + resolveDirectives(loadResource(name)) + EmptyResult
+
+}

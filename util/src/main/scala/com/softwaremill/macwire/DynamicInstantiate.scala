@@ -12,11 +12,17 @@ private[macwire] trait DynamicInstantiate {
     val ctor = cls.getConstructors.apply(0)
     val params = ctor.getParameterTypes.map { paramCls =>
       lookup(paramCls) match {
-        case Nil => throw new InstantiationException(s"Cannot instantiate ${cls.getName}, " +
-          s"dependency of type ${paramCls.getName} cannot be found")
+        case Nil =>
+          throw new InstantiationException(
+            s"Cannot instantiate ${cls.getName}, " +
+              s"dependency of type ${paramCls.getName} cannot be found"
+          )
         case inst :: Nil => inst.asInstanceOf[AnyRef]
-        case insts => throw new InstantiationException(s"Cannot instantiate ${cls.getName}, " +
-          s"multiple dependencies of type ${paramCls.getName} found: ${insts.map(_.getClass.getName)}")
+        case insts =>
+          throw new InstantiationException(
+            s"Cannot instantiate ${cls.getName}, " +
+              s"multiple dependencies of type ${paramCls.getName} found: ${insts.map(_.getClass.getName)}"
+          )
       }
     }
 

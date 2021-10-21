@@ -44,8 +44,7 @@ object ConstructorCrimper {
   private def constructor[C <: blackbox.Context](c: C, log: Logger)(targetType: c.Type) = {
     import c.universe._
 
-    /** In some cases there is one extra (phantom) constructor.
-      * This happens when extended trait has implicit param:
+    /** In some cases there is one extra (phantom) constructor. This happens when extended trait has implicit param:
       *
       * {{{
       *   trait A { implicit val a = ??? };
@@ -53,13 +52,14 @@ object ConstructorCrimper {
       *   import scala.reflect.runtime.universe._
       *   typeOf[X].members.filter(m => m.isMethod && m.asMethod.isConstructor && m.asMethod.isPrimaryConstructor).map(_.asMethod.fullName)
       *
-      *  //res1: Iterable[String] = List(X.<init>, A.$init$)
-      *  }}}
+      *   //res1: Iterable[String] = List(X.<init>, A.$init$)
+      * }}}
       *
-      *  The {{{A.$init$}}} is the phantom constructor and we don't want it.
+      * The {{{A.$init$}}} is the phantom constructor and we don't want it.
       *
-      *  In other words, if we don't filter such constructor using this function
-      *  'wireActor-12-noPublicConstructor.failure' will compile and throw exception during runtime but we want to fail it during compilation time.
+      * In other words, if we don't filter such constructor using this function
+      * 'wireActor-12-noPublicConstructor.failure' will compile and throw exception during runtime but we want to fail
+      * it during compilation time.
       */
     def isPhantomConstructor(constructor: Symbol): Boolean = constructor.asMethod.fullName.endsWith("$init$")
 

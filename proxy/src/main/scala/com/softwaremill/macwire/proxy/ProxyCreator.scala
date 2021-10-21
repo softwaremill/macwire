@@ -33,12 +33,13 @@ object ProxyCreator {
   }
 
   private val TypeDefaults = Map[Class[_], AnyRef](
-    java.lang.Byte.TYPE     -> java.lang.Byte.valueOf(0.toByte),
-    java.lang.Short.TYPE    -> java.lang.Short.valueOf(0.toShort),
-    java.lang.Integer.TYPE  -> java.lang.Integer.valueOf(0),
-    java.lang.Float.TYPE    -> java.lang.Float.valueOf(0),
-    java.lang.Double.TYPE   -> java.lang.Double.valueOf(0),
-    java.lang.Boolean.TYPE  -> java.lang.Boolean.FALSE)
+    java.lang.Byte.TYPE -> java.lang.Byte.valueOf(0.toByte),
+    java.lang.Short.TYPE -> java.lang.Short.valueOf(0.toShort),
+    java.lang.Integer.TYPE -> java.lang.Integer.valueOf(0),
+    java.lang.Float.TYPE -> java.lang.Float.valueOf(0),
+    java.lang.Double.TYPE -> java.lang.Double.valueOf(0),
+    java.lang.Boolean.TYPE -> java.lang.Boolean.FALSE
+  )
 
   private def getDefaultValueForClass(cls: Class[_]): AnyRef = TypeDefaults.getOrElse(cls, null)
 

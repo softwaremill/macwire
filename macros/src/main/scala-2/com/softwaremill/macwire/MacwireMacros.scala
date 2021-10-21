@@ -7,7 +7,7 @@ import scala.reflect.macros.blackbox
 object MacwireMacros {
   private val log = new Logger()
 
-  def wire_impl[T: c.WeakTypeTag](c: blackbox.Context): c.Expr[T] = 
+  def wire_impl[T: c.WeakTypeTag](c: blackbox.Context): c.Expr[T] =
     wire(c)(DependencyResolver.throwErrorOnResolutionFailure[c.type, c.universe.Type, c.universe.Tree](c, log))
 
   def wireRec_impl[T: c.WeakTypeTag](c: blackbox.Context): c.Expr[T] = {
@@ -15,19 +15,21 @@ object MacwireMacros {
 
     def isWireable(tpe: Type): Boolean = {
       val name = tpe.typeSymbol.fullName
-      
-      !name.startsWith("java.lang.") && !name.startsWith("scala.")  
+
+      !name.startsWith("java.lang.") && !name.startsWith("scala.")
     }
-    
-    val dependencyResolver = new DependencyResolver[c.type, Type, Tree](c, log)(tpe => 
+
+    val dependencyResolver = new DependencyResolver[c.type, Type, Tree](c, log)(tpe =>
       if (!isWireable(tpe)) c.abort(c.enclosingPosition, s"Cannot find a value of type: [${tpe}]")
       else c.Expr[T](q"wireRec[$tpe]").tree
     )
-    
+
     wire(c)(dependencyResolver)
   }
 
-  def wire[T: c.WeakTypeTag](c: blackbox.Context)(dependencyResolver: DependencyResolver[c.type, c.universe.Type, c.universe.Tree]): c.Expr[T] = {
+  def wire[T: c.WeakTypeTag](
+      c: blackbox.Context
+  )(dependencyResolver: DependencyResolver[c.type, c.universe.Type, c.universe.Tree]): c.Expr[T] = {
     import c.universe._
 
     val constructorCrimper = new ConstructorCrimper[c.type, T](c, log)
@@ -44,7 +46,9 @@ object MacwireMacros {
       else s"Target type not supported for wiring: $targetType. Please file a bug report with your use-case."
     }
 
-    val code: Tree = (constructorCrimper.constructorTree(dependencyResolver) orElse companionCrimper.applyTree(dependencyResolver)) getOrElse
+    val code: Tree = (constructorCrimper.constructorTree(dependencyResolver) orElse companionCrimper.applyTree(
+      dependencyResolver
+    )) getOrElse
       c.abort(c.enclosingPosition, whatWasWrong)
     log(s"Generated code: ${showCode(code)}, ${showRaw(code)}")
     c.Expr(code)
@@ -60,16 +64,16 @@ object MacwireMacros {
     val (params, fun) = factory match {
       // Function with two parameter lists (implicit parameters) (<2.13)
       case Block(Nil, Function(p, Apply(Apply(f, _), _))) => (p, f)
-      case Block(Nil, Function(p, Apply(f, _))) => (p, f)
+      case Block(Nil, Function(p, Apply(f, _)))           => (p, f)
       // Function with two parameter lists (implicit parameters) (>=2.13)
       case Function(p, Apply(Apply(f, _), _)) => (p, f)
-      case Function(p, Apply(f, _)) => (p, f)
+      case Function(p, Apply(f, _))           => (p, f)
       // Other types not supported
       case _ => c.abort(c.enclosingPosition, s"Not supported factory type: [$factory]")
     }
 
-    val values = params.map {
-      case vd@ValDef(_, name, tpt, rhs) => dependencyResolver.resolve(vd.symbol, typeCheckIfNeeded(tpt))
+    val values = params.map { case vd @ ValDef(_, name, tpt, rhs) =>
+      dependencyResolver.resolve(vd.symbol, typeCheckIfNeeded(tpt))
     }
     val code = q"$fun(..$values)"
 
@@ -99,7 +103,7 @@ object MacwireMacros {
     def extractTypeFromNullaryType(tpe: Type) = {
       tpe match {
         case NullaryMethodType(underlying) => Some(underlying)
-        case _ => None
+        case _                             => None
       }
     }
 

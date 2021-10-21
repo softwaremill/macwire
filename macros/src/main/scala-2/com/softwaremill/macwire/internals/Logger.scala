@@ -29,7 +29,7 @@ private[macwire] final class Logger {
   private def apply(msg: => String, desiredLevel: Int): Unit = {
     if (desiredLevel >= level) {
       val prefix = "   " * ident
-      val logLevelName = if(desiredLevel == DEBUG_LEVEL) "debug" else "trace"
+      val logLevelName = if (desiredLevel == DEBUG_LEVEL) "debug" else "trace"
       println(s"$prefix[$logLevelName] $msg")
     }
   }

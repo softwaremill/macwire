@@ -18,12 +18,12 @@ import dotty.tools.dotc.Driver
 import java.io.IOException
 
 trait CompileTestsSupport extends BaseCompileTestsSupport with OptionValues {
-   type ExpectedFailures = List[String]
+  type ExpectedFailures = List[String]
 
-   override val ignoreSuffixes: List[String] = List(".scala2")
+  override val ignoreSuffixes: List[String] = List(".scala2")
 
-   private def withTempFile(content: String)(f: Path => Unit) = {
-    var tempFile: Path = null 
+  private def withTempFile(content: String)(f: Path => Unit) = {
+    var tempFile: Path = null
     try {
       tempFile = Files.createTempFile("macwire", ".scala")
       Files.write(tempFile, content.getBytes, StandardOpenOption.WRITE)
@@ -32,47 +32,56 @@ trait CompileTestsSupport extends BaseCompileTestsSupport with OptionValues {
     } finally {
       Files.delete(tempFile)
     }
-   }
+  }
 
-   override def addTest(testName: String, ignored: Boolean, expectedFailures: ExpectedFailures, expectedWarningsFragments: List[String], imports: String = GlobalImports) = {
-     behavior of testName
-     val description = (if (expectedFailures.isEmpty) "compile & run" else "cause a compile error")
-     def op(testFun: => Any)  = if (ignored) { ignore should description in testFun } else { it should description in testFun }
-     
-     op {
-        withTempFile(loadTest("/test-cases/" + testName, imports)) { path =>
-          val driver = Driver()
-          val testReporter = new TestReporter
-          val reporter = testReporter
-          val classpath = Array("-classpath", Properties.currentClasspath)
-          
-          driver.process(classpath :+ path.toString, reporter)
+  override def addTest(
+      testName: String,
+      ignored: Boolean,
+      expectedFailures: ExpectedFailures,
+      expectedWarningsFragments: List[String],
+      imports: String = GlobalImports
+  ) = {
+    behavior of testName
+    val description = (if (expectedFailures.isEmpty) "compile & run" else "cause a compile error")
+    def op(testFun: => Any) = if (ignored) { ignore should description in testFun }
+    else { it should description in testFun }
 
-          val infos = testReporter.storedInfos
-          
-          def verifyInfo(level: Int, expected: List[String]) = {
-            val actual = infos.filter(_.level == level).map(_.message)
-     
-            if (expected.size > 0) {
-              val info = actual.mkString("\n")
-              
-              expected.foreach(part => info should include (part))
-            } else {
-              actual shouldBe empty
-            }
+    op {
+      withTempFile(loadTest("/test-cases/" + testName, imports)) { path =>
+        val driver = Driver()
+        val testReporter = new TestReporter
+        val reporter = testReporter
+        val classpath = Array("-classpath", Properties.currentClasspath)
+
+        driver.process(classpath :+ path.toString, reporter)
+
+        val infos = testReporter.storedInfos
+
+        def verifyInfo(level: Int, expected: List[String]) = {
+          val actual = infos.filter(_.level == level).map(_.message)
+
+          if (expected.size > 0) {
+            val info = actual.mkString("\n")
+
+            expected.foreach(part => info should include(part))
+          } else {
+            actual shouldBe empty
           }
+        }
 
-          verifyInfo(1, expectedWarningsFragments)
-          verifyInfo(2, expectedFailures)
-        }      
-     }
-   }
+        verifyInfo(1, expectedWarningsFragments)
+        verifyInfo(2, expectedFailures)
+      }
+    }
+  }
 
-   private def loadTest(name: String, imports: String) = wrapInMainObject(imports + resolveDirectives(loadResource(name)))
+  private def loadTest(name: String, imports: String) = wrapInMainObject(
+    imports + resolveDirectives(loadResource(name))
+  )
 
-   private def wrapInMainObject(source: String) = s"object Main {\n  ${source.linesIterator.mkString("\n  ")}\n}"
+  private def wrapInMainObject(source: String) = s"object Main {\n  ${source.linesIterator.mkString("\n  ")}\n}"
 
- }
+}
 
 import dotty.tools.dotc.reporting.StoreReporter
 

@@ -12,7 +12,8 @@ private[macwire] final class Crimper[C <: blackbox.Context, T: C#WeakTypeTag](va
 
   lazy val targetType: Type = cc.targetType
 
-  lazy val args: List[Tree] = cc.constructorArgsWithImplicitLookups(dependencyResolver)
+  lazy val args: List[Tree] = cc
+    .constructorArgsWithImplicitLookups(dependencyResolver)
     .getOrElse(c.abort(c.enclosingPosition, s"Cannot find a public constructor for [$targetType]"))
     .flatten
 
@@ -23,24 +24,27 @@ private[macwire] final class Crimper[C <: blackbox.Context, T: C#WeakTypeTag](va
     c.Expr[Props](propsTree)
   }
 
-  lazy val actorRefFactoryTree: Tree = log.withBlock("Looking for ActorRefFactory"){
+  lazy val actorRefFactoryTree: Tree = log.withBlock("Looking for ActorRefFactory") {
     val actorRefType = typeOf[ActorRefFactory]
     val tree = dependencyResolver.resolve(actorRefType.typeSymbol, actorRefType)
     log(s"Found ${showCode(tree)}")
     tree
   }
 
-  lazy val wireAnonymousActor: c.Expr[ActorRef] = log.withBlock(s"Constructing ActorRef. Trying to find arguments for constructor of: [$targetType] at ${c.enclosingPosition}") {
+  lazy val wireAnonymousActor: c.Expr[ActorRef] = log.withBlock(
+    s"Constructing ActorRef. Trying to find arguments for constructor of: [$targetType] at ${c.enclosingPosition}"
+  ) {
     val tree = q"$actorRefFactoryTree.actorOf($propsTree)"
     log("Generated code: " + showRaw(tree))
     c.Expr[ActorRef](tree)
   }
 
-  def wireActor(name: c.Expr[String]): c.Expr[ActorRef] = log.withBlock(s"wireActor[$targetType]: at ${c.enclosingPosition}") {
-    val tree = q"$actorRefFactoryTree.actorOf($propsTree, ${name.tree})"
-    log("Generated code: " + showRaw(tree))
-    c.Expr[ActorRef](tree)
-  }
+  def wireActor(name: c.Expr[String]): c.Expr[ActorRef] =
+    log.withBlock(s"wireActor[$targetType]: at ${c.enclosingPosition}") {
+      val tree = q"$actorRefFactoryTree.actorOf($propsTree, ${name.tree})"
+      log("Generated code: " + showRaw(tree))
+      c.Expr[ActorRef](tree)
+    }
 
   lazy val wirePropsWithProducer: c.Expr[Props] = weakTypeOf[T] match {
     case t if t <:< typeOf[IndirectActorProducer] => wireProps
@@ -57,16 +61,19 @@ private[macwire] final class Crimper[C <: blackbox.Context, T: C#WeakTypeTag](va
     case _ => c.abort(c.enclosingPosition, s"wireActorWith does not support the type: [$targetType]")
   }
 
-  def wirePropsWithFactory(factory: c.Tree): c.Expr[Props] = log.withBlock(s"wireProps[$targetType]: at ${c.enclosingPosition}") {
-    import com.softwaremill.macwire.MacwireMacros._
+  def wirePropsWithFactory(factory: c.Tree): c.Expr[Props] =
+    log.withBlock(s"wireProps[$targetType]: at ${c.enclosingPosition}") {
+      import com.softwaremill.macwire.MacwireMacros._
 
-    val funTree = wireWith_impl(c)(factory)
-    val propsTree = q"akka.actor.Props($funTree)"
-    log("Generated code: " + showRaw(propsTree))
-    c.Expr[Props](propsTree)
-  }
+      val funTree = wireWith_impl(c)(factory)
+      val propsTree = q"akka.actor.Props($funTree)"
+      log("Generated code: " + showRaw(propsTree))
+      c.Expr[Props](propsTree)
+    }
 
-  def wireAnonymousActorWithFactory(factory: c.Tree): c.Expr[ActorRef] = log.withBlock(s"Constructing ActorRef. Trying to find arguments for constructor of: [$targetType] at ${c.enclosingPosition}") {
+  def wireAnonymousActorWithFactory(factory: c.Tree): c.Expr[ActorRef] = log.withBlock(
+    s"Constructing ActorRef. Trying to find arguments for constructor of: [$targetType] at ${c.enclosingPosition}"
+  ) {
     import com.softwaremill.macwire.MacwireMacros._
 
     val funTree = wireWith_impl(c)(factory)
@@ -76,13 +83,14 @@ private[macwire] final class Crimper[C <: blackbox.Context, T: C#WeakTypeTag](va
     c.Expr[ActorRef](tree)
   }
 
-  def wireActorWithFactory(factory: c.Tree)(name: c.Expr[String]): c.Expr[ActorRef] = log.withBlock(s"wireActorWithProducer[$targetType]: at ${c.enclosingPosition}") {
-    import com.softwaremill.macwire.MacwireMacros._
+  def wireActorWithFactory(factory: c.Tree)(name: c.Expr[String]): c.Expr[ActorRef] =
+    log.withBlock(s"wireActorWithProducer[$targetType]: at ${c.enclosingPosition}") {
+      import com.softwaremill.macwire.MacwireMacros._
 
-    val funTree = wireWith_impl(c)(factory)
-    val propsTree = q"akka.actor.Props($funTree)"
-    val tree = q"$actorRefFactoryTree.actorOf($propsTree, ${name.tree})"
-    log("Generated code: " + showRaw(tree))
-    c.Expr[ActorRef](tree)
-  }
+      val funTree = wireWith_impl(c)(factory)
+      val propsTree = q"akka.actor.Props($funTree)"
+      val tree = q"$actorRefFactoryTree.actorOf($propsTree, ${name.tree})"
+      log("Generated code: " + showRaw(tree))
+      c.Expr[ActorRef](tree)
+    }
 }
