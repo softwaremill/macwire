@@ -9,6 +9,7 @@
 	- [Factory methods](#factory-methods)
 	- [`lazy val` vs. `val`](#lazy-val-vs-val)
 	- [Recursive wiring](#recursive-wiring)
+	- [Autowire](#autowire)
 	- [Composing modules](#composing-modules)
 	- [Scopes](#scopes)
 	- [Accessing wired instances dynamically](#accessing-wired-instances-dynamically)
@@ -208,7 +209,7 @@ trait UserModule {
 
 This feature is inspired by @yakivy's work on [jam](https://github.com/yakivy/jam).
 
-## Auto wiring
+## Autowire
 
 **Warning**: `autowire` is an experimental feature, if you have any feedback regarding its usage, let us know! Future releases might break source/binary compatibility. It is available for Scala 2 only for now.
 
