@@ -210,7 +210,7 @@ This feature is inspired by @yakivy's work on [jam](https://github.com/yakivy/ja
 
 ## Auto wiring
 
-**Warning**: `autowire` is an experimental feature, if you have any feedback regarding its usage, let us know! Future releases might break source/binary compatibility.
+**Warning**: `autowire` is an experimental feature, if you have any feedback regarding its usage, let us know! Future releases might break source/binary compatibility. It is available for Scala 2 only for now.
 
 In case you need to build an instance from some particular instances and factory methods you can leverage `autowire`. This feature is intended to integrate with effect-management libraries (currently we support [cats-effect](https://github.com/typelevel/cats-effect)).
 
