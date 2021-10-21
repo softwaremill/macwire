@@ -1,0 +1,42 @@
+import cats.effect._
+import com.softwaremill.tagging._
+import com.softwaremill.macwire.autocats._
+
+class Cache {
+  val state = scala.collection.mutable.HashMap.empty[String, String]
+}
+
+trait First
+trait Second
+
+class A(val cache: Cache)
+class B(val cache: Cache)
+class C(val cache: Cache)
+class D(val cache: Cache, val a: A, val b: B)
+class E(val c: C, val d: D)
+
+object Test {
+
+  val cache1 = (new Cache()).taggedWith[First]
+  val cache2 = (new Cache()).taggedWith[Second]
+
+  val theE = {
+    import cats.effect.unsafe.implicits.global
+
+    val resource = autowire[E](
+      cache1,
+      cache2,
+      ((c: Cache @@ First) => new A(c)),
+      ((c: Cache @@ First) => new B(c)),
+      ((c: Cache @@ Second) => new C(c)),
+      ((c: Cache @@ First) => new D(c, _, _))
+    )
+    resource.allocated.unsafeRunSync()._1
+  }
+
+}
+
+require(Test.theE.d.a.cache == Test.cache1)
+require(Test.theE.d.b.cache == Test.cache1)
+require(Test.theE.d.cache == Test.cache1)
+require(Test.theE.c.cache == Test.cache2)

@@ -208,6 +208,53 @@ trait UserModule {
 
 This feature is inspired by @yakivy's work on [jam](https://github.com/yakivy/jam).
 
+## Auto wiring
+
+In case you need to build an instance from some particular instances and factory methods it's recommended to use `autowire`. This feature is intended to interpolate with fp libraries (currently we support `cats`).
+
+`autowire` takes as an argument a list which may contain:
+* values (e.g. `new A()`)
+* factory methods (e.g. `C.create _`)
+* cats.effect.Resource (e.g. `cats.effect.Resource[IO].pure(new A())`)
+* cats.effect.IO (e.g. `cats.effect.IO.pure(new A())`)
+Based on the given list it creates a set of available instances and performs `wireRec` bypassing the instances search phase. The result of the wiring is always wrapped in `cats.effect.Resource`. For example:
+
+```Scala
+import cats.effect._
+
+class DatabaseAccess()
+
+class SecurityFilter private (databaseAccess: DatabaseAccess)
+object SecurityFilter {
+  def apply(databaseAccess: DatabaseAccess): SecurityFilter = new SecurityFilter(databaseAccess)
+}
+
+class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
+class UserStatusReader(databaseAccess: DatabaseAccess, userFinder: UserFinder)
+
+object UserModule {
+  import com.softwaremill.macwire._
+
+  val theDatabaseAccess: Resource[IO, DatabaseAccess] = Resource.pure(new DatabaseAccess())
+
+  val theUserStatusReader: Resource[IO, UserStatusReader] = autowire[UserStatusReader](theDatabaseAccess)
+}
+```
+
+will generate
+```Scala
+[...]
+object UserModule {
+  import com.softwaremill.macwire._
+
+  val theDatabaseAccess: Resource[IO, DatabaseAccess] = Resource.pure(new DatabaseAccess())
+
+  val theUserStatusReader: Resource[IO, UserStatusReader] = UserModule.this.theDatabaseAccess.flatMap(
+    da => Resource.pure[IO, UserStatusReader](new UserStatusReader(da, new UserFinder(da, SecurityFilter.apply(da))))
+  )
+}
+```
+
 ## Composing modules
 
 Modules (traits or classes containing parts of the object graph) can be combined using inheritance or composition.

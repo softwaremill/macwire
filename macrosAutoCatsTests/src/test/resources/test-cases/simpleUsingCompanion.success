@@ -1,0 +1,14 @@
+import com.softwaremill.macwire.autocats._
+import cats.effect._
+
+object Test {
+  class A()
+  class B private (a: A)
+  object B {
+    def apply(a: A): B = new B(a)
+  }
+
+  val theB: Resource[IO, B] = autowire[B]()
+}
+
+require(Test.theB != null)

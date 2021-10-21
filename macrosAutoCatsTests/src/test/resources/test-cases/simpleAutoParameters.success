@@ -1,0 +1,18 @@
+import com.softwaremill.macwire.autocats._
+
+#include commonSimpleClasses
+import cats.effect._
+
+trait Test {
+  def theC: Resource[IO, C] = autowire[C]()
+}
+
+val t = new Test {}
+
+val theC: C = {
+  import cats.effect.unsafe.implicits.global
+  t.theC.allocated.unsafeRunSync()._1
+}
+
+require(theC.a != null)
+require(theC.b != null)

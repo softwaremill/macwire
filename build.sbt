@@ -64,6 +64,8 @@ val scalatest = "org.scalatest" %% "scalatest" % "3.2.9"
 val javassist = "org.javassist" % "javassist" % "3.28.0-GA"
 val akkaActor = "com.typesafe.akka" %% "akka-actor" % "2.6.15"
 val javaxInject = "javax.inject" % "javax.inject" % "1"
+val cats = "org.typelevel" %% "cats-core" % "2.6.1"
+val catsEffect = "org.typelevel" %% "cats-effect" % "3.2.1"
 
 lazy val root = project
   .in(file("."))
@@ -79,7 +81,9 @@ lazy val root = project
       testUtil,
       utilTests,
       macrosAkka,
-      macrosAkkaTests
+      macrosAkkaTests,
+      macrosAutoCats,
+      macrosAutoCatsTests
     ).flatMap(_.projectRefs): _*
   )
 
@@ -165,6 +169,21 @@ lazy val macrosAkkaTests = projectMatrix
   .settings(testSettings)
   .settings(libraryDependencies ++= Seq(scalatest, tagging, akkaActor))
   .dependsOn(macrosAkka, testUtil)
+  .jvmPlatform(scalaVersions = scala2)
+
+  lazy val macrosAutoCats = projectMatrix
+  .in(file("macrosAutoCats"))
+  .settings(commonSettings)
+  .settings(libraryDependencies ++= Seq(catsEffect, cats))
+  .dependsOn(macros)
+  .jvmPlatform(scalaVersions = scala2)
+  .jsPlatform(scalaVersions = scala2)
+
+  lazy val macrosAutoCatsTests = projectMatrix
+  .in(file("macrosAutoCatsTests"))
+  .settings(testSettings)
+  .settings(libraryDependencies ++= Seq(scalatest, catsEffect, tagging))
+  .dependsOn(macrosAutoCats, testUtil)
   .jvmPlatform(scalaVersions = scala2)
 
 Compile / compile := {

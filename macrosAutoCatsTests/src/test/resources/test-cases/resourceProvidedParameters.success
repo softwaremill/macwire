@@ -1,0 +1,23 @@
+import com.softwaremill.macwire.autocats._
+
+#include commonSimpleClasses
+import cats.effect._
+
+val allocated = scala.collection.mutable.Set[String]()
+
+object Test {
+  val theA: Resource[IO, A] = Resource.make(IO { allocated.add("A"); A() })(_ => IO.unit)
+  val theB: Resource[IO, B] = Resource.make(IO { allocated.add("B"); B() })(_ => IO.unit)
+  val theC: Resource[IO, C] = autowire[C](theA, theB)
+}
+
+val theC: C = {
+  import cats.effect.unsafe.implicits.global
+  Test.theC.allocated.unsafeRunSync()._1
+}
+
+require(theC.a != null)
+require(theC.b != null)
+
+require(allocated.contains("A"))
+require(allocated.contains("B"))

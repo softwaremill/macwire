@@ -1,0 +1,22 @@
+import com.softwaremill.macwire.autocats._
+
+import cats.effect._
+
+trait A
+class AA(i: Int) extends A
+
+class B(val a: A)
+
+object Test {
+
+  val theAA: AA = new AA(1)
+  val theB: B = {
+    import cats.effect.unsafe.implicits.global
+    
+    val resource = autowire[B](theAA)
+    resource.allocated.unsafeRunSync()._1
+  }
+
+}
+
+require(Test.theB.a == Test.theAA)
