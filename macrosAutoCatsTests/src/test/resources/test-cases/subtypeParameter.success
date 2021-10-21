@@ -1,4 +1,4 @@
-import com.softwaremill.macwire.auto.catssupport._
+import com.softwaremill.macwire.autocats._
 
 import cats.effect._
 

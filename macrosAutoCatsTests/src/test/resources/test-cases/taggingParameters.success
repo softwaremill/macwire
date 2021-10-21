@@ -1,6 +1,6 @@
 import cats.effect._
 import com.softwaremill.tagging._
-import com.softwaremill.macwire.auto.catssupport._
+import com.softwaremill.macwire.autocats._
 
 class Cache {
   val state = scala.collection.mutable.HashMap.empty[String, String]

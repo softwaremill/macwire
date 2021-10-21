@@ -1,7 +1,7 @@
-package com.softwaremill.macwire.auto
+package com.softwaremill.macwire
 
 import cats.effect._
 
-package object catssupport {
+package object autocats {
     def autowire[T](dependencies: Any*): Resource[IO, T] = macro MacwireCatsEffectMacros.autowire_impl[T]
 }

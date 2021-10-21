@@ -1,4 +1,4 @@
-package com.softwaremill.macwire.auto.catssupport
+package com.softwaremill.macwire.autocats
 
 import com.softwaremill.macwire.CompileTestsSupport
 
