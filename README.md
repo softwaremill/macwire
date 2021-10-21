@@ -210,14 +210,20 @@ This feature is inspired by @yakivy's work on [jam](https://github.com/yakivy/ja
 
 ## Auto wiring
 
-In case you need to build an instance from some particular instances and factory methods it's recommended to use `autowire`. This feature is intended to interpolate with fp libraries (currently we support `cats`).
+**Warning**: `autowire` is an experimental feature, if you have any feedback regarding its usage, let us know! Future releases might break source/binary compatibility.
 
-`autowire` takes as an argument a list which may contain:
+In case you need to build an instance from some particular instances and factory methods you can leverage `autowire`. This feature is intended to integrate with effect-management libraries (currently we support [cats-effect](https://github.com/typelevel/cats-effect)).
+
+`autowire` takes as an argument a list of arguments which may contain:
+
 * values (e.g. `new A()`)
 * factory methods (e.g. `C.create _`)
-* cats.effect.Resource (e.g. `cats.effect.Resource[IO].pure(new A())`)
-* cats.effect.IO (e.g. `cats.effect.IO.pure(new A())`)
-Based on the given list it creates a set of available instances and performs `wireRec` bypassing the instances search phase. The result of the wiring is always wrapped in `cats.effect.Resource`. For example:
+* `cats.effect.Resource` (e.g. `cats.effect.Resource[IO].pure(new A())`)
+* `cats.effect.IO` (e.g. `cats.effect.IO.pure(new A())`)
+
+Using the dependencies from the given arguments it creates an instance of the given type. Any missing instances are created using their primary constructor, provided that the dependencies are met. If this is not possible, a compile-time error is reported. In other words, a `wireRec` is performed, bypassing the instances search phase. 
+
+The result of the wiring is always wrapped in `cats.effect.Resource`. For example:
 
 ```scala
 import cats.effect._
@@ -241,7 +247,8 @@ object UserModule {
 }
 ```
 
-will generate
+will generate:
+
 ```scala
 [...]
 object UserModule {
