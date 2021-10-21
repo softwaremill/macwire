@@ -219,7 +219,7 @@ In case you need to build an instance from some particular instances and factory
 * cats.effect.IO (e.g. `cats.effect.IO.pure(new A())`)
 Based on the given list it creates a set of available instances and performs `wireRec` bypassing the instances search phase. The result of the wiring is always wrapped in `cats.effect.Resource`. For example:
 
-```Scala
+```scala
 import cats.effect._
 
 class DatabaseAccess()
@@ -233,7 +233,7 @@ class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
 class UserStatusReader(databaseAccess: DatabaseAccess, userFinder: UserFinder)
 
 object UserModule {
-  import com.softwaremill.macwire._
+  import com.softwaremill.macwire.autocats._
 
   val theDatabaseAccess: Resource[IO, DatabaseAccess] = Resource.pure(new DatabaseAccess())
 
@@ -242,10 +242,10 @@ object UserModule {
 ```
 
 will generate
-```Scala
+```scala
 [...]
 object UserModule {
-  import com.softwaremill.macwire._
+  import com.softwaremill.macwire.autocats._
 
   val theDatabaseAccess: Resource[IO, DatabaseAccess] = Resource.pure(new DatabaseAccess())
 
