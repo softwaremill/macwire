@@ -22,4 +22,4 @@ require(theC.b != null)
 
 require(created.size == 2)
 require(created.contains("a"))
-require(created.contains("B"))
+require(created.contains("b"))

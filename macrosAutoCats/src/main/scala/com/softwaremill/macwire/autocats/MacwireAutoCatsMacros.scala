@@ -17,38 +17,65 @@ object MacwireCatsEffectMacros {
     val targetType = implicitly[c.WeakTypeTag[T]]
     lazy val typeCheckUtil = new TypeCheckUtil[c.type](c, log)
 
-    trait Provider {
+    sealed trait Provider {
       def `type`: Type
     }
 
-    case class Resource(value: Tree) extends Provider {
-      val `type`: Type = typeCheckUtil.typeCheckIfNeeded(value).typeArgs(1)
-      val ident: Tree = Ident(TermName(c.freshName()))
-      lazy val tpe = typeCheckUtil.typeCheckIfNeeded(value)
+    sealed trait Value extends Provider {
+      def ident: Tree
     }
 
-    case class Instance(value: Tree) extends Provider {
+    class Resource(valueL: => Tree) extends Value {
+      lazy val value = valueL
+
+      lazy val `type`: Type = Resource.underlyingType(typeCheckUtil.typeCheckIfNeeded(value)).getOrElse(c.abort(c.enclosingPosition, "TODO"))
+      lazy val ident: Tree = Ident(TermName(c.freshName()))
+      // lazy val tpe = typeCheckUtil.typeCheckIfNeeded(value)
+
+    }
+
+    object Resource {
+      def fromTree(tree: Tree): Option[Resource] =
+        if (isResource(typeCheckUtil.typeCheckIfNeeded(tree))) Some(new Resource(tree))
+        else None
+
+      def underlyingType(tpe: Type): Option[Type] = if(isResource(tpe)) Some(tpe.typeArgs(1)) else None
+
+      def isResource(tpe: Type): Boolean =
+        tpe.typeSymbol.fullName.startsWith("cats.effect.kernel.Resource") && tpe.typeArgs.size == 2
+
+    }
+
+    case class Instance(value: Tree) extends Value {
       lazy val `type`: Type = typeCheckUtil.typeCheckIfNeeded(value)
       lazy val ident: Tree = value
     }
 
-    case class FactoryMethod(value: Tree) extends Provider {
-      val (params, fun) = value match {
-        // Function with two parameter lists (implicit parameters) (<2.13)
-        case Block(Nil, Function(p, Apply(Apply(f, _), _))) => (p, f)
-        case Block(Nil, Function(p, Apply(f, _)))           => (p, f)
-        // Function with two parameter lists (implicit parameters) (>=2.13)
-        case Function(p, Apply(Apply(f, _), _)) => (p, f)
-        case Function(p, Apply(f, _))           => (p, f)
-        // Other types not supported
-        case _ => c.abort(c.enclosingPosition, s"Not supported factory type: [$value]")
+    class FactoryMethod(params: List[ValDef], fun: Tree) extends Provider {
+
+      def result(resolver: Type => Tree): Value = {
+
+        val resultTree = applyWith(resolver)
+
+val t = fun.symbol.asMethod.returnType
+        if (Resource.isResource(t)) new Resource(resultTree) {
+          override lazy val `type`: Type = tt
+        }
+        else if (Effect.isEffect(t)) new Effect(resultTree) {
+          override lazy val `type`: Type = tt
+        }
+        else Instance(resultTree)
+
       }
 
-      lazy val `type`: Type = fun.symbol.asMethod.returnType
-
-      def applyWith(resolver: Resolver): Tree = {
-        val values = params.map { case vd @ ValDef(_, name, tpt, rhs) =>
-          resolver(vd.symbol, typeCheckUtil.typeCheckIfNeeded(tpt))
+      lazy val `type`: Type = {
+        val resultType = fun.symbol.asMethod.returnType
+        (Resource.underlyingType(resultType) orElse Effect.underlyingType(resultType)).getOrElse(resultType)
+      }
+lazy val tt = `type`
+      def applyWith(resolver: Type => Tree): Tree = {
+        val values = params.map { case ValDef(_, name, tpt, rhs) =>
+          resolver(typeCheckUtil.typeCheckIfNeeded(tpt))
         }
 
         q"$fun(..$values)"
@@ -56,79 +83,80 @@ object MacwireCatsEffectMacros {
 
     }
 
-    case class Effect(value: Tree) extends Provider {
+    object FactoryMethod {
+      def fromTree(tree: Tree): Option[FactoryMethod] = tree match {
+        // Function with two parameter lists (implicit parameters) (<2.13)
+        case Block(Nil, Function(p, Apply(Apply(f, _), _))) => Some(new FactoryMethod(p, f))
+        case Block(Nil, Function(p, Apply(f, _)))           => Some(new FactoryMethod(p, f))
+        // Function with two parameter lists (implicit parameters) (>=2.13)
+        case Function(p, Apply(Apply(f, _), _)) => Some(new FactoryMethod(p, f))
+        case Function(p, Apply(f, _))           => Some(new FactoryMethod(p, f))
+        // Other types not supported
+        case _ => None
+      }
 
-      override val `type`: Type = typeCheckUtil.typeCheckIfNeeded(value).typeArgs(0)
-
-      lazy val asResource = Resource(q"cats.effect.kernel.Resource.eval[cats.effect.IO, ${`type`}]($value)")
     }
 
-    def isResource(expr: Expr[Any]): Boolean = {
-      val checkedType = typeCheckUtil.typeCheckIfNeeded(expr.tree)
+    class Effect(value: Tree) extends Value {
 
-      checkedType.typeSymbol.fullName.startsWith("cats.effect.kernel.Resource") && checkedType.typeArgs.size == 2
+      override def ident: Tree = asResource.ident//????
+
+      override lazy val `type`: Type = typeCheckUtil.typeCheckIfNeeded(value).typeArgs(0)
+def ttt = `type`
+      lazy val asResource = new Resource(q"cats.effect.kernel.Resource.eval[cats.effect.IO, ${`type`}]($value)") {
+        override lazy val `type`: Type = ttt
+      }
     }
 
-    def isFactoryMethod(expr: Expr[Any]): Boolean = expr.tree match {
-      // Function with two parameter lists (implicit parameters) (<2.13)
-      case Block(Nil, Function(p, Apply(Apply(f, _), _))) => true
-      case Block(Nil, Function(p, Apply(f, _)))           => true
-      // Function with two parameter lists (implicit parameters) (>=2.13)
-      case Function(p, Apply(Apply(f, _), _)) => true
-      case Function(p, Apply(f, _))           => true
-      // Other types not supported
-      case _ => false
+    object Effect {
+      def fromTree(tree: Tree): Option[Effect] =
+        if (isEffect(typeCheckUtil.typeCheckIfNeeded(tree))) Some(new Effect(tree))
+        else None
+
+      def underlyingType(tpe: Type): Option[Type] = if(isEffect(tpe)) Some(tpe.typeArgs(0)) else None
+
+      def isEffect(tpe: Type): Boolean =
+        tpe.typeSymbol.fullName.startsWith("cats.effect.IO") && tpe.typeArgs.size == 1
+
     }
 
-    def isEffect(expr: Expr[Any]): Boolean = {
-      val checkedType = typeCheckUtil.typeCheckIfNeeded(expr.tree)
-
-      checkedType.typeSymbol.fullName.startsWith("cats.effect.IO") && checkedType.typeArgs.size == 1
+    def providerFromExpr(expr: Expr[Any]): Provider = {
+      val tree = expr.tree
+      (Resource.fromTree(tree) orElse Effect.fromTree(tree) orElse FactoryMethod.fromTree(tree))
+        .getOrElse(new Instance(tree))
     }
 
-    val resourcesExprs = dependencies.filter(isResource)
-    val factoryMethodsExprs = dependencies.filter(isFactoryMethod)
-    val effectsExprs = dependencies.filter(isEffect)
-    val instancesExprs = dependencies.diff(resourcesExprs).diff(factoryMethodsExprs).diff(effectsExprs)
+    def findProviderIn(values: Seq[Value])(tpe: Type): Option[Tree] = values.find(_.`type` <:< tpe).map(_.ident)
 
-    val resources =
-      (effectsExprs.map(expr => Effect(expr.tree).asResource) ++ resourcesExprs.map(expr => Resource(expr.tree)))
-        .map(r => (r.`type`, r))
-        .toMap
+    val providers = dependencies.map(providerFromExpr)
+    val values: Seq[Value] = {
+      val init: Seq[Value] = providers.flatMap {
+        case e: Effect => Some(e.asResource)
+        case v: Value => Some(v)
+        case _ => None
+      }
 
-    val instances = instancesExprs
-      .map(expr => Instance(expr.tree))
-      .map(i => (i.`type`, i))
-      .toMap
-
-    val factoryMethods = factoryMethodsExprs
-      .map(expr => FactoryMethod(expr.tree))
-      .map(i => (i.`type`, i))
-      .toMap
+      providers.foldLeft(init) {
+        case (v, fm: FactoryMethod) => {
+          v :+ fm.result(findProviderIn(v)(_).getOrElse(c.abort(c.enclosingPosition, "TODO2")))
+        }
+        case (v, _ ) => v
+      }.collect {
+        case v: Value => v
+      }
+    }
 
     log(s"exprs: s[${dependencies.mkString(", ")}]")
-    log(s"resources: [${resources.mkString(", ")}]")
-    log(s"instances: [${instances.mkString(", ")}]")
-    log(s"factory methods: [${factoryMethods.mkString(", ")}]")
+    log(s"Providers: [${providers.mkString(", ")}]")
+    log(s"Values: [${values.mkString(", ")}]")
 
-    def doFind[T <: Provider](values: Map[Type, T])(tpe: Type): Option[T] =
-      values.find { case (t, _) => t <:< tpe }.map(_._2)
-
-    def findInstance(t: Type): Option[Instance] = doFind(instances)(t)
-
-    def findResource(t: Type): Option[Resource] = doFind(resources)(t)
-    def findFactoryMethod(t: Type): Option[FactoryMethod] = doFind(factoryMethods)(t)
+    def findProvider(tpe: Type): Option[Tree] = findProviderIn(values)(tpe)
 
     def isWireable(tpe: Type): Boolean = {
       val name = tpe.typeSymbol.fullName
 
       !name.startsWith("java.lang.") && !name.startsWith("scala.")
     }
-
-    def findProvider(tpe: Type): Option[Tree] = findInstance(tpe)
-      .map(_.ident)
-      .orElse(findResource(tpe).map(_.ident))
-      .orElse(findFactoryMethod(tpe).map(_.applyWith(resolutionWithFallback)))
 
     lazy val resolutionWithFallback: (Symbol, Type) => Tree = (_, tpe) =>
       if (isWireable(tpe)) findProvider(tpe).getOrElse(go(tpe))
@@ -145,16 +173,117 @@ object MacwireCatsEffectMacros {
       r
     }
 
-    val generatedInstance = go(targetType.tpe)
+    val resources: Seq[Resource] = values.collect {
+      case r: Resource => r
+      case e: Effect => e.asResource
+    }
 
-    val code =
-      resources.values.foldRight(q"cats.effect.Resource.pure[cats.effect.IO, $targetType]($generatedInstance)") {
+      val code = resources.foldRight(q"cats.effect.Resource.pure[cats.effect.IO, $targetType](autowirePure[$targetType](..${values.map(_.ident)}))") {
         case (resource, acc) =>
-          q"${resource.value}.flatMap((${resource.ident}: ${resource.tpe}) => $acc)"
+          q"${resource.value}.flatMap((${resource.ident}: ${resource.`type`}) => $acc)"
       }
     log(s"Code: [$code]")
 
     c.Expr[CatsResource[IO, T]](code)
   }
+
+  def autowirePure_impl[T: c.WeakTypeTag](
+      c: blackbox.Context
+  )(dependencies: c.Expr[Any]*): c.Expr[T] = {
+    import c.universe._
+
+    type Resolver = (Symbol, Type) => Tree
+
+    val targetType = implicitly[c.WeakTypeTag[T]]
+    lazy val typeCheckUtil = new TypeCheckUtil[c.type](c, log)
+
+    sealed trait Provider {
+      def `type`: Type
+    }
+
+    case class Instance(value: Tree) extends Provider {
+      lazy val `type`: Type = typeCheckUtil.typeCheckIfNeeded(value)
+      lazy val ident: Tree = value
+    }
+
+    class FactoryMethod(params: List[ValDef], fun: Tree) extends Provider {
+
+      def result(resolver: Type => Tree): Instance = new Instance(applyWith(resolver))
+
+
+
+      lazy val `type`: Type = fun.symbol.asMethod.returnType
+
+      def applyWith(resolver: Type => Tree): Tree = {
+        val values = params.map { case ValDef(_, name, tpt, rhs) =>
+          resolver(typeCheckUtil.typeCheckIfNeeded(tpt))
+        }
+
+        q"$fun(..$values)"
+      }
+
+    }
+
+    object FactoryMethod {
+      def fromTree(tree: Tree): Option[FactoryMethod] = tree match {
+        // Function with two parameter lists (implicit parameters) (<2.13)
+        case Block(Nil, Function(p, Apply(Apply(f, _), _))) => Some(new FactoryMethod(p, f))
+        case Block(Nil, Function(p, Apply(f, _)))           => Some(new FactoryMethod(p, f))
+        // Function with two parameter lists (implicit parameters) (>=2.13)
+        case Function(p, Apply(Apply(f, _), _)) => Some(new FactoryMethod(p, f))
+        case Function(p, Apply(f, _))           => Some(new FactoryMethod(p, f))
+        // Other types not supported
+        case _ => None
+      }
+
+    }
+
+    def providerFromExpr(expr: Expr[Any]): Provider = {
+      val tree = expr.tree
+      FactoryMethod.fromTree(tree)
+        .getOrElse(new Instance(tree))
+    }
+
+    val providers = dependencies.map(providerFromExpr)
+
+
+    log(s"PURE exprs: s[${dependencies.mkString(", ")}]")
+    log(s"PURE Providers: [${providers.mkString(", ")}]")
+    log(s"PURE ProvidersTYPES: [${providers.map(_.`type`).mkString(", ")}]")
+
+    def findProvider(tpe: Type): Option[Tree] = providers.find(_.`type` <:< tpe).map {
+      case i: Instance => i.ident
+      case fm: FactoryMethod => fm.result(findProvider(_).getOrElse(c.abort(c.enclosingPosition, "TODO3"))).ident
+    }
+
+    def isWireable(tpe: Type): Boolean = {
+      val name = tpe.typeSymbol.fullName
+
+      !name.startsWith("java.lang.") && !name.startsWith("scala.")
+    }
+
+    lazy val resolutionWithFallback: (Symbol, Type) => Tree = (_, tpe) =>
+      if (isWireable(tpe)) findProvider(tpe).getOrElse(go(tpe))
+      else c.abort(c.enclosingPosition, s"Cannot find a value of type: [${tpe}]")
+
+    def go(t: Type): Tree = {
+
+      val r =
+        (ConstructorCrimper.constructorTree(c, log)(t, resolutionWithFallback) orElse CompanionCrimper
+          .applyTree(c, log)(t, resolutionWithFallback)) getOrElse
+          c.abort(c.enclosingPosition, s"Failed for [$t]")
+
+      log(s"Constructed [$r]")
+      r
+    }
+
+
+    val code = go(targetType.tpe)
+    log(s"Code: [$code]")
+
+    c.Expr[T](code)
+  }
+
+
 
 }
