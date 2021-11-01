@@ -102,7 +102,8 @@ lazy val tt = `type`
       override def ident: Tree = asResource.ident//????
 
       override lazy val `type`: Type = typeCheckUtil.typeCheckIfNeeded(value).typeArgs(0)
-def ttt = `type`
+
+      def ttt = `type`
       lazy val asResource = new Resource(q"cats.effect.kernel.Resource.eval[cats.effect.IO, ${`type`}]($value)") {
         override lazy val `type`: Type = ttt
       }
@@ -178,112 +179,13 @@ def ttt = `type`
       case e: Effect => e.asResource
     }
 
-      val code = resources.foldRight(q"cats.effect.Resource.pure[cats.effect.IO, $targetType](autowirePure[$targetType](..${values.map(_.ident)}))") {
-        case (resource, acc) =>
-          q"${resource.value}.flatMap((${resource.ident}: ${resource.`type`}) => $acc)"
-      }
+    val code = resources.foldRight(q"cats.effect.Resource.pure[cats.effect.IO, $targetType](com.softwaremill.macwire.autowire[$targetType](..${values.map(_.ident)}))") {
+      case (resource, acc) =>
+        q"${resource.value}.flatMap((${resource.ident}: ${resource.`type`}) => $acc)"
+    }
     log(s"Code: [$code]")
 
     c.Expr[CatsResource[IO, T]](code)
   }
-
-  def autowirePure_impl[T: c.WeakTypeTag](
-      c: blackbox.Context
-  )(dependencies: c.Expr[Any]*): c.Expr[T] = {
-    import c.universe._
-
-    type Resolver = (Symbol, Type) => Tree
-
-    val targetType = implicitly[c.WeakTypeTag[T]]
-    lazy val typeCheckUtil = new TypeCheckUtil[c.type](c, log)
-
-    sealed trait Provider {
-      def `type`: Type
-    }
-
-    case class Instance(value: Tree) extends Provider {
-      lazy val `type`: Type = typeCheckUtil.typeCheckIfNeeded(value)
-      lazy val ident: Tree = value
-    }
-
-    class FactoryMethod(params: List[ValDef], fun: Tree) extends Provider {
-
-      def result(resolver: Type => Tree): Instance = new Instance(applyWith(resolver))
-
-
-
-      lazy val `type`: Type = fun.symbol.asMethod.returnType
-
-      def applyWith(resolver: Type => Tree): Tree = {
-        val values = params.map { case ValDef(_, name, tpt, rhs) =>
-          resolver(typeCheckUtil.typeCheckIfNeeded(tpt))
-        }
-
-        q"$fun(..$values)"
-      }
-
-    }
-
-    object FactoryMethod {
-      def fromTree(tree: Tree): Option[FactoryMethod] = tree match {
-        // Function with two parameter lists (implicit parameters) (<2.13)
-        case Block(Nil, Function(p, Apply(Apply(f, _), _))) => Some(new FactoryMethod(p, f))
-        case Block(Nil, Function(p, Apply(f, _)))           => Some(new FactoryMethod(p, f))
-        // Function with two parameter lists (implicit parameters) (>=2.13)
-        case Function(p, Apply(Apply(f, _), _)) => Some(new FactoryMethod(p, f))
-        case Function(p, Apply(f, _))           => Some(new FactoryMethod(p, f))
-        // Other types not supported
-        case _ => None
-      }
-
-    }
-
-    def providerFromExpr(expr: Expr[Any]): Provider = {
-      val tree = expr.tree
-      FactoryMethod.fromTree(tree)
-        .getOrElse(new Instance(tree))
-    }
-
-    val providers = dependencies.map(providerFromExpr)
-
-
-    log(s"PURE exprs: s[${dependencies.mkString(", ")}]")
-    log(s"PURE Providers: [${providers.mkString(", ")}]")
-    log(s"PURE ProvidersTYPES: [${providers.map(_.`type`).mkString(", ")}]")
-
-    def findProvider(tpe: Type): Option[Tree] = providers.find(_.`type` <:< tpe).map {
-      case i: Instance => i.ident
-      case fm: FactoryMethod => fm.result(findProvider(_).getOrElse(c.abort(c.enclosingPosition, "TODO3"))).ident
-    }
-
-    def isWireable(tpe: Type): Boolean = {
-      val name = tpe.typeSymbol.fullName
-
-      !name.startsWith("java.lang.") && !name.startsWith("scala.")
-    }
-
-    lazy val resolutionWithFallback: (Symbol, Type) => Tree = (_, tpe) =>
-      if (isWireable(tpe)) findProvider(tpe).getOrElse(go(tpe))
-      else c.abort(c.enclosingPosition, s"Cannot find a value of type: [${tpe}]")
-
-    def go(t: Type): Tree = {
-
-      val r =
-        (ConstructorCrimper.constructorTree(c, log)(t, resolutionWithFallback) orElse CompanionCrimper
-          .applyTree(c, log)(t, resolutionWithFallback)) getOrElse
-          c.abort(c.enclosingPosition, s"Failed for [$t]")
-
-      log(s"Constructed [$r]")
-      r
-    }
-
-
-    val code = go(targetType.tpe)
-    log(s"Code: [$code]")
-
-    c.Expr[T](code)
-  }
-
-
 
 }

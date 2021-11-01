@@ -61,4 +61,6 @@ package object macwire {
 
   def wireRec[T]: T = macro MacwireMacros.wireRec_impl[T]
 
+  def autowire[T](dependencies: Any*): T = macro MacwireMacros.autowire_impl[T]
+
 }
