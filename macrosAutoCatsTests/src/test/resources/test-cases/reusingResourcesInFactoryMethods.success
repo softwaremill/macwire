@@ -1,0 +1,29 @@
+import com.softwaremill.macwire.autocats._
+import cats.effect._
+
+import scala.collection.mutable.ListBuffer
+
+case class A()
+class B()
+case class C(b: B)
+case class D(b: B)
+case class E(c: C, d: D)
+
+val created = scala.collection.mutable.Set[String]()
+
+object Test {
+  def makeB(a: A): Resource[IO, B] = Resource.eval(IO{ created.add("b"); new B()})
+
+  val theE = autowire[E](makeB _)
+
+}
+
+val theE: E = {
+  import cats.effect.unsafe.implicits.global
+  Test.theE.allocated.unsafeRunSync()._1
+}
+
+require(theE.c != null)
+require(theE.d != null)
+require(created.size == 1)
+require(created.contains("b"))
