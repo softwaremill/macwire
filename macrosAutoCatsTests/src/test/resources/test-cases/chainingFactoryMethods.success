@@ -4,11 +4,11 @@ import com.softwaremill.macwire.autocats._
 import cats.effect._
 
 
-val created = scala.collection.mutable.Set[String]()
+val created = scala.collection.mutable.ListBuffer[String]()
 
 object Test {
-  def theA(): Resource[IO, A] = { created.add("a"); Resource.pure(A()) }
-  def theB(b: A): Resource[IO, B] = { created.add("b"); Resource.pure(B()) }
+  def theA(): Resource[IO, A] = Resource.eval(IO { created.append("a"); A() })
+  def theB(b: A): Resource[IO, B] = Resource.eval(IO { created.append("b"); B() })
   val theC: Resource[IO, C] = autowire[C](theA _, theB _)
 }
 
@@ -21,5 +21,5 @@ require(theC.a != null)
 require(theC.b != null)
 
 require(created.size == 2)
-require(created.contains("a"))
-require(created.contains("b"))
+require(created(0) == "a")
+require(created(1) == "b")
