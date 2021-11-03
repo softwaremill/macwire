@@ -139,7 +139,7 @@ lazy val tt = `type`
 
       providers.foldLeft(init) {
         case (v, fm: FactoryMethod) => {
-          v :+ fm.result(findProviderIn(v)(_).getOrElse(c.abort(c.enclosingPosition, "TODO2")))
+          v :+ fm.result(x => findProviderIn(v)(x).getOrElse(q"com.softwaremill.macwire.autowire[$x](..${v.map(_.ident)})"))
         }
         case (v, _ ) => v
       }.collect {
