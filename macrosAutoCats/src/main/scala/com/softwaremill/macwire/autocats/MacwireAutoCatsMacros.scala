@@ -3,6 +3,8 @@ package com.softwaremill.macwire.autocats
 import scala.reflect.macros.blackbox
 import cats.effect.{IO, Resource => CatsResource}
 import com.softwaremill.macwire.internals._
+import cats.implicits._
+import com.softwaremill.macwire.MacwireMacros
 
 object MacwireCatsEffectMacros {
   private val log = new Logger()
@@ -29,25 +31,35 @@ object MacwireCatsEffectMacros {
     def findProviderIn(values: Seq[Value])(tpe: Type): Option[Tree] = values.find(_.`type` <:< tpe).map(_.ident)
 
     val providers = dependencies.map(providerFromExpr)
+    
     val values: Seq[Value] = {
-      val init: Seq[Value] = providers.flatMap {
-        case e: Effect => Some(e.asResource)
-        case v: Value  => Some(v)
-        case _         => None
+
+      val (fms, initValues): (Vector[FactoryMethod], Vector[Value]) = providers.toVector.partitionBifold {
+        case e: Effect => Right(e.asResource)
+        case v: Value  => Right(v)
+        case fm: FactoryMethod        => Left(fm)
       }
 
-      providers
-        .foldLeft(init) {
-          case (v, fm: FactoryMethod) => {
-            v :+ fm.result(x =>
-              findProviderIn(v)(x).getOrElse(q"com.softwaremill.macwire.autowire[$x](..${v.map(_.ident)})")
-            )
-          }
-          case (v, _) => v
-        }
-        .collect { case v: Value =>
-          v
-        }
+
+      def freshInstanceFromEmptyConstructor(t: Type): Option[Tree] = {
+        (ConstructorCrimper.constructorTreeV2(c, log)(t, (_, _) => None) orElse CompanionCrimper
+        .applyTreeV2(c, log)(t, (_, _) => None))
+      }
+
+      def go(fms: Vector[FactoryMethod], values: Vector[Value]): Vector[Value] = fms match {
+        case Vector() => values
+        case v => {
+          log(s"Resolving for FMs [${fms.mkString(", ")}] with values [${values.mkString(", ")}]")
+          //FIXME we need to make use of empty constructors at this point :/
+          val (remainingFms, appliedFms) = v.partitionBifold(f => f.maybeResult(t => findProviderIn(values)(t).orElse(freshInstanceFromEmptyConstructor(t))).toRight(f))
+          if (appliedFms.isEmpty) c.abort(c.enclosingPosition, "Failed to apply any factory method")
+
+          go(remainingFms, values ++ appliedFms)
+        
+      }
+      }
+
+      go(fms, initValues)
     }
 
     log(s"exprs: s[${dependencies.mkString(", ")}]")
@@ -150,6 +162,19 @@ object MacwireCatsEffectMacros {
 
       }
 
+      def maybeResult(resolver: Type => Option[Tree]): Option[Value] = 
+            maybeApplyWith(resolver).map { resultTree => 
+          val t = fun.symbol.asMethod.returnType
+          if (Resource.isResource(t)) new Resource(resultTree) {
+            override lazy val `type`: Type = tt
+          }
+          else if (Effect.isEffect(t)) new Effect(resultTree) {
+            override lazy val `type`: Type = tt
+          }
+          else Instance(resultTree)  
+        
+      }
+
       lazy val `type`: Type = {
         val resultType = fun.symbol.asMethod.returnType
         (Resource.underlyingType(resultType) orElse Effect.underlyingType(resultType)).getOrElse(resultType)
@@ -162,6 +187,11 @@ object MacwireCatsEffectMacros {
 
         q"$fun(..$values)"
       }
+
+      def maybeApplyWith(resolver: Type => Option[Tree]): Option[Tree] = 
+        params.map { case ValDef(_, name, tpt, rhs) =>
+          resolver(typeCheckUtil.typeCheckIfNeeded(tpt))
+        }.sequence.map(values => q"$fun(..$values)")
 
     }
 
@@ -276,25 +306,5 @@ object MacwireCatsEffectMacros {
   //   c.Expr[T](code)
   // }
 
-  // private def wireWithResolver[T: c.WeakTypeTag](
-  //     c: blackbox.Context
-  // )(resolver: c.Type => Option[c.Tree]) = {
-  //   import c.universe._
 
-  //   def isWireable(tpe: Type): Boolean = {
-  //     val name = tpe.typeSymbol.fullName
-
-  //     !name.startsWith("java.lang.") && !name.startsWith("scala.")
-  //   }
-
-  //   lazy val resolutionWithFallback: (Symbol, Type) => Tree = (_, tpe) =>
-  //     if (isWireable(tpe)) resolver(tpe).orElse(go(tpe)).getOrElse(c.abort(c.enclosingPosition, s"TODO???"))
-  //     else c.abort(c.enclosingPosition, s"Cannot find a value of type: [${tpe}]")
-
-  //   def go(t: Type): Option[Tree] =
-  //     (ConstructorCrimper.constructorTree(c, log)(t, resolutionWithFallback) orElse CompanionCrimper
-  //       .applyTree(c, log)(t, resolutionWithFallback))
-
-
-  // }
 }

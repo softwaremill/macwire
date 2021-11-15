@@ -137,4 +137,31 @@ object ConstructorCrimper {
       constructorArgs.map(_.foldLeft(constructionMethodTree)((acc: Tree, args: List[Tree]) => Apply(acc, args)))
     }
   }
+
+  def constructorTreeV2[C <: blackbox.Context](
+      c: C,
+      log: Logger
+  )(targetType: c.Type, resolver: (c.Symbol, c.Type) => Option[c.Tree]): Option[c.Tree] = {
+    import c.universe._
+
+    lazy val targetTypeD: Type = targetType.dealias
+
+    lazy val constructor: Option[Symbol] = ConstructorCrimper.constructor(c, log)(targetType)
+
+    lazy val constructorParamLists: Option[List[List[Symbol]]] =
+      constructor.map(_.asMethod.paramLists.filterNot(_.headOption.exists(_.isImplicit)))
+
+    def constructorArgs: Option[List[List[Option[Tree]]]] = log.withBlock("Looking for targetConstructor arguments") {
+      constructorParamLists.map(wireConstructorParams(_))
+    }
+
+    def wireConstructorParams(paramLists: List[List[Symbol]]): List[List[Option[Tree]]] =
+      paramLists.map(_.map(p => resolver(p, /*SI-4751*/ paramType(c)(targetTypeD, p))))
+
+    log.withBlock(s"Creating Constructor Tree for $targetType") {
+      val constructionMethodTree: Tree = Select(New(Ident(targetTypeD.typeSymbol)), termNames.CONSTRUCTOR)
+      val flattenConstructorArgs = constructorArgs.flatMap(l => sequence(l.map(sequence)))//FIXME it breaks the current macwire's philosophy....
+      flattenConstructorArgs.map(_.foldLeft(constructionMethodTree)((acc: Tree, args: List[Tree]) => Apply(acc, args)))
+    }
+  }
 }

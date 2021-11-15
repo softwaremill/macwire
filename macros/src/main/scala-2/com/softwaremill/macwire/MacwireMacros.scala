@@ -212,6 +212,17 @@ object MacwireMacros {
       case i: Instance => i.ident
       case fm: FactoryMethod => fm.result(findProvider(_).getOrElse(c.abort(c.enclosingPosition, "TODO3"))).ident
     }
+    
+    val code = wireWithResolver(c)(findProvider(_)) getOrElse c.abort(c.enclosingPosition, s"Failed for [$targetType]")//FIXME Improve error tracing
+    log(s"Code: [$code]")
+
+    c.Expr[T](code)
+  }
+
+  def wireWithResolver[T: c.WeakTypeTag](
+      c: blackbox.Context
+  )(resolver: c.Type => Option[c.Tree]) = {
+    import c.universe._
 
     def isWireable(tpe: Type): Boolean = {
       val name = tpe.typeSymbol.fullName
@@ -220,25 +231,15 @@ object MacwireMacros {
     }
 
     lazy val resolutionWithFallback: (Symbol, Type) => Tree = (_, tpe) =>
-      if (isWireable(tpe)) findProvider(tpe).getOrElse(go(tpe))
+      if (isWireable(tpe)) resolver(tpe).orElse(go(tpe)).getOrElse(c.abort(c.enclosingPosition, s"TODO???"))
       else c.abort(c.enclosingPosition, s"Cannot find a value of type: [${tpe}]")
 
-    def go(t: Type): Tree = {
+    def go(t: Type): Option[Tree] =
+      (ConstructorCrimper.constructorTree(c, log)(t, resolutionWithFallback) orElse CompanionCrimper
+        .applyTree(c, log)(t, resolutionWithFallback))
 
-      val r =
-        (ConstructorCrimper.constructorTree(c, log)(t, resolutionWithFallback) orElse CompanionCrimper
-          .applyTree(c, log)(t, resolutionWithFallback)) getOrElse
-          c.abort(c.enclosingPosition, s"Failed for [$t]")
 
-      log(s"Constructed [$r]")
-      r
-    }
-
-    
-    val code = go(targetType.tpe)
-    log(s"Code: [$code]")
-
-    c.Expr[T](code)
+    go(implicitly[c.WeakTypeTag[T]].tpe)
   }
 
 }
