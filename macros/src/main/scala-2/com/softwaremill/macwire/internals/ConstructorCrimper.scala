@@ -97,7 +97,8 @@ object ConstructorCrimper {
     }
   }
 
-  private def paramType[C <: blackbox.Context](c: C)(targetTypeD: c.Type, param: c.Symbol): c.Type = {
+  //TODO move to the package object
+  def paramType[C <: blackbox.Context](c: C)(targetTypeD: c.Type, param: c.Symbol): c.Type = {
     import c.universe._
 
     val (sym: Symbol, tpeArgs: List[Type]) = targetTypeD match {
@@ -164,4 +165,27 @@ object ConstructorCrimper {
       flattenConstructorArgs.map(_.foldLeft(constructionMethodTree)((acc: Tree, args: List[Tree]) => Apply(acc, args)))
     }
   }
+
+  def constructorV3[C <: blackbox.Context](
+    c: C,
+    log: Logger
+  )(targetType: c.Type): Option[(List[List[c.universe.Symbol]], List[List[c.Tree]] => c.Tree)] = {
+    import c.universe._
+
+    lazy val targetTypeD: Type = targetType.dealias
+
+    lazy val constructor: Option[Symbol] = ConstructorCrimper.constructor(c, log)(targetType)
+
+    lazy val constructorParamLists: Option[List[List[Symbol]]] =
+      constructor.map(_.asMethod.paramLists.filterNot(_.headOption.exists(_.isImplicit)).map(_.map(_.asModule)))
+
+
+    def fff(constructorArgs: List[List[Tree]]): Tree = {
+        val constructionMethodTree: Tree = Select(New(Ident(targetTypeD.typeSymbol)), termNames.CONSTRUCTOR)
+      constructorArgs.foldLeft(constructionMethodTree)((acc: Tree, args: List[Tree]) => Apply(acc, args))
+  }
+
+    constructorParamLists.map(cpl => (cpl, fff(_)))
+  }
+
 }
