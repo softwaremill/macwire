@@ -23,9 +23,9 @@ object MacwireCatsEffectMacros {
     val sortedProviders = graph.buildGraphVertices(dependencies.toList)
 
     val code = sortedProviders.collect {
-      case e: graph.Effect => e
-      case r: graph.Resource => r
-      case fm: graph.FactoryMethod => fm
+      case e: graph.catsProviders.Effect => e
+      case r: graph.catsProviders.Resource => r
+      case fm: graph.catsProviders.FactoryMethod => fm
     }.foldRight(
       q"cats.effect.Resource.pure[cats.effect.IO, $targetType](com.softwaremill.macwire.autowire[$targetType](..${sortedProviders.map(_.ident)}))"
     ) { case (resource, acc) =>
