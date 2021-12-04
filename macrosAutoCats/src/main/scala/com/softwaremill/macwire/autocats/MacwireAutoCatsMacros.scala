@@ -5,8 +5,7 @@ import cats.effect.{IO, Resource => CatsResource}
 import com.softwaremill.macwire.internals._
 import cats.implicits._
 import com.softwaremill.macwire.MacwireMacros
-import com.softwaremill.macwire.autocats.internals.CatsProviders
-import com.softwaremill.macwire.autocats.internals.CatsProvidersGraph
+import com.softwaremill.macwire.autocats.internals._
 
 object MacwireCatsEffectMacros {
   private val log = new Logger()
@@ -18,14 +17,14 @@ object MacwireCatsEffectMacros {
 
     val targetType = implicitly[c.WeakTypeTag[T]]
     lazy val typeCheckUtil = new TypeCheckUtil[c.type](c, log)
-    val graph = new CatsProvidersGraph[c.type](c, log)
+    val graph = new CatsProvidersGraphContext[c.type](c, log)
 
-    val sortedProviders = graph.buildGraphVertices(dependencies.toList)
+    val sortedProviders = graph.buildGraphVertices(dependencies.toList).topologicalOrder()
 
     val code = sortedProviders.collect {
-      case e: graph.catsProviders.Effect => e
-      case r: graph.catsProviders.Resource => r
-      case fm: graph.catsProviders.FactoryMethod => fm
+      case e: graph.Effect => e
+      case r: graph.Resource => r
+      case fm: graph.FactoryMethod => fm
     }.foldRight(
       q"cats.effect.Resource.pure[cats.effect.IO, $targetType](com.softwaremill.macwire.autowire[$targetType](..${sortedProviders.map(_.ident)}))"
     ) { case (resource, acc) =>

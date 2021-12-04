@@ -5,57 +5,48 @@ import com.softwaremill.macwire.internals._
 import cats.implicits._
 import scala.collection.immutable
 
-class CatsProvidersGraph[C <: blackbox.Context](val c: C, log: Logger) {
+class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger) extends CatsProvidersV2[C] with GraphBuilderUtils[C] {
   lazy val typeCheckUtil = new TypeCheckUtil[c.type](c, log)
   
-  lazy val catsProviders = new CatsProvidersV2[c.type](c, log)
-  import catsProviders._
-  
-  case class FactoryMethodTree(params: List[c.universe.ValDef], fun: c.Tree, resultType: c.Type)
-  object FactoryMethodTree {
+
+  class CatsProvidersGraph(providers: Map[c.Type, Provider], inputTypesOrder: List[c.Type]) {
     import c.universe._
 
-    def apply(tree: Tree): Option[FactoryMethodTree] = FactoryMethod.deconstruct { case (fun, params) =>
-      FactoryMethodTree(params, fun, FactoryMethod.underlyingType(fun))
-    }(tree)
-  }
 
-  case class BuilderContext(
-      providers: Map[c.Type, Provider],
-      notResolvedFactoryMethods: Map[c.Type, FactoryMethodTree]
-  ) {
-    import c.universe._
-
-    def resolvedFactoryMethod(provider: FactoryMethod): BuilderContext = copy(
-      providers = providers.+((provider.resultType, provider.asInstanceOf[Provider])),
-      notResolvedFactoryMethods = notResolvedFactoryMethods.removed(provider.resultType)
-    )
-
-    def resolve(tpe: Type): Option[Either[Provider, FactoryMethodTree]] = {
-      val result = providers
-        .get(tpe)//hehe it does not support inheritance :p
-        .map(_.asLeft[FactoryMethodTree])
-        .orElse(notResolvedFactoryMethods.get(tpe).map(_.asRight[Provider]))
-
-      log(s"For type [$tpe] found [$result]")
-      result
-    }
-
-    def next(): Option[FactoryMethodTree] = {
-      val value = notResolvedFactoryMethods.headOption.map(_._2)
-      log(s"Fetched next value [$value]")
-      value
-    }
-
-    def addProvider(provider: Provider): BuilderContext =
-      log.withBlock(s"For type [${provider.resultType}] add provider [${provider}]") {
-        copy(
-          providers = providers.+((provider.resultType, provider))
-        )
+    def topologicalOrder(): List[Provider] = {
+      def go(remainingInputTypes: List[Type], resultProviders: List[Provider]): (List[Type], List[Provider]) =       
+        remainingInputTypes match {
+        case Nil => (remainingInputTypes, resultProviders)
+        case head :: tl =>
+          log.withBlock(s"Build providers list from [$head]") {
+            def goDeep(provider: Provider): List[Provider] = log.withBlock(s"Building deeper with [$provider]") {
+              provider.dependencies.flatten match { //FIXME cannot just flatten it :)
+                case Nil => List(provider)
+                case deps =>
+                  deps.foldl(List(provider)) {
+                    case (r, None)                                   => r
+                    case (r, Some(p)) if resultProviders.contains(p) => r
+                    case (r, Some(p))                                => goDeep(p) ++ r
+                  }
+              }
+            }
+            val ps = goDeep(
+              providers.get(head).getOrElse(c.abort(c.enclosingPosition, "Internal error. Missing provider"))
+            )
+            go(
+              remainingInputTypes.diff(resultProviders.map(_.resultType) ++ ps.map(_.resultType)),
+              resultProviders ++ ps
+            )
+          }
       }
-  }
 
-  def buildGraphVertices(rawProviders: List[c.universe.Expr[Any]]): List[Provider] = {
+      go(inputTypesOrder, List.empty)._2
+    }
+
+}
+
+
+  def buildGraphVertices(rawProviders: List[c.universe.Expr[Any]]): CatsProvidersGraph = {
     import c.universe._
 
     val (providers, fms): (Map[Type, Provider], Map[Type, FactoryMethodTree]) = rawProviders
@@ -153,47 +144,8 @@ class CatsProvidersGraph[C <: blackbox.Context](val c: C, log: Logger) {
 
     log(s"Input providers order [${inputProvidersOrder.mkString(", ")}]")
 
-    def buildProvidersList(
-        ctx: BuilderContext
-    )(remainingInputTypes: List[Type], resultProviders: List[Provider]): (List[Type], List[Provider]) =
-      remainingInputTypes match {
-        case Nil => (remainingInputTypes, resultProviders)
-        case head :: tl =>
-          log.withBlock(s"Build providers list from [$head]") {
-            def goDeep(provider: Provider): List[Provider] = log.withBlock(s"Building deeper with [$provider]") {
-              provider.dependencies.flatten match { //FIXME cannot just flatten it :)
-                case Nil => List(provider)
-                case deps =>
-                  deps.foldl(List(provider)) {
-                    case (r, None)                                   => r
-                    case (r, Some(p)) if resultProviders.contains(p) => r
-                    case (r, Some(p))                                => goDeep(p) ++ r
-                  }
-              }
-            }
-            val ps = goDeep(
-              ctx.providers.get(head).getOrElse(c.abort(c.enclosingPosition, "Internal error. Missing provider"))
-            )
-            buildProvidersList(ctx)(
-              remainingInputTypes.diff(resultProviders.map(_.resultType) ++ ps.map(_.resultType)),
-              resultProviders ++ ps
-            )
-          }
-      }
-
-    val (tps, orderedProviders) = buildProvidersList(resolvedCtx)(inputProvidersOrder, List.empty)
-    log(s"Ordered providers [${orderedProviders.map(_.resultType).mkString(", ")}]")
-
-    orderedProviders
+    new CatsProvidersGraph(resolvedCtx.providers, inputProvidersOrder)
   }
 
   private def mkStringFrom2DimList[T](ll: List[List[T]]): String = ll.map(_.mkString(", ")).mkString("\n")
-}
-
-object CatsProvidersGraph {
-  private val log = new Logger()
-
-  def fromDependencies[C <: blackbox.Context](c: C)(rawProviders: List[c.Expr[Any]]) = {
-    
-  }
 }

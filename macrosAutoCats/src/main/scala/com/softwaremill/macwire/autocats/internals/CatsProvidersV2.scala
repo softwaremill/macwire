@@ -4,8 +4,11 @@ import scala.reflect.macros.blackbox
 import com.softwaremill.macwire.internals._
 import cats.implicits._
 
-class CatsProvidersV2[C <: blackbox.Context](val c: C, log: Logger) {
-  lazy val typeCheckUtil = new TypeCheckUtil[c.type](c, log)
+trait CatsProvidersV2[C <: blackbox.Context] {
+    val c: C
+    val log: Logger
+
+   val typeCheckUtil: TypeCheckUtil[c.type]
 
   trait Provider {
     def resultType: c.Type
