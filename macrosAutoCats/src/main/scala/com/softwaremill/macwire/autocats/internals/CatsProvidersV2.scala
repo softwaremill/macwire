@@ -5,10 +5,10 @@ import com.softwaremill.macwire.internals._
 import cats.implicits._
 
 trait CatsProvidersV2[C <: blackbox.Context] {
-    val c: C
-    val log: Logger
+  val c: C
+  val log: Logger
 
-   val typeCheckUtil: TypeCheckUtil[c.type]
+  val typeCheckUtil: TypeCheckUtil[c.type]
 
   trait Provider {
     def resultType: c.Type
@@ -65,14 +65,18 @@ trait CatsProvidersV2[C <: blackbox.Context] {
     private lazy val appliedTree: Tree =
       dependencies.map(_.map(_.get.ident)).foldLeft(fun)((acc: Tree, args: List[Tree]) => Apply(acc, args))
 
-    private lazy val result: Provider = {
+    lazy val result: Provider = log.withResult {
       val t = fun.symbol.asMethod.returnType
 //TODO support for FactoryMethods
 //TODO it seems to be a common pattern, we may abstract over it
-      if (Resource.isResource(t)) new Resource(appliedTree)
-      else if (Effect.isEffect(t)) new Effect(appliedTree)
+      if (Resource.isResource(t)) new Resource(appliedTree) {
+        override lazy val resultType: Type = Resource.underlyingType(t)
+      }
+      else if (Effect.isEffect(t)) new Effect(appliedTree) {
+        override lazy val resultType: Type = Effect.underlyingType(t)
+      }
       else new Instance(appliedTree)
-    }
+    }(result => s"Factory method result [$result]")
 
     lazy val ident: Tree = result.ident
     lazy val value: Tree = result.value

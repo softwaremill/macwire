@@ -21,12 +21,16 @@ object MacwireCatsEffectMacros {
 
     val sortedProviders = graph.buildGraphVertices(dependencies.toList).topologicalOrder()
 
-    val code = sortedProviders.collect {
+    log(s"Sorted providers [${sortedProviders.mkString(", ")}]")
+    val code = sortedProviders.map {
+      case fm: graph.FactoryMethod => fm.result
+      case p => p
+    }.collect {
       case e: graph.Effect => e
       case r: graph.Resource => r
-      case fm: graph.FactoryMethod => fm
     }.foldRight(
       q"cats.effect.Resource.pure[cats.effect.IO, $targetType](com.softwaremill.macwire.autowire[$targetType](..${sortedProviders.map(_.ident)}))"
+      // q"cats.effect.Resource.pure[cats.effect.IO, $targetType](???)"
     ) { case (resource, acc) =>
       q"${resource.value}.flatMap((${resource.ident}: ${resource.resultType}) => $acc)"
     }

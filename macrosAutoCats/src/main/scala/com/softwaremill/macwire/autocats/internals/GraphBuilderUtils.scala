@@ -18,28 +18,27 @@ trait  GraphBuilderUtils[C <: blackbox.Context] { this: CatsProvidersV2[C] =>
   }
 
   case class BuilderContext(
-      providers: Map[c.Type, Provider],
-      notResolvedFactoryMethods: Map[c.Type, FactoryMethodTree]
+      providers: List[Provider],
+      notResolvedFactoryMethods: List[FactoryMethodTree]
   ) {
     import c.universe._
 
     def resolvedFactoryMethod(provider: FactoryMethod): BuilderContext = copy(
-      providers = providers.+((provider.resultType, provider.asInstanceOf[Provider])),
-      notResolvedFactoryMethods = notResolvedFactoryMethods.removed(provider.resultType)
+      providers = provider :: providers,
+      notResolvedFactoryMethods = notResolvedFactoryMethods.filter(p => p.resultType != provider.resultType)
     )
 
     def resolve(tpe: Type): Option[Either[Provider, FactoryMethodTree]] = {
-      val result = providers
-        .get(tpe)//hehe it does not support inheritance :p
+      val result = providers.find(_.resultType <:< tpe)
         .map(_.asLeft[FactoryMethodTree])
-        .orElse(notResolvedFactoryMethods.get(tpe).map(_.asRight[Provider]))
+        .orElse(notResolvedFactoryMethods.find(_.resultType <:< tpe).map(_.asRight[Provider]))
 
       log(s"For type [$tpe] found [$result]")
       result
     }
 
     def next(): Option[FactoryMethodTree] = {
-      val value = notResolvedFactoryMethods.headOption.map(_._2)
+      val value = notResolvedFactoryMethods.headOption
       log(s"Fetched next value [$value]")
       value
     }
@@ -47,7 +46,7 @@ trait  GraphBuilderUtils[C <: blackbox.Context] { this: CatsProvidersV2[C] =>
     def addProvider(provider: Provider): BuilderContext =
       log.withBlock(s"For type [${provider.resultType}] add provider [${provider}]") {
         copy(
-          providers = providers.+((provider.resultType, provider))
+          providers = provider :: providers
         )
       }
   }

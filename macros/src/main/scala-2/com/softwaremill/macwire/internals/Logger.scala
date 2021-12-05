@@ -18,6 +18,12 @@ private[macwire] final class Logger {
     }
   }
 
+  def withResult[T](block: => T)(msgFactory: T => String): T = {
+    val result = block
+    apply(msgFactory(result))
+    result
+  }
+
   def beginBlock() {
     ident += 1
   }

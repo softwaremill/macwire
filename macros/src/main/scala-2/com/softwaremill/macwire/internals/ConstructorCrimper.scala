@@ -174,11 +174,10 @@ object ConstructorCrimper {
 
     lazy val targetTypeD: Type = targetType.dealias
 
-    lazy val constructor: Option[Symbol] = ConstructorCrimper.constructor(c, log)(targetType)
+    val constructor: Option[Symbol] = ConstructorCrimper.constructor(c, log)(targetType)
 
-    lazy val constructorParamLists: Option[List[List[Symbol]]] =
-      constructor.map(_.asMethod.paramLists.filterNot(_.headOption.exists(_.isImplicit)).map(_.map(_.asModule)))
-
+    val constructorParamLists: Option[List[List[Symbol]]] =
+      constructor.map(_.asMethod.paramLists.filterNot(_.headOption.exists(_.isImplicit)))
 
     def fff(constructorArgs: List[List[Tree]]): Tree = {
         val constructionMethodTree: Tree = Select(New(Ident(targetTypeD.typeSymbol)), termNames.CONSTRUCTOR)
