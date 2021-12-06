@@ -4,7 +4,7 @@ import scala.reflect.macros.blackbox
 import com.softwaremill.macwire.internals._
 import cats.implicits._
 
-trait  GraphBuilderUtils[C <: blackbox.Context] { this: CatsProvidersV2[C] => 
+trait  GraphBuilderUtils[C <: blackbox.Context] { this: CatsProviders[C] => 
     val c: C
     val log: Logger
 

@@ -3,10 +3,9 @@ package com.softwaremill.macwire.autocats.internals
 import scala.reflect.macros.blackbox
 import com.softwaremill.macwire.internals._
 import cats.implicits._
-import scala.collection.immutable
 
 class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger)
-    extends CatsProvidersV2[C]
+    extends CatsProviders[C]
     with GraphBuilderUtils[C] {
   lazy val typeCheckUtil = new TypeCheckUtil[c.type](c, log)
 
@@ -45,7 +44,7 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
 
   }
 
-  def buildGraphVertices(rawProviders: List[c.universe.Expr[Any]]): CatsProvidersGraph = {
+  def buildGraph(rawProviders: List[c.universe.Expr[Any]]): CatsProvidersGraph = {
     import c.universe._
 
     val (providers, fms): (Map[Type, Provider], Map[Type, FactoryMethodTree]) = rawProviders
@@ -85,17 +84,23 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
 
   def maybeResolveParamWithConstructor(ctx: BuilderContext)(param: c.Type): Option[(BuilderContext, Constructor)] =
     log.withResult {
-      ConstructorCrimper
-        .constructorV3(c, log)(param)
-        .map {
-          case (constructorParams, creatorF) => {
-            val constructorParamsTypes = constructorParams.map(_.map(s => ConstructorCrimper.paramType(c)(param, s)))
-            log.trace(s"Constructor params [${constructorParamsTypes.mkString(", ")}]")
-
-            val (updatedCtx, resolvedConParams) = resolveParamsLists(ctx)(constructorParamsTypes)
-            (updatedCtx, Constructor(param, resolvedConParams, creatorF))
-          }
+      def maybeResolveParams(maybeFactory: Option[(List[List[c.Symbol]], List[List[c.Tree]] => c.Tree)]): Option[(BuilderContext, Constructor)] = {
+        maybeFactory.flatMap { case (constructorParams, creatorF) =>
+          val paramsTypes = constructorParams.map(_.map(s => ConstructorCrimper.paramType(c)(param, s)))
+          log.trace(s"Constructor params [${paramsTypes.mkString(", ")}] for type [$param]")
+         
+          val (updatedCtx, resolvedConParams) = resolveParamsLists(ctx)(paramsTypes)
+          
+          if (resolvedConParams.exists(_.exists(_.isEmpty))) None
+          else Some((updatedCtx, Constructor(param, resolvedConParams, creatorF)))
         }
+
+      }
+
+      if (!isWireable(c)(param)) None
+      else
+        maybeResolveParams(ConstructorCrimper.constructorFactory(c, log)(param)).orElse(maybeResolveParams(CompanionCrimper.applyFactory(c, log)(param)))
+
     } {
       case None                   => s"Failed to create constructor for type [$param]"
       case Some((_, constructor)) => s"For type [$param] created constructor [$constructor]"

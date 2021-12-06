@@ -1,5 +1,7 @@
 package com.softwaremill.macwire
 
+import scala.reflect.macros.blackbox
+
 package object internals {
   //FIXME any built-in solution?
   def sequence[A](l: List[Option[A]]) = (Option(List.empty[A]) /: l) {
@@ -14,4 +16,10 @@ package object internals {
     composeOpts(f, fs: _*)(a).getOrElse(value(a))
 
   def combine[A, B](fs: Seq[A => B])(op: B => B => B): A => B = fs.reduce { (f1, f2) => (a: A) => op(f1(a))(f2(a)) }
+
+  def isWireable[C <: blackbox.Context](c: C)(tpe: c.Type): Boolean = {
+    val name = tpe.typeSymbol.fullName
+
+    !name.startsWith("java.lang.") && !name.startsWith("scala.")
+  }
 }

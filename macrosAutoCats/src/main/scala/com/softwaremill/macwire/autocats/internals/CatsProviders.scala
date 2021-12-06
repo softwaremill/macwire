@@ -1,125 +1,138 @@
 package com.softwaremill.macwire.autocats.internals
 
 import scala.reflect.macros.blackbox
+import com.softwaremill.macwire.internals._
 import cats.implicits._
 
-import com.softwaremill.macwire.internals._
+trait CatsProviders[C <: blackbox.Context] {
+  val c: C
+  val log: Logger
 
-class CatsProviders[C <: blackbox.Context](c: C, log: Logger) extends Providers(c, log) {
-  import con.universe._
+  val typeCheckUtil: TypeCheckUtil[c.type]
 
-  class Resource(valueL: => Tree) extends Value {
-    lazy val value = valueL
+  trait Provider {
+    def resultType: c.Type
+    def dependencies: List[List[Option[Provider]]]
+    def ident: c.Tree
+    def value: c.Tree
+  }
 
-    lazy val `type`: Type =
-      Resource
-        .underlyingType(typeCheckUtil.typeCheckIfNeeded(value))
-        .getOrElse(con.abort(con.enclosingPosition, "TODO"))
-    lazy val ident: Tree = Ident(TermName(con.freshName()))
+  class Effect(rawValue: c.Tree) extends Provider {
+    import c.universe._
 
+    lazy val resultType: Type = Effect.underlyingType(typeCheckUtil.typeCheckIfNeeded(rawValue))
+    lazy val dependencies: List[List[Option[Provider]]] = List.empty
+    lazy val asResource = new Resource(q"cats.effect.kernel.Resource.eval[cats.effect.IO, ${resultType}]($rawValue)")
+    lazy val value: Tree = asResource.value
+    lazy val ident: Tree = asResource.ident
+  }
+
+  object Effect {
+    import c.universe._
+
+    def underlyingType(tpe: Type): Type = tpe.typeArgs(0)
+    def maybeUnderlyingType(tpe: Type): Option[Type] = if (isEffect(tpe)) Some(underlyingType(tpe)) else None
+    def isEffect(tpe: Type): Boolean = tpe.typeSymbol.fullName.startsWith("cats.effect.IO") && tpe.typeArgs.size == 1
+  }
+
+  class Resource(val value: c.Tree) extends Provider {
+    import c.universe._
+
+    lazy val resultType: Type = Resource.underlyingType(typeCheckUtil.typeCheckIfNeeded(value))
+    lazy val dependencies: List[List[Option[Provider]]] = List.empty
+    lazy val ident: Tree = Ident(TermName(c.freshName()))
   }
 
   object Resource {
-    def fromTree(tree: Tree): Option[Resource] =
-      if (isResource(typeCheckUtil.typeCheckIfNeeded(tree))) Some(new Resource(tree))
-      else None
+    import c.universe._
 
-    def underlyingType(tpe: Type): Option[Type] = if (isResource(tpe)) Some(tpe.typeArgs(1)) else None
+    def underlyingType(tpe: Type): Type = tpe.typeArgs(1)
+    def maybeUnderlyingType(tpe: Type): Option[Type] = if (isResource(tpe)) Some(underlyingType(tpe)) else None
 
     def isResource(tpe: Type): Boolean =
       tpe.typeSymbol.fullName.startsWith("cats.effect.kernel.Resource") && tpe.typeArgs.size == 2
 
+    def fromTree(tree: Tree): Option[Resource] =
+      if (isResource(typeCheckUtil.typeCheckIfNeeded(tree))) Some(new Resource(tree))
+      else None
+
   }
 
-  class CatsFactoryMethod(params: List[ValDef], fun: Tree) extends FactoryMethod(params, fun) {
+  class FactoryMethod(fun: c.Tree, val resultType: c.Type, val dependencies: List[List[Option[Provider]]])
+      extends Provider {
+    import c.universe._
 
-    override def result(resolver: Type => Tree): Value = {
-
-      val resultTree = applyWith(resolver)
-
+    private lazy val appliedTree: Tree = log.withBlock(s"Applied tree for [$fun] from deps: [${dependencies.map(_.mkString(", ")).mkString(", ")}]") { 
+      dependencies.map(_.map(_.get.ident)).foldLeft(fun)((acc: Tree, args: List[Tree]) => Apply(acc, args))
+    }
+    lazy val result: Provider = log.withResult {
       val t = fun.symbol.asMethod.returnType
-      if (Resource.isResource(t)) new Resource(resultTree) {
-        override lazy val `type`: Type = tt
+//TODO support for FactoryMethods
+//TODO it seems to be a common pattern, we may abstract over it
+      if (Resource.isResource(t)) new Resource(appliedTree) {
+        override lazy val resultType: Type = Resource.underlyingType(t)
       }
-      else if (Effect.isEffect(t)) new Effect(resultTree) {
-        override lazy val `type`: Type = tt
+      else if (Effect.isEffect(t)) new Effect(appliedTree) {
+        override lazy val resultType: Type = Effect.underlyingType(t)
       }
-      else Instance(resultTree)
+      else new Instance(appliedTree)
+    }(result => s"Factory method result [$result]")
 
-    }
-
-    override def maybeResult(resolver: Type => Option[Tree]): Option[Value] = {
-      println(s"CATS BASE METHOD")
-      maybeApplyWith(resolver).map { resultTree =>
-        val t = fun.symbol.asMethod.returnType
-        if (Resource.isResource(t)) new Resource(resultTree) {
-          override lazy val `type`: Type = tt
-        }
-        else if (Effect.isEffect(t)) new Effect(resultTree) {
-          override lazy val `type`: Type = tt
-        }
-        else Instance(resultTree)
-
-      }
-    }
-    override lazy val `type`: Type = {
-      val resultType = fun.symbol.asMethod.returnType
-      (Resource.underlyingType(resultType) orElse Effect.underlyingType(resultType)).getOrElse(resultType)
-    }
-    lazy val tt = `type`
-    override def applyWith(resolver: Type => Tree): Tree = {
-      val values = params.map { case ValDef(_, name, tpt, rhs) =>
-        resolver(typeCheckUtil.typeCheckIfNeeded(tpt))
-      }
-
-      q"$fun(..$values)"
-    }
-
-    override def maybeApplyWith(resolver: Type => Option[Tree]): Option[Tree] =
-      params
-        .map { case ValDef(_, name, tpt, rhs) =>
-          resolver(typeCheckUtil.typeCheckIfNeeded(tpt))
-        }
-        .sequence
-        .map(values => q"$fun(..$values)")
+    lazy val ident: Tree = result.ident
+    lazy val value: Tree = result.value
 
   }
 
-  object CatsFactoryMethod {
-    def fromTree(tree: Tree): Option[CatsFactoryMethod] = tree match {
+  object FactoryMethod {
+    import c.universe._
+
+    def underlyingType(tree: Tree): Type = {
+      val resultType = tree.symbol.asMethod.returnType
+      (Resource.maybeUnderlyingType(resultType) orElse Effect.maybeUnderlyingType(resultType)).getOrElse(resultType)
+    }
+
+    def underlyingResultType(tree: Tree): Type = {
+      val (fun, _) = fromTree(tree).getOrElse(c.abort(c.enclosingPosition, "TODO..."))
+      underlyingType(fun)
+    }
+
+    def unapply(tree: Tree): Option[(Tree, List[ValDef])] = deconstruct(identity)(tree)
+    def fromTree(tree: Tree): Option[(Tree, List[ValDef])] = unapply(tree)
+    def isFactoryMethod(tree: Tree): Boolean = fromTree(tree).isDefined
+
+    def deconstruct[T](componentsTransformer: ((Tree, List[ValDef])) => T)(tree: Tree): Option[T] = tree match {
       // Function with two parameter lists (implicit parameters) (<2.13)
-      case Block(Nil, Function(p, Apply(Apply(f, _), _))) => Some(new CatsFactoryMethod(p, f))
-      case Block(Nil, Function(p, Apply(f, _)))           => Some(new CatsFactoryMethod(p, f))
+      case Block(Nil, Function(p, Apply(Apply(f, _), _))) => Some(componentsTransformer((f, p)))
+      case Block(Nil, Function(p, Apply(f, _)))           => Some(componentsTransformer((f, p)))
       // Function with two parameter lists (implicit parameters) (>=2.13)
-      case Function(p, Apply(Apply(f, _), _)) => Some(new CatsFactoryMethod(p, f))
-      case Function(p, Apply(f, _))           => Some(new CatsFactoryMethod(p, f))
+      case Function(p, Apply(Apply(f, _), _)) => Some(componentsTransformer((f, p)))
+      case Function(p, Apply(f, _))           => Some(componentsTransformer((f, p)))
       // Other types not supported
       case _ => None
     }
 
   }
+//FIXME I don't really like the name `creator`, but don't know a better one ATM
+//FIXME it's also used for apply methods, so it should be renamed 
+  case class Constructor(
+      resultType: c.Type,
+      dependencies: List[List[Option[Provider]]],
+      creator: List[
+        List[c.Tree]
+      ] => c.Tree
+  ) extends Provider {
+    //TODO reuse created instance
+    override lazy val ident = creator(dependencies.map(_.map(_.get.ident)))
 
-  class Effect(value: Tree) extends Value {
-
-    override def ident: Tree = asResource.ident //????
-
-    override lazy val `type`: Type = typeCheckUtil.typeCheckIfNeeded(value).typeArgs(0)
-
-    def ttt = `type`
-    lazy val asResource = new Resource(q"cats.effect.kernel.Resource.eval[cats.effect.IO, ${`type`}]($value)") {
-      override lazy val `type`: Type = ttt
-    }
+    override def value: c.Tree = ???
   }
 
-  object Effect {
-    def fromTree(tree: Tree): Option[Effect] =
-      if (isEffect(typeCheckUtil.typeCheckIfNeeded(tree))) Some(new Effect(tree))
-      else None
+  class Instance(val value: c.Tree) extends Provider {
 
-    def underlyingType(tpe: Type): Option[Type] = if (isEffect(tpe)) Some(tpe.typeArgs(0)) else None
+    override def dependencies: List[List[Option[Provider]]] = List.empty
 
-    def isEffect(tpe: Type): Boolean =
-      tpe.typeSymbol.fullName.startsWith("cats.effect.IO") && tpe.typeArgs.size == 1
+    lazy val resultType: c.Type = typeCheckUtil.typeCheckIfNeeded(value)
+    lazy val ident: c.Tree = value
 
   }
 }
