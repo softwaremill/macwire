@@ -1,7 +1,3 @@
-import com.softwaremill.macwire.autocats._
-
-import cats.effect._
-
 trait A
 class AA(i: Int) extends A
 

@@ -1,7 +1,4 @@
-import com.softwaremill.macwire.autocats._
-
 #include commonSimpleClasses
-import cats.effect._
 
 trait Test {
   def theA: Resource[IO, A] = autowire[A]()

@@ -1,7 +1,3 @@
-import com.softwaremill.macwire.autocats._
-
-import cats.effect._
-
 val created = scala.collection.mutable.ListBuffer[String]()
 
 object Test {

@@ -1,7 +1,4 @@
-import com.softwaremill.macwire.autocats._
-
 #include commonSimpleClasses
-import cats.effect._
 
 val created = scala.collection.mutable.Set[String]()
 

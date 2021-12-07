@@ -10,9 +10,9 @@ import scala.io.Source
 private[macwire] trait BaseCompileTestsSupport extends AnyFlatSpec with Matchers {
   type ExpectedFailures = List[String]
 
-   val GlobalImports = "import com.softwaremill.macwire.{wire, wireWith, wireSet, wireRec}\n\n"
-   val DirectiveRegexp = "#include ([a-zA-Z]+)".r
-   val EmptyResult = "\n\n()"
+  val GlobalImports = "import com.softwaremill.macwire._\n\n"
+  val DirectiveRegexp = "#include ([a-zA-Z]+)".r
+  val EmptyResult = "\n\n()"
 
   def ambiguousResMsg(depClassName: String): String = s"Found multiple values of type [$depClassName]"
   def valueNotFound(depClassName: String): String = s"Cannot find a value of type: [$depClassName]"

@@ -1,6 +1,3 @@
-import com.softwaremill.macwire.autocats._
-import cats.effect._
-
 class B(s: String)
 
 object Test {

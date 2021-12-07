@@ -1,8 +1,8 @@
 package com.softwaremill.macwire.autocats
 
-import com.softwaremill.macwire.CompileTestsSupport
+import com.softwaremill.macwire.CatsAutowireCompileTestsSupport
 
-class CompileTests extends CompileTestsSupport {
+class CompileTests extends CatsAutowireCompileTestsSupport {
 
   runTestsWith(
     expectedFailures = List(

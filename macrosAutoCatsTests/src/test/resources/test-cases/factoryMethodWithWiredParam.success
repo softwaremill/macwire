@@ -1,7 +1,3 @@
-import com.softwaremill.macwire.autocats._
-
-import cats.effect._
-
 case class A() 
 class B(i: Int)
 class C(a: A, b: B)

@@ -1,5 +1,3 @@
-import com.softwaremill.macwire.autocats._
-import cats.effect._
 import scala.collection.mutable.ListBuffer
 
 class A()
