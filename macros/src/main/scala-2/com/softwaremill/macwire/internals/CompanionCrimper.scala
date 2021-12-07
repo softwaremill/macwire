@@ -86,10 +86,13 @@ object CompanionCrimper {
 
     lazy val applyParamLists: Option[List[List[Symbol]]] = apply.map(_.asMethod.paramLists)
 
-    def factory(applyMethod: Tree, applyArgs: List[List[Tree]]) =
+    def factory(applyMethod: Tree)(applyArgs: List[List[Tree]]) =
       applyArgs.foldLeft(applyMethod)((acc: Tree, args: List[Tree]) => Apply(acc, args))
 
-    applyParamLists.zip(applySelect).map { case (pl, applyMethod) => (pl, factory(applyMethod, _)) }
+      for {
+        params <- applyParamLists
+        applyMethod <- applySelect
+      } yield (params, factory(applyMethod)(_))
   }
 
 }
