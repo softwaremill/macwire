@@ -45,28 +45,24 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
   }
 
   def buildGraph(rawProviders: List[c.universe.Expr[Any]]): CatsProvidersGraph = {
-    import c.universe._
-
-    val (providers, fms): (Map[Type, Provider], Map[Type, FactoryMethodTree]) = rawProviders
+    val (providers, fms): (List[Provider], List[FactoryMethodTree]) = rawProviders
       .partitionBifold { expr =>
         val tree = expr.tree
         val tpe = typeCheckUtil.typeCheckIfNeeded(tree)
 
-        if (FactoryMethod.isFactoryMethod(tree))
-          Right(
-            FactoryMethod.underlyingResultType(tree) -> FactoryMethodTree(tree).get //FIXME
-          )
-        else if (Resource.isResource(tpe)) Left(Resource.underlyingType(tpe) -> new Resource(tree))
-        else if (Effect.isEffect(tpe)) Left(Effect.underlyingType(tpe) -> new Effect(tree))
-        else Left(tpe -> new Instance(tree))
+        FactoryMethodTree(tree)
+          .map(_.asRight[Provider])
+          .orElse(Resource.fromTree(tree, tpe).map(_.asLeft[FactoryMethodTree]))
+          .orElse(Effect.fromTree(tree, tpe).map(_.asLeft[FactoryMethodTree]))
+          .getOrElse(new Instance(tree).asLeft[FactoryMethodTree])
       }
-      .bimap(_.toMap, _.toMap)
+      .bimap(_.toList, _.toList)
 
-    println(s"PROVIDERS [${providers.mkString(", ")}]")
-    println(s"FMS [${fms.mkString(", ")}]")
+    log(s"Providers: [${providers.mkString(", ")}]")
+    log(s"Factory methods: [${fms.mkString(", ")}]")
 
-    val resolvedCtx = resolveFactoryMethods(BuilderContext(providers.values.toList, fms.values.toList)) //FIXME
-    log(s"Providers: [${resolvedCtx.providers.mkString(", ")}]")
+    val initContext = BuilderContext(providers, fms)
+    val resolvedCtx = resolveFactoryMethods(initContext)
 
     val inputProvidersOrder = rawProviders.map(expr => {
       val tree = expr.tree
@@ -84,13 +80,15 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
 
   def maybeResolveParamWithConstructor(ctx: BuilderContext)(param: c.Type): Option[(BuilderContext, Constructor)] =
     log.withResult {
-      def maybeResolveParams(maybeFactory: Option[(List[List[c.Symbol]], List[List[c.Tree]] => c.Tree)]): Option[(BuilderContext, Constructor)] = {
+      def maybeResolveParams(
+          maybeFactory: Option[(List[List[c.Symbol]], List[List[c.Tree]] => c.Tree)]
+      ): Option[(BuilderContext, Constructor)] = {
         maybeFactory.flatMap { case (constructorParams, creatorF) =>
-          val paramsTypes = constructorParams.map(_.map(s => ConstructorCrimper.paramType(c)(param, s)))
+          val paramsTypes = constructorParams.map(_.map(paramType(c)(param, _)))
           log.trace(s"Constructor params [${paramsTypes.mkString(", ")}] for type [$param]")
-         
+
           val (updatedCtx, resolvedConParams) = resolveParamsLists(ctx)(paramsTypes)
-          
+
           if (resolvedConParams.exists(_.exists(_.isEmpty))) None
           else Some((updatedCtx, Constructor(param, resolvedConParams, creatorF)))
         }
@@ -99,7 +97,8 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
 
       if (!isWireable(c)(param)) None
       else
-        maybeResolveParams(ConstructorCrimper.constructorFactory(c, log)(param)).orElse(maybeResolveParams(CompanionCrimper.applyFactory(c, log)(param)))
+        maybeResolveParams(ConstructorCrimper.constructorFactory(c, log)(param))
+          .orElse(maybeResolveParams(CompanionCrimper.applyFactory(c, log)(param)))
 
     } {
       case None                   => s"Failed to create constructor for type [$param]"

@@ -26,14 +26,14 @@ private[macwire] class ConstructorCrimper[C <: blackbox.Context, T: C#WeakTypeTa
   def wireConstructorParams(
       dependencyResolver: DependencyResolverType
   )(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.map(
-    _.map(p => dependencyResolver.resolve(p, /*SI-4751*/ ConstructorCrimper.paramType(c)(targetTypeD, p)))
+    _.map(p => dependencyResolver.resolve(p, /*SI-4751*/ paramType(c)(targetTypeD, p)))
   )
 
   def wireConstructorParamsWithImplicitLookups(
       dependencyResolver: DependencyResolverType
   )(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.map(_.map {
-    case i if i.isImplicit => q"implicitly[${ConstructorCrimper.paramType(c)(targetType, i)}]"
-    case p                 => dependencyResolver.resolve(p, /*SI-4751*/ ConstructorCrimper.paramType(c)(targetTypeD, p))
+    case i if i.isImplicit => q"implicitly[${paramType(c)(targetType, i)}]"
+    case p                 => dependencyResolver.resolve(p, /*SI-4751*/ paramType(c)(targetTypeD, p))
   })
 
 }
@@ -95,22 +95,6 @@ object ConstructorCrimper {
       ctor.foreach(ctor => log(s"Found ${showConstructor(c)(ctor)}"))
       ctor
     }
-  }
-
-  //TODO move to the package object
-  def paramType[C <: blackbox.Context](c: C)(targetTypeD: c.Type, param: c.Symbol): c.Type = {
-    import c.universe._
-
-    val (sym: Symbol, tpeArgs: List[Type]) = targetTypeD match {
-      case TypeRef(_, sym, tpeArgs) => (sym, tpeArgs)
-      case t =>
-        c.abort(
-          c.enclosingPosition,
-          s"Target type not supported for wiring: $t. Please file a bug report with your use-case."
-        )
-    }
-    val pTpe = param.typeSignature.substituteTypes(sym.asClass.typeParams, tpeArgs)
-    if (param.asTerm.isByNameParam) pTpe.typeArgs.head else pTpe
   }
 
   def constructorTree[C <: blackbox.Context](

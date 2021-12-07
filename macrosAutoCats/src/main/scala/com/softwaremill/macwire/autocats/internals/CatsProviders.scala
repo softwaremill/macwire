@@ -33,6 +33,10 @@ trait CatsProviders[C <: blackbox.Context] {
     def underlyingType(tpe: Type): Type = tpe.typeArgs(0)
     def maybeUnderlyingType(tpe: Type): Option[Type] = if (isEffect(tpe)) Some(underlyingType(tpe)) else None
     def isEffect(tpe: Type): Boolean = tpe.typeSymbol.fullName.startsWith("cats.effect.IO") && tpe.typeArgs.size == 1
+    def fromTree(tree: Tree, tpe: Type): Option[Effect] =
+      if (isEffect(tpe)) Some(new Effect(tree))
+      else None
+
   }
 
   class Resource(val value: c.Tree) extends Provider {
@@ -52,8 +56,8 @@ trait CatsProviders[C <: blackbox.Context] {
     def isResource(tpe: Type): Boolean =
       tpe.typeSymbol.fullName.startsWith("cats.effect.kernel.Resource") && tpe.typeArgs.size == 2
 
-    def fromTree(tree: Tree): Option[Resource] =
-      if (isResource(typeCheckUtil.typeCheckIfNeeded(tree))) Some(new Resource(tree))
+    def fromTree(tree: Tree, tpe: Type): Option[Resource] =
+      if (isResource(tpe)) Some(new Resource(tree))
       else None
 
   }
