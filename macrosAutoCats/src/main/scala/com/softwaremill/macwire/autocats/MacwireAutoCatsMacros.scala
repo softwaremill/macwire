@@ -17,19 +17,20 @@ object MacwireCatsEffectMacros {
 
     val targetType = implicitly[c.WeakTypeTag[T]]
 
-    val graph = new CatsProvidersGraphContext[c.type](c, log)
-    val sortedProviders = graph.buildGraph(dependencies.toList).topologicalOrder()
+    val graphContext = new CatsProvidersGraphContext[c.type](c, log)
+    val graph = graphContext.buildGraph(dependencies.toList, targetType.tpe)
+    val sortedProviders = graph.topologicalOrder()
 
     log(s"Sorted providers [${sortedProviders.mkString(", ")}]")
     
     val code = sortedProviders.map {
-      case fm: graph.FactoryMethod => fm.result
+      case fm: graphContext.FactoryMethod => fm.result
       case p => p
     }.collect {
-      case e: graph.Effect => e
-      case r: graph.Resource => r
+      case e: graphContext.Effect => e
+      case r: graphContext.Resource => r
     }.foldRight(
-      q"cats.effect.Resource.pure[cats.effect.IO, $targetType](com.softwaremill.macwire.autowire[$targetType](..${sortedProviders.map(_.ident)}))"
+      q"cats.effect.Resource.pure[cats.effect.IO, $targetType](${graph.root.ident})"
     ) { case (resource, acc) =>
       q"${resource.value}.flatMap((${resource.ident}: ${resource.resultType}) => $acc)"
     }

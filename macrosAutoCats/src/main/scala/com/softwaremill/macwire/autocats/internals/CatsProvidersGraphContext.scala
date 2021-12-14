@@ -9,9 +9,10 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
     with GraphBuilderUtils[C] {
   lazy val typeCheckUtil = new TypeCheckUtil[c.type](c, log)
 
-  class CatsProvidersGraph(providers: List[Provider], inputTypesOrder: List[c.Type]) {
+  class CatsProvidersGraph(providers: List[Provider], inputTypesOrder: List[c.Type], val root: Provider) {
     import c.universe._
 
+    //TODO simplify with root provider
     def topologicalOrder(): List[Provider] = {
       def go(remainingInputTypes: List[Type], resultProviders: List[Provider]): (List[Type], List[Provider]) =
         remainingInputTypes match {
@@ -44,7 +45,7 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
 
   }
 
-  def buildGraph(rawProviders: List[c.universe.Expr[Any]]): CatsProvidersGraph = {
+  def buildGraph(rawProviders: List[c.universe.Expr[Any]], rootType: c.Type): CatsProvidersGraph = {
     val (providers, fms): (List[Provider], List[FactoryMethodTree]) = rawProviders
       .partitionBifold { expr =>
         val tree = expr.tree
@@ -62,7 +63,8 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
     log(s"Factory methods: [${fms.mkString(", ")}]")
 
     val initContext = BuilderContext(providers, fms)
-    val resolvedCtx = resolveFactoryMethods(initContext)
+    val (resolvedCtx, rootProvider) = maybeResolveParamWithConstructor(resolveFactoryMethods(initContext))(rootType)
+      .getOrElse(c.abort(c.enclosingPosition, s"Cannot find a value of type: [$rootType]"))
 
     val inputProvidersOrder = rawProviders.map(expr => {
       val tree = expr.tree
@@ -75,11 +77,11 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
 
     log(s"Input providers order [${inputProvidersOrder.mkString(", ")}]")
 
-    new CatsProvidersGraph(resolvedCtx.providers, inputProvidersOrder)
+    new CatsProvidersGraph(resolvedCtx.providers, inputProvidersOrder, rootProvider)
   }
 
   def maybeResolveParamWithConstructor(ctx: BuilderContext)(param: c.Type): Option[(BuilderContext, Constructor)] =
-    log.withResult {
+    log.withBlock(s"Resolving constructor for [$param]") {
       def maybeResolveParams(
           maybeFactory: Option[(List[List[c.Symbol]], List[List[c.Tree]] => c.Tree)]
       ): Option[(BuilderContext, Constructor)] = {
@@ -90,7 +92,10 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
           val (updatedCtx, resolvedConParams) = resolveParamsLists(ctx)(paramsTypes)
 
           if (resolvedConParams.exists(_.exists(_.isEmpty))) None
-          else Some((updatedCtx, Constructor(param, resolvedConParams, creatorF)))
+          else {
+            val constructor = Constructor(param, resolvedConParams, creatorF)
+            Some((updatedCtx.addProvider(constructor), constructor))
+          }
         }
 
       }
@@ -100,9 +105,6 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
         maybeResolveParams(ConstructorCrimper.constructorFactory(c, log)(param))
           .orElse(maybeResolveParams(CompanionCrimper.applyFactory(c, log)(param)))
 
-    } {
-      case None                   => s"Failed to create constructor for type [$param]"
-      case Some((_, constructor)) => s"For type [$param] created constructor [$constructor]"
     }
 
   def resolveParamsList(ctx: BuilderContext)(params: List[c.Type]): (BuilderContext, List[Option[Provider]]) =
@@ -117,7 +119,7 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
         case None =>
           maybeResolveParamWithConstructor(currentCtx)(param) match {
             case Some((updatedCtx, constructor)) =>
-              (updatedCtx.addProvider(constructor), resolvedParams :+ Some(constructor))
+              (updatedCtx, resolvedParams :+ Some(constructor))
             case None => (ctx, resolvedParams :+ None)
           }
       }
@@ -145,13 +147,10 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
 
       log(s"Resolved dependencies [${deps.map(_.mkString(", ")).mkString("\n")}]")
 
+      val fm = new FactoryMethod(fun = fun, resultType = resultType, dependencies = deps)
       (
-        updatedCtx,
-        new FactoryMethod(
-          fun = fun,
-          resultType = resultType,
-          dependencies = deps
-        )
+        updatedCtx.resolvedFactoryMethod(fm),
+        fm
       )
     }
   }
@@ -159,9 +158,9 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
   def resolveFactoryMethods(ctx: BuilderContext): BuilderContext = ctx.next() match {
     case None => ctx
     case Some(fmt) => {
-      val (updatedCtx, fm) = resolveFactoryMethod(ctx)(fmt)
+      val (updatedCtx, _) = resolveFactoryMethod(ctx)(fmt)
 
-      resolveFactoryMethods(updatedCtx.resolvedFactoryMethod(fm))
+      resolveFactoryMethods(updatedCtx)
     }
   }
 

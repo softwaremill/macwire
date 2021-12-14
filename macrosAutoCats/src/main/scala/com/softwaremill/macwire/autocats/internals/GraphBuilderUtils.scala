@@ -4,11 +4,11 @@ import scala.reflect.macros.blackbox
 import com.softwaremill.macwire.internals._
 import cats.implicits._
 
-trait  GraphBuilderUtils[C <: blackbox.Context] { this: CatsProviders[C] => 
-    val c: C
-    val log: Logger
+trait GraphBuilderUtils[C <: blackbox.Context] { this: CatsProviders[C] =>
+  val c: C
+  val log: Logger
 
-    case class FactoryMethodTree(params: List[c.universe.ValDef], fun: c.Tree, resultType: c.Type)
+  case class FactoryMethodTree(params: List[c.universe.ValDef], fun: c.Tree, resultType: c.Type)
   object FactoryMethodTree {
     import c.universe._
 
@@ -17,10 +17,14 @@ trait  GraphBuilderUtils[C <: blackbox.Context] { this: CatsProviders[C] =>
     }(tree)
   }
 
-  case class BuilderContext(
+  case class BuilderContext private (
       providers: List[Provider],
       notResolvedFactoryMethods: List[FactoryMethodTree]
   ) {
+    duplicates(providers.map(_.resultType) ::: notResolvedFactoryMethods.map(_.resultType)) match {
+      case Seq() => ()
+      case dups  => c.abort(c.enclosingPosition, s"Ambiguous instances of types [${dups.mkString(", ")}]")
+    }
     import c.universe._
 
     def resolvedFactoryMethod(provider: FactoryMethod): BuilderContext = copy(
@@ -29,7 +33,8 @@ trait  GraphBuilderUtils[C <: blackbox.Context] { this: CatsProviders[C] =>
     )
 
     def resolve(tpe: Type): Option[Either[Provider, FactoryMethodTree]] = {
-      val result = providers.find(_.resultType <:< tpe)
+      val result = providers
+        .find(_.resultType <:< tpe)
         .map(_.asLeft[FactoryMethodTree])
         .orElse(notResolvedFactoryMethods.find(_.resultType <:< tpe).map(_.asRight[Provider]))
 

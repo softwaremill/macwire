@@ -82,7 +82,8 @@ trait CatsProviders[C <: blackbox.Context] {
       else new Instance(appliedTree)
     }(result => s"Factory method result [$result]")
 
-    lazy val ident: Tree = result.ident
+    lazy val ident: Tree = log.withResult(result.ident)(i => s"Ident for [$fun] is [$i] object: [$this]") 
+
     lazy val value: Tree = result.value
 
   }
