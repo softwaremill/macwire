@@ -118,18 +118,17 @@ trait CatsProviders[C <: blackbox.Context] {
     })
 
   }
-//FIXME I don't really like the name `creator`, but don't know a better one ATM
-//FIXME it's also used for apply methods, so it should be renamed
-  case class Constructor(
+
+  case class Creator(
       resultType: c.Type,
       dependencies: List[List[Option[Provider]]],
-      creator: List[
+      creatorFun: List[
         List[c.Tree]
       ] => c.Tree
   ) extends Provider {
     import c.universe._
     //TODO reuse created instance
-    private lazy val appliedCreator = creator(dependencies.map(_.map(_.get.ident)))
+    private lazy val appliedCreator = creatorFun(dependencies.map(_.map(_.get.ident)))
     lazy val asResource = new Resource(q"cats.effect.Resource.pure[cats.effect.IO, $resultType]($appliedCreator)")
     override lazy val ident = asResource.ident
 

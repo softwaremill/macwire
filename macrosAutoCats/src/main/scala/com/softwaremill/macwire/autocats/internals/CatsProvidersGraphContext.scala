@@ -29,7 +29,8 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
             )
         }
       }
-    def topologicalOrder(): List[Provider] = log.withBlock("Stable topological order") {
+
+    def topologicalSort(): List[Provider] = log.withBlock("Stable topological sort") {
       def go(provider: Provider, usedProviders: Set[Provider]): List[Provider] =
         log.withBlock(s"Going deeper for type [${provider.resultType}]") {
 
@@ -74,7 +75,7 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
     log(s"Factory methods: [${fms.mkString(", ")}]")
 
     val initContext = BuilderContext(providers, fms)
-    val (resolvedCtx, rootProvider) = maybeResolveParamWithConstructor(resolveFactoryMethods(initContext))(rootType)
+    val (resolvedCtx, rootProvider) = maybeResolveParamWithCreator(resolveFactoryMethods(initContext))(rootType)
       .getOrElse(c.abort(c.enclosingPosition, s"Cannot find a value of type: [$rootType]"))
 
     val inputProvidersOrder = rawProviders
@@ -95,21 +96,21 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
     new CatsProvidersGraph(inputProvidersOrder ++ resolvedCtx.providers.diff(inputProvidersOrder), rootProvider)
   }
 
-  def maybeResolveParamWithConstructor(ctx: BuilderContext)(param: c.Type): Option[(BuilderContext, Constructor)] =
-    log.withBlock(s"Resolving constructor for [$param]") {
+  def maybeResolveParamWithCreator(ctx: BuilderContext)(param: c.Type): Option[(BuilderContext, Creator)] =
+    log.withBlock(s"Resolving creator for [$param]") {
       def maybeResolveParams(
           maybeFactory: Option[(List[List[c.Symbol]], List[List[c.Tree]] => c.Tree)]
-      ): Option[(BuilderContext, Constructor)] = {
-        maybeFactory.flatMap { case (constructorParams, creatorF) =>
-          val paramsTypes = constructorParams.map(_.map(paramType(c)(param, _)))
-          log.trace(s"Constructor params [${paramsTypes.mkString(", ")}] for type [$param]")
+      ): Option[(BuilderContext, Creator)] = {
+        maybeFactory.flatMap { case (creatorParams, creatorF) =>
+          val paramsTypes = creatorParams.map(_.map(paramType(c)(param, _)))
+          log.trace(s"Creator params [${paramsTypes.mkString(", ")}] for type [$param]")
 
           val (updatedCtx, resolvedConParams) = resolveParamsLists(ctx)(paramsTypes)
 
           if (resolvedConParams.exists(_.exists(_.isEmpty))) None
           else {
-            val constructor = Constructor(param, resolvedConParams, creatorF)
-            Some((updatedCtx.addProvider(constructor), constructor))
+            val creator = Creator(param, resolvedConParams, creatorF)
+            Some((updatedCtx.addProvider(creator), creator))
           }
         }
 
@@ -132,9 +133,9 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
           (updatedCtx, resolvedParams :+ Some(fm))
         }
         case None =>
-          maybeResolveParamWithConstructor(currentCtx)(param) match {
-            case Some((updatedCtx, constructor)) =>
-              (updatedCtx, resolvedParams :+ Some(constructor))
+          maybeResolveParamWithCreator(currentCtx)(param) match {
+            case Some((updatedCtx, creator)) =>
+              (updatedCtx, resolvedParams :+ Some(creator))
             case None => (ctx, resolvedParams :+ None)
           }
       }
