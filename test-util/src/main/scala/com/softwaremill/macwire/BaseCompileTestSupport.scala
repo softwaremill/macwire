@@ -60,7 +60,7 @@ private[macwire] trait BaseCompileTestsSupport extends AnyFlatSpec with Matchers
   }
 
   def findOrElseFail(m: Map[String, List[String]], testName: String, errMsg: String) =
-    m.find { case (name, _) => testName.startsWith(name) }.getOrElse(sys.error(errMsg))._2
+    m.find { case (name, _) => testName == name }.getOrElse(sys.error(errMsg))._2
 
   private def checkNoDuplicatedExpectation(
       expectationList: List[(String, ExpectedFailures)],
