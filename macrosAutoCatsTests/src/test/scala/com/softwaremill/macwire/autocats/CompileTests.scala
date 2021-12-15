@@ -7,7 +7,7 @@ class CompileTests extends CatsAutowireCompileTestsSupport {
   runTestsWith(
     expectedFailures = List(
       "simpleMissingDeps" -> List("Cannot find a value of type: [B]"), //TODO List("Cannot find a value of type: [String], path: B.s")
-      "simpleMissingDepsMultiLevel" -> List("Cannot find a value of type: [C]"), //TODO List("Cannot find a value of type: [String], path: C.b.a.s")
+      "simpleMissingMultiLevelDeps" -> List("Cannot find a value of type: [C]"), //TODO List("Cannot find a value of type: [String], path: C.b.a.s")
       "notUsedProvider" -> List("Not used providers for the following types [D]")
     ),
     expectedWarnings = List()
