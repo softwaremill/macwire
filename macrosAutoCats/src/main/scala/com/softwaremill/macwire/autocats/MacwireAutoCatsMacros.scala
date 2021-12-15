@@ -32,7 +32,7 @@ object MacwireCatsEffectMacros {
       ) { case (resource, acc) =>
         q"${resource.value}.flatMap((${resource.ident}: ${resource.resultType}) => $acc)"
       }
-      
+
     log(s"CODE: [$code]")
 
     c.Expr[CatsResource[IO, T]](code)

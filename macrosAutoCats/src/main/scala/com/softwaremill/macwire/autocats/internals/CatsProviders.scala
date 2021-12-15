@@ -73,7 +73,7 @@ trait CatsProviders[C <: blackbox.Context] {
     lazy val result: Provider = log.withResult {
       val t = fun.symbol.asMethod.returnType
 
-    //TODO support for FactoryMethods
+      //TODO support for FactoryMethods
       if (Resource.isResource(t)) new Resource(appliedTree) {
         override lazy val resultType: Type = Resource.underlyingType(t)
       }
@@ -98,7 +98,8 @@ trait CatsProviders[C <: blackbox.Context] {
     }
 
     def underlyingResultType(tree: Tree): Type = {
-      val (fun, _) = fromTree(tree).getOrElse(c.abort(c.enclosingPosition, "TODO..."))
+      val (fun, _) =
+        fromTree(tree).getOrElse(c.abort(c.enclosingPosition, s"The given tree is not a factory method: [$tree]"))
       underlyingType(fun)
     }
 
@@ -106,7 +107,7 @@ trait CatsProviders[C <: blackbox.Context] {
     def fromTree(tree: Tree): Option[(Tree, List[ValDef])] = unapply(tree)
     def isFactoryMethod(tree: Tree): Boolean = fromTree(tree).isDefined
 
-    def deconstruct[T](componentsTransformer: ((Tree, List[ValDef])) => T)(tree: Tree): Option[T] = log.withBlock(s"DECONSTRUCT: [${showRaw(tree)}]")(tree match {
+    def deconstruct[T](componentsTransformer: ((Tree, List[ValDef])) => T)(tree: Tree): Option[T] = tree match {
       // Function with two parameter lists (implicit parameters) (<2.13)
       case Block(Nil, Function(p, Apply(Apply(f, _), _))) => Some(componentsTransformer((f, p)))
       case Block(Nil, Function(p, Apply(f, _)))           => Some(componentsTransformer((f, p)))
@@ -115,7 +116,7 @@ trait CatsProviders[C <: blackbox.Context] {
       case Function(p, Apply(f, _))           => Some(componentsTransformer((f, p)))
       // Other types not supported
       case _ => None
-    })
+    }
 
   }
 

@@ -11,7 +11,7 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
 
   class CatsProvidersGraph(providers: List[Provider], val root: Provider) {
     log(s"Created graph for providers [${mkStringProviders(providers)}]")
-    
+
     private def verifyOrder(resultProviders: List[Provider]) =
       log.withBlock(s"Verifying order of [${mkStringProviders(resultProviders)}]") {
         def go(provider: Provider): Set[Provider] =
