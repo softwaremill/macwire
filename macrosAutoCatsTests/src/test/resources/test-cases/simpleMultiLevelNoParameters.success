@@ -20,4 +20,4 @@ require(theE.c != null)
 require(theE.c.a != null)
 require(theE.c.b != null)
 
-require(theE.a != theE.c.a)
+require(theE.a == theE.c.a)

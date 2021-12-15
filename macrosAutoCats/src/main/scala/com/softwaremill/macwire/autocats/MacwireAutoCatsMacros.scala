@@ -29,6 +29,7 @@ object MacwireCatsEffectMacros {
     }.collect {
       case e: graphContext.Effect => e
       case r: graphContext.Resource => r
+      case con: graphContext.Constructor => con
     }.foldRight(
       q"cats.effect.Resource.pure[cats.effect.IO, $targetType](${graph.root.ident})"
     ) { case (resource, acc) =>

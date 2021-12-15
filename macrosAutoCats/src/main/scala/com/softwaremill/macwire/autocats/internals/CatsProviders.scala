@@ -66,13 +66,14 @@ trait CatsProviders[C <: blackbox.Context] {
       extends Provider {
     import c.universe._
 
-    private lazy val appliedTree: Tree = log.withBlock(s"Applied tree for [$fun] from deps: [${dependencies.map(_.mkString(", ")).mkString(", ")}]") { 
-      dependencies.map(_.map(_.get.ident)).foldLeft(fun)((acc: Tree, args: List[Tree]) => Apply(acc, args))
-    }
+    private lazy val appliedTree: Tree =
+      log.withBlock(s"Applied tree for [$fun] from deps: [${dependencies.map(_.mkString(", ")).mkString(", ")}]") {
+        dependencies.map(_.map(_.get.ident)).foldLeft(fun)((acc: Tree, args: List[Tree]) => Apply(acc, args))
+      }
     lazy val result: Provider = log.withResult {
       val t = fun.symbol.asMethod.returnType
-//TODO support for FactoryMethods
-//TODO it seems to be a common pattern, we may abstract over it
+
+    //TODO support for FactoryMethods
       if (Resource.isResource(t)) new Resource(appliedTree) {
         override lazy val resultType: Type = Resource.underlyingType(t)
       }
@@ -82,7 +83,7 @@ trait CatsProviders[C <: blackbox.Context] {
       else new Instance(appliedTree)
     }(result => s"Factory method result [$result]")
 
-    lazy val ident: Tree = log.withResult(result.ident)(i => s"Ident for [$fun] is [$i] object: [$this]") 
+    lazy val ident: Tree = log.withResult(result.ident)(i => s"Ident for [$fun] is [$i] object: [$this]")
 
     lazy val value: Tree = result.value
 
@@ -105,7 +106,7 @@ trait CatsProviders[C <: blackbox.Context] {
     def fromTree(tree: Tree): Option[(Tree, List[ValDef])] = unapply(tree)
     def isFactoryMethod(tree: Tree): Boolean = fromTree(tree).isDefined
 
-    def deconstruct[T](componentsTransformer: ((Tree, List[ValDef])) => T)(tree: Tree): Option[T] = tree match {
+    def deconstruct[T](componentsTransformer: ((Tree, List[ValDef])) => T)(tree: Tree): Option[T] = log.withBlock(s"DECONSTRUCT: [${showRaw(tree)}]")(tree match {
       // Function with two parameter lists (implicit parameters) (<2.13)
       case Block(Nil, Function(p, Apply(Apply(f, _), _))) => Some(componentsTransformer((f, p)))
       case Block(Nil, Function(p, Apply(f, _)))           => Some(componentsTransformer((f, p)))
@@ -114,11 +115,11 @@ trait CatsProviders[C <: blackbox.Context] {
       case Function(p, Apply(f, _))           => Some(componentsTransformer((f, p)))
       // Other types not supported
       case _ => None
-    }
+    })
 
   }
 //FIXME I don't really like the name `creator`, but don't know a better one ATM
-//FIXME it's also used for apply methods, so it should be renamed 
+//FIXME it's also used for apply methods, so it should be renamed
   case class Constructor(
       resultType: c.Type,
       dependencies: List[List[Option[Provider]]],
@@ -126,10 +127,13 @@ trait CatsProviders[C <: blackbox.Context] {
         List[c.Tree]
       ] => c.Tree
   ) extends Provider {
+    import c.universe._
     //TODO reuse created instance
-    override lazy val ident = creator(dependencies.map(_.map(_.get.ident)))
+    private lazy val appliedCreator = creator(dependencies.map(_.map(_.get.ident)))
+    lazy val asResource = new Resource(q"cats.effect.Resource.pure[cats.effect.IO, $resultType]($appliedCreator)")
+    override lazy val ident = asResource.ident
 
-    override def value: c.Tree = ???
+    override def value: c.Tree = asResource.value
   }
 
   class Instance(val value: c.Tree) extends Provider {

@@ -1,0 +1,14 @@
+#include commonSimpleClasses
+
+object Test {
+    val ioD: IO[D] = IO.raiseError(new RuntimeException("Should not be used")) 
+
+    def theC: Resource[IO, C] = autowire[C](
+        ioD
+    )
+}
+
+val theC: C = {
+    import cats.effect.unsafe.implicits.global
+    Test.theC.allocated.unsafeRunSync()._1
+}

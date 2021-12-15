@@ -9,38 +9,49 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
     with GraphBuilderUtils[C] {
   lazy val typeCheckUtil = new TypeCheckUtil[c.type](c, log)
 
-  class CatsProvidersGraph(providers: List[Provider], inputTypesOrder: List[c.Type], val root: Provider) {
-    import c.universe._
+  class CatsProvidersGraph(providers: List[Provider], val root: Provider) {
+    log(s"Created graph for providers [${mkStringProviders(providers)}]")
+    
+    private def verifyOrder(resultProviders: List[Provider]) =
+      log.withBlock(s"Verifying order of [${mkStringProviders(resultProviders)}]") {
+        def go(provider: Provider): Set[Provider] =
+          provider.dependencies.flatten.foldl(Set(provider))((result, maybeProvider) =>
+            maybeProvider.map(go).getOrElse(Set.empty) ++ result
+          )
 
-    //TODO simplify with root provider
-    def topologicalOrder(): List[Provider] = {
-      def go(remainingInputTypes: List[Type], resultProviders: List[Provider]): (List[Type], List[Provider]) =
-        remainingInputTypes match {
-          case Nil => (remainingInputTypes, resultProviders)
-          case head :: _ =>
-            log.withBlock(s"Build providers list from [$head]") {
-              def goDeep(provider: Provider): List[Provider] =
-                log.withBlock(s"Building deeper for type [${provider.resultType}] with [$provider]") {
-                  provider.dependencies.flatten.foldl(List(provider)) {
-                    case (r, None)                                   => r
-                    case (r, Some(p)) if resultProviders.contains(p) => r
-                    case (r, Some(p))                                => goDeep(p) ++ r
-                  }
-                }
-              val ps = goDeep(
-                providers
-                  .find(_.resultType <:< head)
-                  .getOrElse(c.abort(c.enclosingPosition, "Internal error. Missing provider"))
-              )
+        resultProviders.lastOption.map(go).map { usedProviders =>
+          val notUsedProviders = providers.diff(usedProviders.toSeq)
 
-              go(
-                remainingInputTypes.diff(resultProviders.map(_.resultType) ++ ps.map(_.resultType)),
-                resultProviders ++ ps
+          if (notUsedProviders.nonEmpty)
+            c.abort(
+              c.enclosingPosition,
+              s"Not used providers for the following types [${notUsedProviders.map(_.resultType).mkString(", ")}]"
+            )
+        }
+      }
+    def topologicalOrder(): List[Provider] = log.withBlock("Stable topological order") {
+      def go(provider: Provider, usedProviders: Set[Provider]): List[Provider] =
+        log.withBlock(s"Going deeper for type [${provider.resultType}]") {
+
+          provider.dependencies.flatten.foldl(List.empty[Provider]) {
+            case (_, None) => c.abort(c.enclosingPosition, "Missing dependency.")
+            case (r, Some(p)) if (usedProviders ++ r.toSet).contains(p) =>
+              log.withBlock(s"Already used provider for type [${p.resultType}]")(r)
+            case (r, Some(p)) =>
+              log.withResult { (r ::: go(p, (usedProviders ++ r.toSet) + p)) :+ p }(result =>
+                s"Built list for the following types [${result.map(_.resultType).mkString(", ")}]"
               )
-            }
+          }
         }
 
-      go(inputTypesOrder, List.empty)._2
+        val result = providers.foldLeft(List.empty[Provider]) {
+          case (resultProviders, nextProvider) if resultProviders.contains(nextProvider) => resultProviders
+          case (resultProviders, nextProvider) => resultProviders ::: go(nextProvider, resultProviders.toSet)
+        } :+ root
+
+        verifyOrder(result)
+
+        result
     }
 
   }
@@ -66,18 +77,22 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
     val (resolvedCtx, rootProvider) = maybeResolveParamWithConstructor(resolveFactoryMethods(initContext))(rootType)
       .getOrElse(c.abort(c.enclosingPosition, s"Cannot find a value of type: [$rootType]"))
 
-    val inputProvidersOrder = rawProviders.map(expr => {
-      val tree = expr.tree
-      val tpe = typeCheckUtil.typeCheckIfNeeded(tree)
-      if (FactoryMethod.isFactoryMethod(tree)) FactoryMethod.underlyingResultType(tree)
-      else if (Resource.isResource(tpe)) Resource.underlyingType(tpe)
-      else if (Effect.isEffect(tpe)) Effect.underlyingType(tpe)
-      else tpe
-    })
+    val inputProvidersOrder = rawProviders
+      .map(expr => {
+        val tree = expr.tree
+        val tpe = typeCheckUtil.typeCheckIfNeeded(tree)
+        if (FactoryMethod.isFactoryMethod(tree)) FactoryMethod.underlyingResultType(tree)
+        else if (Resource.isResource(tpe)) Resource.underlyingType(tpe)
+        else if (Effect.isEffect(tpe)) Effect.underlyingType(tpe)
+        else tpe
+      })
+      .map(tpe =>
+        resolvedCtx.providers.find(_.resultType <:< tpe).getOrElse(c.abort(c.enclosingPosition, "Internal error"))
+      )
 
     log(s"Input providers order [${inputProvidersOrder.mkString(", ")}]")
 
-    new CatsProvidersGraph(resolvedCtx.providers, inputProvidersOrder, rootProvider)
+    new CatsProvidersGraph(inputProvidersOrder ++ resolvedCtx.providers.diff(inputProvidersOrder), rootProvider)
   }
 
   def maybeResolveParamWithConstructor(ctx: BuilderContext)(param: c.Type): Option[(BuilderContext, Constructor)] =
@@ -165,4 +180,5 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
   }
 
   private def mkStringFrom2DimList[T](ll: List[List[T]]): String = ll.map(_.mkString(", ")).mkString("\n")
+  private def mkStringProviders(providers: List[Provider]) = providers.map(_.resultType).mkString(", ")
 }
