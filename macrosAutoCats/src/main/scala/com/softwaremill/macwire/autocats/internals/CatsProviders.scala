@@ -2,7 +2,6 @@ package com.softwaremill.macwire.autocats.internals
 
 import scala.reflect.macros.blackbox
 import com.softwaremill.macwire.internals._
-import cats.implicits._
 
 trait CatsProviders[C <: blackbox.Context] {
   val c: C
@@ -10,7 +9,7 @@ trait CatsProviders[C <: blackbox.Context] {
 
   val typeCheckUtil: TypeCheckUtil[c.type]
 
-  trait Provider {
+  sealed trait Provider {
     def resultType: c.Type
     def dependencies: List[List[Option[Provider]]]
     def ident: c.Tree
