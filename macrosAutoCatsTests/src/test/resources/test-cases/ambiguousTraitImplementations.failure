@@ -1,0 +1,13 @@
+trait T
+class A() extends T
+class B() extends T
+class C(t: T)
+
+object Test {
+  val theC = autowire[C](new A(), new B())
+}
+
+val theC: C = {
+  import cats.effect.unsafe.implicits.global
+  Test.theC.allocated.unsafeRunSync()._1
+}

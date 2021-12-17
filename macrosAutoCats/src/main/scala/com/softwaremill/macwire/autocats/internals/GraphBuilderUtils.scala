@@ -3,6 +3,7 @@ package com.softwaremill.macwire.autocats.internals
 import scala.reflect.macros.blackbox
 import com.softwaremill.macwire.internals._
 import cats.implicits._
+import scala.collection.immutable
 
 trait GraphBuilderUtils[C <: blackbox.Context] { this: CatsProviders[C] =>
   val c: C
@@ -21,10 +22,6 @@ trait GraphBuilderUtils[C <: blackbox.Context] { this: CatsProviders[C] =>
       providers: List[Provider],
       notResolvedFactoryMethods: List[FactoryMethodTree]
   ) {
-    duplicates(providers.map(_.resultType) ::: notResolvedFactoryMethods.map(_.resultType)) match {
-      case Seq() => ()
-      case dups  => c.abort(c.enclosingPosition, s"Ambiguous instances of types [${dups.mkString(", ")}]")
-    }
     import c.universe._
 
     def resolvedFactoryMethod(provider: FactoryMethod): BuilderContext = copy(
@@ -33,12 +30,29 @@ trait GraphBuilderUtils[C <: blackbox.Context] { this: CatsProviders[C] =>
     )
 
     def resolve(tpe: Type): Option[Either[Provider, FactoryMethodTree]] = {
-      val result = providers
-        .find(_.resultType <:< tpe)
+      val resolvedProviders = providers
+        .filter(_.resultType <:< tpe)
         .map(_.asLeft[FactoryMethodTree])
-        .orElse(notResolvedFactoryMethods.find(_.resultType <:< tpe).map(_.asRight[Provider]))
+
+      val resolvedFMT = notResolvedFactoryMethods
+        .filter(_.resultType <:< tpe)
+        .map(_.asRight[Provider])
+
+      val result = (resolvedProviders ++ resolvedFMT) match {
+        case Nil          => None
+        case List(result) => Some(result)
+        case ambiguousProviders => {
+          val duplicates = ambiguousProviders.map {
+            case Left(value)  => value.resultType
+            case Right(value) => value.resultType
+          }.toSet
+
+          c.abort(c.enclosingPosition, s"Ambiguous instances of types [${duplicates.mkString(", ")}]")
+        }
+      }
 
       log(s"For type [$tpe] found [$result]")
+
       result
     }
 
