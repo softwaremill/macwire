@@ -96,11 +96,11 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
     new CatsProvidersGraph(inputProvidersOrder ++ resolvedCtx.providers.diff(inputProvidersOrder), rootProvider)
   }
 
-  def maybeResolveParamWithCreator(ctx: BuilderContext)(param: c.Type): Option[(BuilderContext, Creator)] =
+  def maybeResolveParamWithCreator(ctx: BuilderContext)(param: c.Type): Option[(BuilderContext, FactoryMethod)] =
     log.withBlock(s"Resolving creator for [$param]") {
       def maybeResolveParams(
           maybeFactory: Option[(List[List[c.Symbol]], List[List[c.Tree]] => c.Tree)]
-      ): Option[(BuilderContext, Creator)] = {
+      ): Option[(BuilderContext, FactoryMethod)] = {
         maybeFactory.flatMap { case (creatorParams, creatorF) =>
           val paramsTypes = creatorParams.map(_.map(paramType(c)(param, _)))
           log.trace(s"Creator params [${paramsTypes.mkString(", ")}] for type [$param]")
@@ -109,7 +109,7 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
 
           if (resolvedConParams.exists(_.exists(_.isEmpty))) None
           else {
-            val creator = Creator(param, resolvedConParams, creatorF)
+            val creator = new FactoryMethod(param, param, resolvedConParams, creatorF)
             Some((updatedCtx.addProvider(creator), creator))
           }
         }
@@ -163,7 +163,8 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
 
       log(s"Resolved dependencies [${deps.map(_.mkString(", ")).mkString("\n")}]")
 
-      val fm = new FactoryMethod(fun = fun, resultType = resultType, dependencies = deps)
+
+      val fm = new FactoryMethod(methodType = fun.symbol.asMethod.returnType, resultType = resultType, dependencies = deps, apply = _.foldLeft(fun)((acc: Tree, args: List[Tree]) => Apply(acc, args)))
       (
         updatedCtx.resolvedFactoryMethod(fm),
         fm

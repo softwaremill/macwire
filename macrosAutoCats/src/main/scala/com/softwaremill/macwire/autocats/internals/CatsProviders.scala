@@ -62,28 +62,34 @@ trait CatsProviders[C <: blackbox.Context] {
 
   }
 
-  class FactoryMethod(fun: c.Tree, val resultType: c.Type, val dependencies: List[List[Option[Provider]]])
-      extends Provider {
+  class FactoryMethod(
+      methodType: c.Type,
+      val resultType: c.Type,
+      val dependencies: List[List[Option[Provider]]],
+      apply: List[List[c.Tree]] => c.Tree
+  ) extends Provider {
     import c.universe._
 
-    private lazy val appliedTree: Tree =
-      log.withBlock(s"Applied tree for [$fun] from deps: [${dependencies.map(_.mkString(", ")).mkString(", ")}]") {
-        dependencies.map(_.map(_.get.ident)).foldLeft(fun)((acc: Tree, args: List[Tree]) => Apply(acc, args))
-      }
+    private lazy val appliedTree: Tree = apply(dependencies.map(_.map(_.get.ident)))
+    // log.withBlock(s"Applied tree for [$fun] from deps: [${dependencies.map(_.mkString(", ")).mkString(", ")}]") {
+    //   dependencies.map(_.map(_.get.ident)).foldLeft(fun)((acc: Tree, args: List[Tree]) => Apply(acc, args))
+    // }
     lazy val result: Provider = log.withResult {
-      val t = fun.symbol.asMethod.returnType
-
+      val fmResultType = resultType
       //TODO support for FactoryMethods
-      if (Resource.isResource(t)) new Resource(appliedTree) {
-        override lazy val resultType: Type = Resource.underlyingType(t)
+      if (Resource.isResource(methodType)) new Resource(appliedTree) {
+        override lazy val resultType: Type = Resource.underlyingType(methodType)
       }
-      else if (Effect.isEffect(t)) new Effect(appliedTree) {
-        override lazy val resultType: Type = Effect.underlyingType(t)
+      else if (Effect.isEffect(methodType)) new Effect(appliedTree) {
+        override lazy val resultType: Type = Effect.underlyingType(methodType)
       }
-      else new Instance(appliedTree)
+      else
+        new Resource(q"cats.effect.Resource.pure[cats.effect.IO, $resultType]($appliedTree)") {
+          override lazy val resultType: Type = fmResultType
+        }
     }(result => s"Factory method result [$result]")
 
-    lazy val ident: Tree = log.withResult(result.ident)(i => s"Ident for [$fun] is [$i] object: [$this]")
+    lazy val ident: Tree = result.ident
 
     lazy val value: Tree = result.value
 
@@ -118,22 +124,6 @@ trait CatsProviders[C <: blackbox.Context] {
       case _ => None
     }
 
-  }
-
-  case class Creator(
-      resultType: c.Type,
-      dependencies: List[List[Option[Provider]]],
-      creatorFun: List[
-        List[c.Tree]
-      ] => c.Tree
-  ) extends Provider {
-    import c.universe._
-    //TODO reuse created instance
-    private lazy val appliedCreator = creatorFun(dependencies.map(_.map(_.get.ident)))
-    lazy val asResource = new Resource(q"cats.effect.Resource.pure[cats.effect.IO, $resultType]($appliedCreator)")
-    override lazy val ident = asResource.ident
-
-    override def value: c.Tree = asResource.value
   }
 
   class Instance(val value: c.Tree) extends Provider {
