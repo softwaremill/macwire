@@ -58,8 +58,8 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
   }
 
   def buildGraph(rawProviders: List[c.universe.Expr[Any]], rootType: c.Type): CatsProvidersGraph = {
-    val (providers, fms): (List[Provider], List[FactoryMethodTree]) = rawProviders
-      .partitionBifold { expr =>
+    val inputProviders = rawProviders
+      .map { expr =>
         val tree = expr.tree
         val tpe = typeCheckUtil.typeCheckIfNeeded(tree)
 
@@ -69,24 +69,22 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
           .orElse(Effect.fromTree(tree, tpe).map(_.asLeft[FactoryMethodTree]))
           .getOrElse(new Instance(tree).asLeft[FactoryMethodTree])
       }
-      .bimap(_.toList, _.toList)
+
+    val (providers, fmts): (List[Provider], List[FactoryMethodTree]) =
+      inputProviders.partitionBifold(identity)
 
     log(s"Providers: [${providers.mkString(", ")}]")
-    log(s"Factory methods: [${fms.mkString(", ")}]")
+    log(s"Factory methods: [${fmts.mkString(", ")}]")
 
-    val initContext = BuilderContext(providers, fms)
+    val initContext = BuilderContext(providers, fmts)
     val (resolvedCtx, rootProvider) = maybeResolveParamWithCreator(resolveFactoryMethods(initContext))(rootType)
       .getOrElse(c.abort(c.enclosingPosition, s"Cannot find a value of type: [$rootType]"))
 
-    val inputProvidersOrder = rawProviders
-      .map(expr => {
-        val tree = expr.tree
-        val tpe = typeCheckUtil.typeCheckIfNeeded(tree)
-        if (FactoryMethod.isFactoryMethod(tree)) FactoryMethod.underlyingResultType(tree)
-        else if (Resource.isResource(tpe)) Resource.underlyingType(tpe)
-        else if (Effect.isEffect(tpe)) Effect.underlyingType(tpe)
-        else tpe
-      })
+    val inputProvidersOrder = inputProviders
+      .map {
+        case Left(value)  => value.resultType
+        case Right(value) => value.resultType
+      }
       .map(tpe =>
         resolvedCtx.providers.find(_.resultType <:< tpe).getOrElse(c.abort(c.enclosingPosition, "Internal error"))
       )
@@ -163,8 +161,12 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
 
       log(s"Resolved dependencies [${deps.map(_.mkString(", ")).mkString("\n")}]")
 
-
-      val fm = new FactoryMethod(methodType = fun.symbol.asMethod.returnType, resultType = resultType, dependencies = deps, apply = _.foldLeft(fun)((acc: Tree, args: List[Tree]) => Apply(acc, args)))
+      val fm = new FactoryMethod(
+        methodType = fun.symbol.asMethod.returnType,
+        resultType = resultType,
+        dependencies = deps,
+        apply = _.foldLeft(fun)((acc: Tree, args: List[Tree]) => Apply(acc, args))
+      )
       (
         updatedCtx.resolvedFactoryMethod(fm),
         fm
