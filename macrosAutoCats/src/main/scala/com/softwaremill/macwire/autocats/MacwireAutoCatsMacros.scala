@@ -5,7 +5,7 @@ import cats.effect.{IO, Resource => CatsResource}
 import com.softwaremill.macwire.internals._
 import com.softwaremill.macwire.autocats.internals._
 
-object MacwireCatsEffectMacros {
+object MacwireAutoCatsMacros {
   private val log = new Logger()
 
   def autowire_impl[T: c.WeakTypeTag](
