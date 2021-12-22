@@ -57,7 +57,14 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
 
   }
 
+  /** Creates a graph representation of a given providers list and all necessary intermediate providers that are
+    * required to create an instance of the `rootType`.
+    */
   def buildGraph(rawProviders: List[c.universe.Expr[Any]], rootType: c.Type): CatsProvidersGraph = {
+
+    /** `FactoryMethodTree` does not extend the `Provider` trait, but it may be considered as a lazy representation of
+      * `FactoryMethod` so the name `inputProviders` is appropriate
+      */
     val inputProviders = rawProviders
       .map { expr =>
         val tree = expr.tree
@@ -77,24 +84,42 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
     log(s"Factory methods: [${fmts.mkString(", ")}]")
 
     val initContext = BuilderContext(providers, fmts)
-    val (resolvedCtx, rootProvider) = maybeResolveParamWithCreator(resolveFactoryMethods(initContext))(rootType)
-      .getOrElse(c.abort(c.enclosingPosition, s"Cannot find a value of type: [$rootType]"))
 
-    val inputProvidersOrder = inputProviders
+    val resolvedFMContext = resolveFactoryMethods(initContext)
+
+    /** We assume that we cannot use input provider directly, so we create a result object with available constructors.
+      * It's a mimic of `wire`'s property
+      */
+    val (resolvedCtx, rootProvider) = maybeResolveParamWithCreator(resolvedFMContext)(rootType)
+      .getOrElse(c.abort(c.enclosingPosition, s"Cannot construct an instance of type: [$rootType]"))
+
+    val inputProvidersTypes = inputProviders
       .map {
         case Left(value)  => value.resultType
         case Right(value) => value.resultType
       }
-      .map(tpe =>
-        resolvedCtx.providers.find(_.resultType <:< tpe).getOrElse(c.abort(c.enclosingPosition, "Internal error"))
-      )
 
-    log(s"Input providers order [${inputProvidersOrder.mkString(", ")}]")
+    val sortedProviders = sortProvidersWithInputOrder(inputProvidersTypes)(resolvedCtx)
 
-    new CatsProvidersGraph(inputProvidersOrder ++ resolvedCtx.providers.diff(inputProvidersOrder), rootProvider)
+    log(s"Input providers order [${sortedProviders.mkString(", ")}]")
+
+    new CatsProvidersGraph(sortedProviders, rootProvider)
   }
 
-  def maybeResolveParamWithCreator(ctx: BuilderContext)(param: c.Type): Option[(BuilderContext, FactoryMethod)] =
+  /**
+    * Make sure that we compose resources in the same order we received them
+    */
+  private def sortProvidersWithInputOrder(
+      inputProvidersTypes: List[c.Type]
+  )(resultContext: BuilderContext): List[Provider] = {
+    val inputProviders = inputProvidersTypes.map(tpe =>
+      resultContext.providers.find(_.resultType <:< tpe).getOrElse(c.abort(c.enclosingPosition, "Internal error"))
+    )
+
+    inputProviders ++ resultContext.providers.diff(inputProviders)
+  }
+
+  private def maybeResolveParamWithCreator(ctx: BuilderContext)(param: c.Type): Option[(BuilderContext, FactoryMethod)] =
     log.withBlock(s"Resolving creator for [$param]") {
       def maybeResolveParams(
           maybeFactory: Option[(List[List[c.Symbol]], List[List[c.Tree]] => c.Tree)]
@@ -121,7 +146,7 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
 
     }
 
-  def resolveParamsList(ctx: BuilderContext)(params: List[c.Type]): (BuilderContext, List[Option[Provider]]) =
+  private def resolveParamsList(ctx: BuilderContext)(params: List[c.Type]): (BuilderContext, List[Option[Provider]]) =
     params.foldLeft((ctx, List.empty[Option[Provider]])) { case ((currentCtx, resolvedParams), param) =>
       currentCtx.resolve(param) match {
         case Some(Left(provider)) => (currentCtx, resolvedParams :+ Some(provider))
@@ -139,7 +164,7 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
       }
     }
 
-  def resolveParamsLists(
+  private def resolveParamsLists(
       ctx: BuilderContext
   )(params: List[List[c.Type]]): (BuilderContext, List[List[Option[Provider]]]) =
     log.withBlock(s"Resolving params [${mkStringFrom2DimList(params)}]") {
@@ -150,7 +175,7 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
       }
     }
 
-  def resolveFactoryMethod(ctx: BuilderContext)(fmt: FactoryMethodTree): (BuilderContext, FactoryMethod) = {
+  private def resolveFactoryMethod(ctx: BuilderContext)(fmt: FactoryMethodTree): (BuilderContext, FactoryMethod) = {
     import c.universe._
 
     val FactoryMethodTree(params, fun, resultType) = fmt
@@ -174,7 +199,10 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
     }
   }
 
-  def resolveFactoryMethods(ctx: BuilderContext): BuilderContext = ctx.next() match {
+  /**
+    * DFS based algorithm that resolves all `FactoryMethodTree`
+    */
+  private def resolveFactoryMethods(ctx: BuilderContext): BuilderContext = ctx.next() match {
     case None => ctx
     case Some(fmt) => {
       val (updatedCtx, _) = resolveFactoryMethod(ctx)(fmt)

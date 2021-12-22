@@ -9,6 +9,10 @@ trait GraphBuilderUtils[C <: blackbox.Context] { this: CatsProviders[C] =>
   val c: C
   val log: Logger
 
+  /**
+    * Lazy representation of FactoryMethod 
+    * It's required because we may need to use a factory method to construct an intermediate instance in graph building process
+    */
   case class FactoryMethodTree(params: List[c.universe.ValDef], fun: c.Tree, resultType: c.Type)
   object FactoryMethodTree {
     import c.universe._
