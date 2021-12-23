@@ -1,7 +1,3 @@
-import com.softwaremill.macwire.autocats._
-
-import cats.effect._
-
 class A()
 class B()
 class C(val a: A, val b: B)
@@ -24,4 +20,4 @@ require(theE.c != null)
 require(theE.c.a != null)
 require(theE.c.b != null)
 
-require(theE.a != theE.c.a)
+require(theE.a == theE.c.a)

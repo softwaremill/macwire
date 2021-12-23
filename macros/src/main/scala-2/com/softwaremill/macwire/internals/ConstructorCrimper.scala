@@ -26,14 +26,14 @@ private[macwire] class ConstructorCrimper[C <: blackbox.Context, T: C#WeakTypeTa
   def wireConstructorParams(
       dependencyResolver: DependencyResolverType
   )(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.map(
-    _.map(p => dependencyResolver.resolve(p, /*SI-4751*/ ConstructorCrimper.paramType(c)(targetTypeD, p)))
+    _.map(p => dependencyResolver.resolve(p, /*SI-4751*/ paramType(c)(targetTypeD, p)))
   )
 
   def wireConstructorParamsWithImplicitLookups(
       dependencyResolver: DependencyResolverType
   )(paramLists: List[List[Symbol]]): List[List[Tree]] = paramLists.map(_.map {
-    case i if i.isImplicit => q"implicitly[${ConstructorCrimper.paramType(c)(targetType, i)}]"
-    case p                 => dependencyResolver.resolve(p, /*SI-4751*/ ConstructorCrimper.paramType(c)(targetTypeD, p))
+    case i if i.isImplicit => q"implicitly[${paramType(c)(targetType, i)}]"
+    case p                 => dependencyResolver.resolve(p, /*SI-4751*/ paramType(c)(targetTypeD, p))
   })
 
 }
@@ -97,44 +97,44 @@ object ConstructorCrimper {
     }
   }
 
-  private def paramType[C <: blackbox.Context](c: C)(targetTypeD: c.Type, param: c.Symbol): c.Type = {
-    import c.universe._
-
-    val (sym: Symbol, tpeArgs: List[Type]) = targetTypeD match {
-      case TypeRef(_, sym, tpeArgs) => (sym, tpeArgs)
-      case t =>
-        c.abort(
-          c.enclosingPosition,
-          s"Target type not supported for wiring: $t. Please file a bug report with your use-case."
-        )
-    }
-    val pTpe = param.typeSignature.substituteTypes(sym.asClass.typeParams, tpeArgs)
-    if (param.asTerm.isByNameParam) pTpe.typeArgs.head else pTpe
-  }
-
   def constructorTree[C <: blackbox.Context](
       c: C,
       log: Logger
-  )(targetType: c.Type, resolver: (c.Symbol, c.Type) => c.Tree): Option[c.Tree] = {
+  )(targetType: c.Type, resolver: (c.Symbol, c.Type) => c.Tree): Option[c.Tree] =
+    constructorFactory(c, log)(targetType).map { case (paramLists, factory) =>
+      import c.universe._
+
+      lazy val targetTypeD: Type = targetType.dealias
+
+      def wireConstructorParams(paramLists: List[List[Symbol]]): List[List[Tree]] =
+        paramLists.map(_.map(p => resolver(p, /*SI-4751*/ paramType(c)(targetTypeD, p))))
+
+      def constructorArgs: List[List[Tree]] = log.withBlock("Looking for targetConstructor arguments") {
+        wireConstructorParams(paramLists)
+      }
+
+      factory(constructorArgs)
+    }
+
+  def constructorFactory[C <: blackbox.Context](
+      c: C,
+      log: Logger
+  )(targetType: c.Type): Option[(List[List[c.Symbol]], List[List[c.Tree]] => c.Tree)] = {
     import c.universe._
 
     lazy val targetTypeD: Type = targetType.dealias
 
-    lazy val constructor: Option[Symbol] = ConstructorCrimper.constructor(c, log)(targetType)
+    val constructor: Option[Symbol] = ConstructorCrimper.constructor(c, log)(targetType)
 
-    lazy val constructorParamLists: Option[List[List[Symbol]]] =
+    val constructorParamLists: Option[List[List[Symbol]]] =
       constructor.map(_.asMethod.paramLists.filterNot(_.headOption.exists(_.isImplicit)))
 
-    def constructorArgs: Option[List[List[Tree]]] = log.withBlock("Looking for targetConstructor arguments") {
-      constructorParamLists.map(wireConstructorParams(_))
-    }
-
-    def wireConstructorParams(paramLists: List[List[Symbol]]): List[List[Tree]] =
-      paramLists.map(_.map(p => resolver(p, /*SI-4751*/ paramType(c)(targetTypeD, p))))
-
-    log.withBlock(s"Creating Constructor Tree for $targetType") {
+    def factory(constructorArgs: List[List[Tree]]): Tree = {
       val constructionMethodTree: Tree = Select(New(Ident(targetTypeD.typeSymbol)), termNames.CONSTRUCTOR)
-      constructorArgs.map(_.foldLeft(constructionMethodTree)((acc: Tree, args: List[Tree]) => Apply(acc, args)))
+      constructorArgs.foldLeft(constructionMethodTree)((acc: Tree, args: List[Tree]) => Apply(acc, args))
     }
+
+    constructorParamLists.map(cpl => (cpl, factory(_)))
   }
+
 }

@@ -3,8 +3,8 @@
 val created = scala.collection.mutable.Set[String]()
 
 object Test {
-  def theA: A = { created.add("A"); A() }
-  val theC: Resource[IO, C] = autowire[C](theA)
+  def theA(b: B): A = { created.add(s"A using $b"); A() }
+  val theC: Resource[IO, C] = autowire[C](theA _)
 }
 
 val theC: C = {
@@ -15,4 +15,4 @@ val theC: C = {
 require(theC.a != null)
 require(theC.b != null)
 
-require(created.contains("A"))
+require(created.contains("A using B()"))

@@ -1,6 +1,3 @@
-import com.softwaremill.macwire.autocats._
-import cats.effect._
-
 class A(s: String)
 class B(a: A)
 class C(b: B)

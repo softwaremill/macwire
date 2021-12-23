@@ -219,6 +219,7 @@ In case you need to build an instance from some particular instances and factory
 
 * values (e.g. `new A()`)
 * factory methods (e.g. `C.create _`)
+* factory methods that return `cats.effect.Resource` or `cats.effect.IO` (e.g. `C.createIO _`)
 * `cats.effect.Resource` (e.g. `cats.effect.Resource[IO].pure(new A())`)
 * `cats.effect.IO` (e.g. `cats.effect.IO.pure(new A())`)
 

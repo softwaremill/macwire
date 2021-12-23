@@ -1,0 +1,11 @@
+  class A(s: String) 
+  
+  object Test {
+    val theA = autowire[A](new A("s"))
+
+  }
+
+  val theA: A = {
+    import cats.effect.unsafe.implicits.global
+    Test.theA.allocated.unsafeRunSync()._1
+  }

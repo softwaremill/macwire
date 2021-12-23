@@ -1,0 +1,13 @@
+class A()
+class B(a: A)
+
+object Test {
+    def makeA(): Resource[IO, A] = Resource.pure(new A())
+    val theB = autowire[B](new A(), makeA _)
+
+}
+
+val theC: B = {
+    import cats.effect.unsafe.implicits.global
+    Test.theB.allocated.unsafeRunSync()._1
+}

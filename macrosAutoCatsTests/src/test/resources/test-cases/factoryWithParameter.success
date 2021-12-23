@@ -1,13 +1,11 @@
-import com.softwaremill.macwire.autocats._
-
 #include commonSimpleClasses
-import cats.effect._
 
 val created = scala.collection.mutable.Set[String]()
 
 object Test {
+  val theB: B = B() 
   def theA(b: B): A = { created.add(s"A using $b"); A() }
-  val theC: Resource[IO, C] = autowire[C](theA _)
+  val theC: Resource[IO, C] = autowire[C](theB, theA _)
 }
 
 val theC: C = {

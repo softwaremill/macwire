@@ -1,6 +1,4 @@
-import cats.effect._
 import com.softwaremill.tagging._
-import com.softwaremill.macwire.autocats._
 
 class Cache {
   val state = scala.collection.mutable.HashMap.empty[String, String]
@@ -29,7 +27,7 @@ object Test {
       ((c: Cache @@ First) => new A(c)),
       ((c: Cache @@ First) => new B(c)),
       ((c: Cache @@ Second) => new C(c)),
-      ((c: Cache @@ First) => new D(c, _, _))
+      ((c: Cache @@ First, a: A, b: B) => new D(c, a, b))
     )
     resource.allocated.unsafeRunSync()._1
   }

@@ -1,13 +1,10 @@
-import com.softwaremill.macwire.autocats._
-
 #include commonSimpleClasses
-import cats.effect._
 
-val allocated = scala.collection.mutable.Set[String]()
+val allocated = scala.collection.mutable.ListBuffer[String]()
 
 object Test {
-  val theA: IO[A] = IO { allocated.add("A"); A() }
-  val theB: IO[B] = IO { allocated.add("B"); B() }
+  val theA: IO[A] = IO { allocated.append("A"); A() }
+  val theB: IO[B] = IO { allocated.append("B"); B() }
   val theC: Resource[IO, C] = autowire[C](theA, theB)
 }
 
@@ -19,5 +16,5 @@ val theC: C = {
 require(theC.a != null)
 require(theC.b != null)
 
-require(allocated.contains("A"))
-require(allocated.contains("B"))
+require(allocated(0) == "A")
+require(allocated(1) == "B")

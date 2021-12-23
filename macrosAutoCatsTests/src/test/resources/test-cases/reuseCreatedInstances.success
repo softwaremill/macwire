@@ -1,0 +1,33 @@
+  import scala.collection.mutable.ListBuffer
+  val created = ListBuffer[String]()
+
+  class A() {
+    created.append("a")
+  }
+
+  class B() {
+    created.append("b")
+  }
+
+  class C(val a: A, val b: B)
+
+  class D(val c: C, val a: A, val b: B)
+
+
+  object Test {
+    val theD = autowire[D]()
+
+  }
+
+  val theD: D = {
+    import cats.effect.unsafe.implicits.global
+    Test.theD.allocated.unsafeRunSync()._1
+  }
+
+  require(theD.c != null)
+  require(theD.c.a == theD.a)
+  require(theD.c.b == theD.b)
+
+  require(created.size == 2)
+  require(created.contains("a"))
+  require(created.contains("b"))

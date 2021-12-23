@@ -1,0 +1,27 @@
+class A() 
+class B()
+class C(a: A, b: B)
+case class D(c: C)
+
+val created = scala.collection.mutable.ListBuffer[String]()
+
+object Test {
+
+  val ioA: IO[A] = IO {created.append("a"); new A()}
+  val resourceB: Resource[IO, B] = Resource.eval(IO {created.append("b"); new B()})
+  def makeC(a: A, b: B): Resource[IO, C] = Resource.eval(IO{ created.append("c"); new C(a, b)})
+
+  val theD = autowire[D](ioA, resourceB, makeC _)
+
+}
+
+val theD: D = {
+  import cats.effect.unsafe.implicits.global
+  Test.theD.allocated.unsafeRunSync()._1
+}
+
+require(theD.c != null)
+require(created.size == 3)
+require(created(0) == "a")
+require(created(1) == "b")
+require(created(2) == "c")
