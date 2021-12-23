@@ -1,3 +1,5 @@
+import com.softwaremill.SbtSoftwareMillCommon.commonSmlBuildSettings
+import com.softwaremill.Publish.{updateDocs, ossPublishSettings}
 import com.softwaremill.UpdateVersionInDocs
 
 import sbt._
