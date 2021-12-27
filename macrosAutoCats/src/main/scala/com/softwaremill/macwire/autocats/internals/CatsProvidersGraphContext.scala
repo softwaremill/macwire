@@ -90,7 +90,7 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
     /** We assume that we cannot use input provider directly, so we create a result object with available constructors.
       * It's a mimic of `wire`'s property
       */
-    val (resolvedCtx, rootProvider) = maybeResolveParamWithCreator(resolvedFMContext)(rootType)
+    val (resolvedCtx, rootProvider) = (maybeResolveWithFactoryMethod(resolvedFMContext)(rootType) orElse maybeResolveParamWithCreator(resolvedFMContext)(rootType))
       .getOrElse(c.abort(c.enclosingPosition, s"Cannot construct an instance of type: [$rootType]"))
 
     val inputProvidersTypes = inputProviders
@@ -118,6 +118,11 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
 
     inputProviders ++ resultContext.providers.diff(inputProviders)
   }
+
+  private def maybeResolveWithFactoryMethod(ctx: BuilderContext)(param: c.Type): Option[(BuilderContext, Provider)] = ctx.providers.find {
+    case fm: FactoryMethod => fm.resultType <:< param
+    case _ => false
+  }.map(r => (ctx, r))
 
   private def maybeResolveParamWithCreator(ctx: BuilderContext)(param: c.Type): Option[(BuilderContext, FactoryMethod)] =
     log.withBlock(s"Resolving creator for [$param]") {
