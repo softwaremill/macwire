@@ -1,0 +1,21 @@
+class A()
+class B(val a: A)
+
+val created = scala.collection.mutable.ListBuffer[String]()
+
+def makeB(s: String, a: A) = { created.append("b"); created.append(s); new B(a)}
+
+object Test {
+    val theB = autowire[B](makeB("s", _))
+
+}
+
+val theB: B = {
+    import cats.effect.unsafe.implicits.global
+    Test.theB.allocated.unsafeRunSync()._1
+}
+
+require(theB.a != null)
+require(created.size == 2)
+require(created(0) == "b")
+require(created(0) == "s")
