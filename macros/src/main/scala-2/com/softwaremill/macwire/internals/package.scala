@@ -21,6 +21,20 @@ package object internals {
         )
     }
     val pTpe = param.typeSignature.substituteTypes(sym.asClass.typeParams, tpeArgs)
-    if (param.asTerm.isByNameParam) pTpe.typeArgs.head else pTpe
+    resolveCallByNameParamType(c)(pTpe)
   }
+
+  def resolveCallByNameParamType[C <: blackbox.Context](c: C)(tpe: c.Type): c.Type = {
+    import c.universe._
+
+    val cl = c.universe.definitions.ByNameParamClass
+    val isByName = tpe match {
+      case TypeRef(_, `cl`, _) => true
+      case _ => false
+    }
+
+    if (isByName) tpe.typeArgs.head else tpe
+  }
+    
+
 }
