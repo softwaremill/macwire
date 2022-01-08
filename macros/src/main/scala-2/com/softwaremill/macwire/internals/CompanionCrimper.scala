@@ -49,8 +49,10 @@ object CompanionCrimper {
     
     import c.universe._
 
+    val targetTypeD = targetType.dealias
+
     def wireParams(paramList: List[Symbol]): List[Tree] =
-      paramList.map(p => resolver(p, p.typeSignature))
+      paramList.map(p => resolver(p, paramType(c)(targetTypeD, p)))
 
     lazy val applyArgs: List[List[Tree]] = paramLists.map(x => wireParams(x))
 
