@@ -73,7 +73,7 @@ object MacwireMacros {
     }
 
     val values = params.map { case vd @ ValDef(_, name, tpt, rhs) =>
-      dependencyResolver.resolve(vd.symbol, typeCheckIfNeeded(tpt))
+      dependencyResolver.resolve(vd.symbol, resolveCallByNameParamType(c)(typeCheckIfNeeded(tpt)))
     }
     val code = q"$fun(..$values)"
 

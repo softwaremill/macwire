@@ -1,0 +1,21 @@
+#include commonSimpleClasses
+
+import scala.collection.mutable.ListBuffer
+
+object Test {
+  val created = ListBuffer.empty[String]
+
+  class Component private (val a: A)
+
+
+  object Component {
+    def create(dependency: => A) = { created.append("a"); new Component(dependency) }
+  }
+
+  val dependency = wire[A]
+  val component = wireWith(Component.create _)
+}
+
+require(Test.component.a != null)
+require(Test.created.size == 1)
+require(Test.created.head == "a")
