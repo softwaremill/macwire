@@ -685,13 +685,13 @@ The jars are deployed to [Sonatype's OSS repository](https://oss.sonatype.org/co
 To use MacWire in your project, add a dependency:
 
 ````scala
-libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.5.3" % "provided"
+libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.5.4" % "provided"
 
-libraryDependencies += "com.softwaremill.macwire" %% "macrosakka" % "2.5.3" % "provided"
+libraryDependencies += "com.softwaremill.macwire" %% "macrosakka" % "2.5.4" % "provided"
 
-libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.5.3"
+libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.5.4"
 
-libraryDependencies += "com.softwaremill.macwire" %% "proxy" % "2.5.3"
+libraryDependencies += "com.softwaremill.macwire" %% "proxy" % "2.5.4"
 ````
 
 MacWire is available for Scala 2.12, 2.13, 3 on the JVM and JS.
