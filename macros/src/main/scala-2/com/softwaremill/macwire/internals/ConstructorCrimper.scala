@@ -137,4 +137,26 @@ object ConstructorCrimper {
     constructorParamLists.map(cpl => (cpl, factory(_)))
   }
 
+  def constructorFactory2[C <: blackbox.Context](
+      c: C,
+      log: Logger
+  )(targetType: c.Type): Option[(c.Symbol, List[List[c.Symbol]], List[List[c.Tree]] => c.Tree)] = {
+    import c.universe._
+
+    lazy val targetTypeD: Type = targetType.dealias
+
+    val constructor: Option[Symbol] = ConstructorCrimper.constructor(c, log)(targetType)
+
+    val constructorParamLists: Option[List[List[Symbol]]] =
+      constructor.map(_.asMethod.paramLists.filterNot(_.headOption.exists(_.isImplicit)))
+  
+    val constructionMethodTree: Tree = Select(New(Ident(targetTypeD.typeSymbol)), termNames.CONSTRUCTOR)
+
+    def factory(constructorArgs: List[List[Tree]]): Tree = {
+      constructorArgs.foldLeft(constructionMethodTree)((acc: Tree, args: List[Tree]) => Apply(acc, args))
+    }
+
+    constructorParamLists.map(cpl => (constructionMethodTree.symbol, cpl, factory(_)))
+  }
+
 }

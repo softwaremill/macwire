@@ -95,4 +95,30 @@ object CompanionCrimper {
       } yield (params, factory(applyMethod)(_))
   }
 
+  def applyFactory2[C <: blackbox.Context](
+      c: C,
+      log: Logger
+  )(targetType: c.Type): Option[(c.Symbol, List[List[c.Symbol]], List[List[c.Tree]] => c.Tree)] = {
+    import c.universe._
+
+    lazy val apply: Option[Symbol] = CompanionCrimper
+      .applies(c, log)(targetType)
+      .flatMap(_ match {
+        case applyMethod :: Nil => Some(applyMethod)
+        case _                  => None
+      })
+
+    lazy val applySelect: Option[Select] = apply.map(a => Select(Ident(targetType.typeSymbol.companion), a))
+
+    lazy val applyParamLists: Option[List[List[Symbol]]] = apply.map(_.asMethod.paramLists)
+
+    def factory(applyMethod: Tree)(applyArgs: List[List[Tree]]) =
+      applyArgs.foldLeft(applyMethod)((acc: Tree, args: List[Tree]) => Apply(acc, args))
+
+      for {
+        params <- applyParamLists
+        applyMethod <- applySelect
+      } yield (applyMethod.symbol, params, factory(applyMethod)(_))
+  }
+
 }
