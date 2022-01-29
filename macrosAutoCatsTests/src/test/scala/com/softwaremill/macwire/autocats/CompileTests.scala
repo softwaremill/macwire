@@ -6,12 +6,15 @@ class CompileTests extends CatsAutowireCompileTestsSupport {
 
   runTestsWith(
     expectedFailures = List(
-      "simpleMissingDeps" -> List("Cannot construct an instance of type: [B]"), //TODO List("Cannot find a value of type: [String], path: B.s")
-      "simpleMissingMultiLevelDeps" -> List("Cannot construct an instance of type: [C]"), //TODO List("Cannot find a value of type: [String], path: C.b.a.s")
+      "simpleMissingDeps" -> List("Failed to create an instance of [B].", "Cannot construct instance of [String] on path [constructor B].a -> [constructor A].s"),
+      "simpleMissingMultiLevelDeps" -> List("Failed to create an instance of [C].", "Cannot construct instance of [String] on path [constructor C].b -> [constructor B].a -> [constructor A].s"),
       "notUsedProvider" -> List("Not used providers for the following types [D]"),
       "ambiguousInstances" -> List("Ambiguous instances of types [A]"),
       "ambiguousTraitImplementations" -> List("Ambiguous instances of types [A, B]"),
-      "constructInputProvider" -> List("Cannot construct an instance of type: [A]")
+      "constructInputProvider" -> List("Failed to create an instance of [B].", "Cannot construct instance of [String] on path [constructor B].a -> [constructor A].s"),//TODO we should add a warning in this case.
+      "missingConstructorDependencies" -> List("Failed to create an instance of [C].", "Cannot construct instance of [Int] on path [constructor C].b -> [constructor B].i"),
+      "missingApplyDependencies" -> List("Failed to create an instance of [", "C].", "Cannot construct instance of [Int] on path [constructor C].b -> [method apply].i"),
+      "missingFactoryMethodDependencies" -> List("Failed to create an instance of [C].", "Cannot construct instance of [Int] on path [constructor C].b -> [method makeB].i"),
     ),
     expectedWarnings = List()
   )

@@ -101,7 +101,7 @@ object ConstructorCrimper {
       c: C,
       log: Logger
   )(targetType: c.Type, resolver: (c.Symbol, c.Type) => c.Tree): Option[c.Tree] =
-    constructorFactory(c, log)(targetType).map { case (paramLists, factory) =>
+    constructorFactory(c, log)(targetType).map { case (_, paramLists, factory) =>
       import c.universe._
 
       lazy val targetTypeD: Type = targetType.dealias
@@ -117,27 +117,6 @@ object ConstructorCrimper {
     }
 
   def constructorFactory[C <: blackbox.Context](
-      c: C,
-      log: Logger
-  )(targetType: c.Type): Option[(List[List[c.Symbol]], List[List[c.Tree]] => c.Tree)] = {
-    import c.universe._
-
-    lazy val targetTypeD: Type = targetType.dealias
-
-    val constructor: Option[Symbol] = ConstructorCrimper.constructor(c, log)(targetType)
-
-    val constructorParamLists: Option[List[List[Symbol]]] =
-      constructor.map(_.asMethod.paramLists.filterNot(_.headOption.exists(_.isImplicit)))
-
-    def factory(constructorArgs: List[List[Tree]]): Tree = {
-      val constructionMethodTree: Tree = Select(New(Ident(targetTypeD.typeSymbol)), termNames.CONSTRUCTOR)
-      constructorArgs.foldLeft(constructionMethodTree)((acc: Tree, args: List[Tree]) => Apply(acc, args))
-    }
-
-    constructorParamLists.map(cpl => (cpl, factory(_)))
-  }
-
-  def constructorFactory2[C <: blackbox.Context](
       c: C,
       log: Logger
   )(targetType: c.Type): Option[(c.Symbol, List[List[c.Symbol]], List[List[c.Tree]] => c.Tree)] = {
@@ -156,7 +135,10 @@ object ConstructorCrimper {
       constructorArgs.foldLeft(constructionMethodTree)((acc: Tree, args: List[Tree]) => Apply(acc, args))
     }
 
-    constructorParamLists.map(cpl => (constructionMethodTree.symbol, cpl, factory(_)))
+    for {
+      cpl <- constructorParamLists
+      c <- constructor
+    } yield (c, cpl, factory(_))
   }
 
 }

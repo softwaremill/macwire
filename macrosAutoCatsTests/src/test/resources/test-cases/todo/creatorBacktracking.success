@@ -1,0 +1,25 @@
+val created = scala.collection.mutable.ListBuffer[Int]()
+
+class A()
+
+class B private (a: A)
+object B {
+    def apply(a:A, i: Int) = new B(a)
+}
+
+class C(b: B)
+object C {
+  def apply(a: A) = {
+    created.append(1)
+    B(a, 1)
+  }
+}
+
+class D(c: C)
+
+object Test {
+    val theD: Resource[IO, D] = autowire[D]()
+}
+
+require(created.size == 1)
+require(created(0) == 1)

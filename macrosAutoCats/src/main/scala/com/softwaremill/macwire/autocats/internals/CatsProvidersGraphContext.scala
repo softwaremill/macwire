@@ -17,7 +17,7 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
     private def verifyOrder(resultProviders: List[Provider]) = {
       log.withBlock(s"Verifying order of [${mkStringProviders(resultProviders)}]") {
         def go(provider: Provider): Set[Provider] =
-          provider.dependencies.flatten.foldl(Set(provider))((result, maybeProvider) => go(maybeProvider) ++ result)
+          provider.dependencies.flatten.foldl(Set(provider)) { case (result, (_, dep)) => go(dep) ++ result }
 
         resultProviders.lastOption.map(go).map { usedProviders =>
           val notUsedProviders = providers.diff(usedProviders.toSeq)
@@ -32,40 +32,47 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
     }
 
     private def failOnMissingDependencies() = log.withBlock("Checking missing dependencies"){
-      type ProviderPath = List[Provider]
+      type ProviderPath = List[(c.Symbol, Provider)]
       case class CheckContext(currentPath: ProviderPath, missingPaths: Set[ProviderPath]) {
-        def withProvider(provider: Provider)(f: CheckContext => CheckContext) = {
-          val currentCtx =  copy(currentPath = currentPath :+ provider)
+        def withProvider(sym: c.Symbol, provider: Provider)(f: CheckContext => CheckContext) = {
+          val currentCtx =  copy(currentPath = currentPath.:+((sym, provider)))
           val processedCtx = f(currentCtx)
           copy(missingPaths = processedCtx.missingPaths)
         }
 
-        def missingPath(leaf: Provider): CheckContext = copy(missingPaths = missingPaths.+(currentPath :+ leaf))
+        def missingPath(): CheckContext = copy(missingPaths = missingPaths.+(currentPath))
       }
 
       object CheckContext {
         lazy val empty = CheckContext(List.empty, Set.empty)
       }
 
-      def go(ctx: CheckContext)(provider: Provider): CheckContext = log.withBlock(s"Checking provider [$provider] for type [${provider.resultType}]") {
-        ctx.withProvider(provider) { currentCtx =>
+      def go(ctx: CheckContext)(sym: c.Symbol, provider: Provider): CheckContext = log.withBlock(s"Checking provider [$provider] for type [${provider.resultType}]") {
+        ctx.withProvider(sym, provider) { currentCtx =>
           provider match {
-            case p: NotResolvedProvider => currentCtx.missingPath(p)
-            case _ => provider.dependencies.foldLeft(currentCtx) { case (paramsCtx, deps) => deps.foldLeft(paramsCtx) { case (paramCtx, param) => go(paramCtx)(param)}}
+            case _: NotResolvedProvider => currentCtx.missingPath()
+            case _ => provider.dependencies.foldLeft(currentCtx) { case (paramsCtx, deps) => deps.foldLeft(paramsCtx) { case (paramCtx, (sym, param)) => go(paramCtx)(sym, param)}}
           }
         }
       }
 
-        val resultCtx = go(CheckContext.empty)(root)
+        val resultCtx = go(CheckContext.empty)(c.universe.NoSymbol, root)
 
         if (resultCtx.missingPaths.nonEmpty) {
-          val msg = resultCtx.missingPaths.map { path =>
-            val pathStr = path.map(_.symbol).mkString(".")
-            val missingProvider = path.last.asInstanceOf[NotResolvedProvider]//FIXME should be typed
-            s"Cannot construct instance of [${missingProvider.resultType}] on path [$pathStr]"
-          }.mkString("\n")
+          def buildPathMsg(path: ProviderPath) = if (path.size <= 1) path.map(_._1).mkString
+          else {
+            val head = path.head._2
+            val mid = path.drop(1).dropRight(1)
+            val last = path.last._2
 
-          c.abort(c.enclosingPosition, msg)
+            val midStr = mid.map { case (sym, provider) => s".${sym.name} -> [${provider.symbol}]"}.mkString("", "", "")
+
+            s"Cannot construct instance of [${last.resultType}] on path [${head.symbol}]$midStr.${last.symbol.name}"
+          }
+          
+          val msg = resultCtx.missingPaths.map(buildPathMsg).mkString(s"Failed to create an instance of [${root.resultType}].\n", "\n", "\n")
+
+          c.error(c.enclosingPosition, msg)
         }
     }
 
@@ -74,10 +81,10 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
         log.withBlock(s"Going deeper for type [${provider.resultType}]") {
 
           provider.dependencies.flatten.foldl(List.empty[Provider]) {
-            case (r, p: NotResolvedProvider) => log.withBlock(s"Skipping not resolved provider for type [${p.resultType}]")(r)
-            case (r, p) if (usedProviders ++ r.toSet).contains(p) =>
+            case (r, (_, p: NotResolvedProvider)) => log.withBlock(s"Skipping not resolved provider for type [${p.resultType}]")(r)
+            case (r, (_, p)) if (usedProviders ++ r.toSet).contains(p) =>
               log.withBlock(s"Already used provider for type [${p.resultType}]")(r)
-            case (r, p) =>
+            case (r, (_, p)) =>
               log.withResult { (r ::: go(p, (usedProviders ++ r.toSet) + p)) :+ p }(result =>
                 s"Built list for the following types [${result.map(_.resultType).mkString(", ")}]"
               )
@@ -92,7 +99,6 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
         failOnMissingDependencies()
         verifyOrder(result)
 
-        log(s"RESULT [${result.map(_.resultType)}]")
         result
     }
 
@@ -131,19 +137,14 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
     /** We assume that we cannot use input provider directly, so we create a result object with available constructors.
       * It's a mimic of `wire`'s property
       */
-    //TODO we should find the root provider at the beginning of the `buildGraph` method. In case of None we should abort the whole resolution and the other case we should resolve it's dependencies
+    
     val (resolvedCtx, rootProvider) = maybeResolveWithFactoryMethod(resolvedFMContext)(
       rootType
     ).getOrElse(
-      resolveRootCreator(resolvedFMContext)(
-        rootType,
-        findCreator(rootType).getOrElse(
+       findResolvableCreator(resolvedFMContext)(rootType).getOrElse(
           c.abort(c.enclosingPosition, s"Cannot construct an instance of type: [$rootType]")
-        )
       )
     )
-
-    // orElse maybeResolveParamWithCreator(resolvedFMContext)(rootType))
 
     val inputProvidersTypes = inputProviders
       .map {
@@ -180,9 +181,25 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
 
   type CreatorType = (c.Symbol, List[List[c.Symbol]], List[List[c.Tree]] => c.Tree)
 
-  //TODO warn user if this step fails
-  private def findCreator(param: c.Type): Option[(c.Symbol, List[List[c.Symbol]], List[List[c.Tree]] => c.Tree)] =
-    ConstructorCrimper.constructorFactory2(c, log)(param) orElse CompanionCrimper.applyFactory2(c, log)(param)
+  private def findResolvableCreator(ctx: BuilderContext)(param: c.Type): Option[(BuilderContext, Provider)] = {
+    val maybeConstructor = ConstructorCrimper.constructorFactory(c, log)(param).map(resolveCreatorParams(ctx)(param, _))
+    val maybeApply = CompanionCrimper.applyFactory(c, log)(param).map(resolveCreatorParams(ctx)(param, _))
+
+    def allDependenciesResolved(result: (BuilderContext, FactoryMethod)): Boolean = result._2.dependencies.flatten.collectFirst{case t@(_, _: NotResolvedProvider) => t}.isEmpty
+
+    (maybeConstructor, maybeApply) match {
+      //Found at least one resolvable creator
+      case (Some(result), _) if allDependenciesResolved(result) => Some(result)
+      case (_, Some(result)) if allDependenciesResolved(result) => Some(result)
+
+      //Found at least one non-resolvable creator
+      case (Some(result), _) => Some(result)
+      case (None, Some(result)) => Some(result)
+
+      //Not found any creator
+      case (None, None) => None
+    }
+  }
 
   private def resolveCreatorParams(
       ctx: BuilderContext
@@ -198,37 +215,31 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
     (updatedCtx.addProvider(fm), fm)
   }
 
-  private def resolveRootCreator(
-      ctx: BuilderContext
-  )(tpe: c.Type, creator: CreatorType): (BuilderContext, FactoryMethod) =
-    if (isWireable(c)(tpe)) resolveCreatorParams(ctx)(tpe, creator)
-    else c.abort(c.enclosingPosition, s"[$tpe] is not wireable")
-
-  private def resolveParamsList(ctx: BuilderContext)(params: List[Param]): (BuilderContext, List[Provider]) =
-    params.foldLeft((ctx, List.empty[Provider])) { case ((currentCtx, resolvedParams), Param(paramSym, paramTpe)) =>
+  private def resolveParamsList(ctx: BuilderContext)(params: List[Param]): (BuilderContext, List[(c.Symbol, Provider)]) =
+    params.foldLeft((ctx, List.empty[(c.Symbol, Provider)])) { case ((currentCtx, resolvedParams), Param(paramSym, paramTpe)) =>
       currentCtx.resolve(paramTpe) match {
-        case Some(Left(provider)) => (currentCtx, resolvedParams :+ provider)
+        case Some(Left(provider)) => (currentCtx, resolvedParams.:+((paramSym, provider)))
         case Some(Right(fmt)) => {
           val (updatedCtx, fm) = resolveFactoryMethod(currentCtx)(fmt)
 
-          (updatedCtx, resolvedParams :+ fm)
+          (updatedCtx, resolvedParams.:+((paramSym, fm)))
         }
-        case None =>
-          findCreator(paramTpe) match {
-            case Some(creator) if isWireable(c)(paramTpe) =>
-              val (updatedCtx, fm) = resolveCreatorParams(currentCtx)(paramTpe, creator)
-              updatedCtx.logContext
-              (updatedCtx, resolvedParams :+ fm)
-            case _ => (ctx, resolvedParams :+ new NotResolvedProvider(paramTpe, paramSym))
-          }
+        case None if isWireable(c)(paramTpe) =>
+          findResolvableCreator(currentCtx)(paramTpe).map { case (updatedCtx, fm) => 
+            updatedCtx.logContext
+            (updatedCtx, resolvedParams.:+((paramSym, fm)))
+           }.getOrElse(((ctx, resolvedParams.:+((paramSym, new NotResolvedProvider(paramTpe, paramSym))))))
+        case _ => (ctx, resolvedParams.:+((paramSym, new NotResolvedProvider(paramTpe, paramSym))))
       }
     }
 
+
+
   private def resolveParamsLists(
       ctx: BuilderContext
-  )(params: List[List[Param]]): (BuilderContext, List[List[Provider]]) =
+  )(params: List[List[Param]]): (BuilderContext, List[List[(c.Symbol, Provider)]]) =
     log.withBlock(s"Resolving params [${mkStringFrom2DimList(params)}]") {
-      params.foldLeft((ctx, List.empty[List[Provider]])) { case ((currentCtx, resolvedParamsLists), paramsList) =>
+      params.foldLeft((ctx, List.empty[List[(c.Symbol, Provider)]])) { case ((currentCtx, resolvedParamsLists), paramsList) =>
         val (updatedCtx, resolvedParamsList) = resolveParamsList(currentCtx)(paramsList)
         (updatedCtx, resolvedParamsLists :+ resolvedParamsList)
       }

@@ -1,11 +1,11 @@
-  class A(s: String) 
+class A(s: String)
+class B(a: A)
   
-  object Test {
-    val theA = autowire[A](new A("s"))
+object Test {
+  val theB = autowire[B](new B(new A("s")))
+}
 
-  }
-
-  val theA: A = {
-    import cats.effect.unsafe.implicits.global
-    Test.theA.allocated.unsafeRunSync()._1
-  }
+val theA: A = {
+  import cats.effect.unsafe.implicits.global
+  Test.theA.allocated.unsafeRunSync()._1
+}

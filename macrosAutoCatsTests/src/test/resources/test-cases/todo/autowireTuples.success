@@ -1,0 +1,13 @@
+#include commonSimpleClasses
+
+object Test {
+  val tuple = autowire[(A, B)]()
+}
+
+val tuple: (A, B) = {
+  import cats.effect.unsafe.implicits.global
+  Test.tuple.allocated.unsafeRunSync()._1
+}
+
+require(tuple._1 == A())
+require(tuple._2 == B())

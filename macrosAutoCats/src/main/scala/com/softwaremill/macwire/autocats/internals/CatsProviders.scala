@@ -11,7 +11,7 @@ trait CatsProviders[C <: blackbox.Context] {
 
   sealed trait Provider {
     def resultType: c.Type
-    def dependencies: List[List[Provider]]
+    def dependencies: List[List[(c.Symbol, Provider)]]
     def ident: c.Tree
     def value: c.Tree
     def symbol: c.Symbol
@@ -24,7 +24,7 @@ trait CatsProviders[C <: blackbox.Context] {
     import c.universe._
 
     lazy val resultType: Type = Effect.underlyingType(typeCheckUtil.typeCheckIfNeeded(rawValue))
-    lazy val dependencies: List[List[Provider]] = List.empty
+    lazy val dependencies: List[List[(c.Symbol, Provider)]] = List.empty
     lazy val asResource = new Resource(q"cats.effect.kernel.Resource.eval[cats.effect.IO, ${resultType}]($rawValue)")
     lazy val value: Tree = asResource.value
     lazy val ident: Tree = asResource.ident
@@ -49,7 +49,7 @@ trait CatsProviders[C <: blackbox.Context] {
     import c.universe._
 
     lazy val resultType: Type = Resource.underlyingType(typeCheckUtil.typeCheckIfNeeded(value))
-    lazy val dependencies: List[List[Provider]] = List.empty
+    lazy val dependencies: List[List[(c.Symbol, Provider)]] = List.empty
     lazy val ident: Tree = Ident(TermName(c.freshName()))
   }
 
@@ -72,15 +72,13 @@ trait CatsProviders[C <: blackbox.Context] {
     val symbol: c.Symbol,
       methodType: c.Type,
       val resultType: c.Type,
-      val dependencies: List[List[Provider]],
+      val dependencies: List[List[(c.Symbol, Provider)]],
       apply: List[List[c.Tree]] => c.Tree
   ) extends Provider {
     import c.universe._
 
-    private lazy val appliedTree: Tree = apply(dependencies.map(_.map(_.ident)))
-    // log.withBlock(s"Applied tree for [$fun] from deps: [${dependencies.map(_.mkString(", ")).mkString(", ")}]") {
-    //   dependencies.map(_.map(_.get.ident)).foldLeft(fun)((acc: Tree, args: List[Tree]) => Apply(acc, args))
-    // }
+    private lazy val appliedTree: Tree = apply(dependencies.map(_.map(_._2.ident)))
+    
     lazy val result: Provider = log.withResult {
       val fmResultType = resultType
       //TODO support for FactoryMethods
@@ -138,7 +136,7 @@ trait CatsProviders[C <: blackbox.Context] {
     override def symbol: c.Symbol = value.symbol
 
 
-    override def dependencies: List[List[Provider]] = List.empty
+    override def dependencies: List[List[(c.Symbol, Provider)]] = List.empty
 
     lazy val resultType: c.Type = typeCheckUtil.typeCheckIfNeeded(value)
     lazy val ident: c.Tree = value
@@ -146,7 +144,7 @@ trait CatsProviders[C <: blackbox.Context] {
   }
 
   class NotResolvedProvider(val resultType: c.Type, val symbol: c.Symbol) extends Provider {
-    override def dependencies: List[List[Provider]] = c.abort(c.enclosingPosition, s"Internal Error: Not resolved provider for type [$resultType]")
+    override def dependencies: List[List[(c.Symbol, Provider)]] = c.abort(c.enclosingPosition, s"Internal Error: Not resolved provider for type [$resultType]")
     override def ident: c.Tree = c.abort(c.enclosingPosition, s"Internal Error: Not resolved provider for type [$resultType]")
     override def value: c.Tree = c.abort(c.enclosingPosition, s"Internal Error: Not resolved provider for type [$resultType]")
 
