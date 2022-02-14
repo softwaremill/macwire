@@ -1,0 +1,7 @@
+class A()
+class B(a: A, i: Int)
+class C(b: B, s: String)
+
+object Test {
+    val theC: Resource[IO, C] = autowire[C]()
+}

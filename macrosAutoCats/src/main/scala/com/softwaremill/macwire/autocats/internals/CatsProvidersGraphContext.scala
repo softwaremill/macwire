@@ -67,9 +67,9 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
 
             val midStr = mid.map { case (sym, provider) => s".${sym.name} -> [${provider.symbol}]"}.mkString("", "", "")
 
-            s"Cannot construct instance of [${last.resultType}] on path [${head.symbol}]$midStr.${last.symbol.name}"
+            s"Missing dependency of type [${last.resultType}]. Path [${head.symbol}]$midStr.${last.symbol.name}"
           }
-          
+
           val msg = resultCtx.missingPaths.map(buildPathMsg).mkString(s"Failed to create an instance of [${root.resultType}].\n", "\n", "\n")
 
           c.error(c.enclosingPosition, msg)
