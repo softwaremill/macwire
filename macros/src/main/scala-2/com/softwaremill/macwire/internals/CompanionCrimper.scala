@@ -45,7 +45,7 @@ object CompanionCrimper {
       c: C,
       log: Logger
   )(targetType: c.Type, resolver: (c.Symbol, c.Type) => c.Tree): Option[c.Tree] = 
-    applyFactory(c, log)(targetType).map { case (paramLists, factory) =>
+    applyFactory(c, log)(targetType).map { case (_, paramLists, factory) =>
     
     import c.universe._
 
