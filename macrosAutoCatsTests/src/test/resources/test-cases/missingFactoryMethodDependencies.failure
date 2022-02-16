@@ -1,0 +1,9 @@
+class A()
+class B(a: A)
+class C(b: B)
+
+object Test {
+  def makeB(a: A, i: Int) = new B(a)
+  
+  val theC: Resource[IO, C] = autowire[C](makeB _)
+}

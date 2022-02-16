@@ -62,7 +62,7 @@ object CompanionCrimper {
   def applyFactory[C <: blackbox.Context](
       c: C,
       log: Logger
-  )(targetType: c.Type): Option[(List[List[c.Symbol]], List[List[c.Tree]] => c.Tree)] = {
+  )(targetType: c.Type): Option[(c.Symbol, List[List[c.Symbol]], List[List[c.Tree]] => c.Tree)] = {
     import c.universe._
 
     lazy val apply: Option[Symbol] = CompanionCrimper
@@ -82,7 +82,8 @@ object CompanionCrimper {
       for {
         params <- applyParamLists
         applyMethod <- applySelect
-      } yield (params, factory(applyMethod)(_))
+        a <- apply
+      } yield (a, params, factory(applyMethod)(_))
   }
 
 }

@@ -28,12 +28,14 @@ trait GraphBuilderUtils[C <: blackbox.Context] { this: CatsProviders[C] =>
   ) {
     import c.universe._
 
+    def logContext = log(s"Available instances in context: [${providers.map(_.resultType)}] & [${notResolvedFactoryMethods.map(_.resultType)}]")
     def resolvedFactoryMethod(provider: FactoryMethod): BuilderContext = copy(
       providers = provider :: providers,
       notResolvedFactoryMethods = notResolvedFactoryMethods.filter(p => p.resultType != provider.resultType)
     )
 
     def resolve(tpe: Type): Option[Either[Provider, FactoryMethodTree]] = {
+      logContext
       val resolvedProviders = providers
         .filter(_.resultType <:< tpe)
         .map(_.asLeft[FactoryMethodTree])

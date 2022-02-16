@@ -1,0 +1,10 @@
+object Test {
+    class A()
+    class B private (a: A)
+    object B {
+        def apply(a:A, i: Int) = new B(a)
+    }
+    class C(b: B)
+
+    val theC: Resource[IO, C] = autowire[C]()
+}
