@@ -15,39 +15,89 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
     val wiredDef = Symbol.spliceOwner.owner
     val wiredOwner = wiredDef.owner
 
-    def doFind(symbol: Symbol, scope: Scope): Map[Scope, List[EligibleValue]] = {
-      def handleClassDef(s: Symbol): List[EligibleValue] =
+    def doFind(symbol: Symbol, scope: Scope): EligibleValues = {
+      def hasModuleAnnotation(symbol: Symbol): Boolean =
+        symbol.annotations.map(_.tpe.show).exists(_ == "com.softwaremill.macwire.Module")
+
+      def inspectModule(scope: Scope, tpe: TypeRepr, expr: Tree): Option[EligibleValues] = {
+        // it might be a @Module, let's see
+        val hasSymbol = expr.symbol != null // sometimes expr has no symbol...
+        val valIsModule = hasSymbol && hasModuleAnnotation(expr.symbol)
+        // the java @Inherited meta-annotation does not seem to be understood by scala-reflect...
+        val valParentIsModule = hasSymbol && !valIsModule && tpe.baseClasses.exists(hasModuleAnnotation)
+
+        if (valIsModule || valParentIsModule) {
+          log.withBlock(s"Inspecting module $tpe") {
+            val r = expr.symbol.declarations.map(_.tree).map {
+              case m: ValDef =>
+                EligibleValue(
+                  m.tpt.tpe,
+                  This(expr.symbol.owner).select(expr.symbol).select(m.symbol)
+                )
+              case m: DefDef if m.termParamss.flatMap(_.params).isEmpty =>
+                EligibleValue(m.rhs.map(_.tpe).getOrElse(m.returnTpt.tpe), Select.unique(Ref(expr.symbol), m.name))
+            }
+            
+            Some(EligibleValues(Map(scope.widen -> r)))
+          }
+        } else {
+          None
+        }
+      }
+
+      def buildEligibleValue(scope: Scope): PartialFunction[Tree, EligibleValues] = {
+        case m: ValDef =>
+          merge(
+            inspectModule(scope.widen, m.rhs.map(_.tpe).getOrElse(m.tpt.tpe), m).getOrElse(EligibleValues.empty),
+            EligibleValues(Map(scope -> List(EligibleValue(m.rhs.map(_.tpe).getOrElse(m.tpt.tpe), m))))
+          )
+
+        case m: DefDef if m.termParamss.flatMap(_.params).isEmpty =>
+          merge(
+            inspectModule(scope.widen, m.rhs.map(_.tpe).getOrElse(m.returnTpt.tpe), m).getOrElse(EligibleValues.empty),
+            EligibleValues(Map(scope -> List(EligibleValue(m.rhs.map(_.tpe).getOrElse(m.returnTpt.tpe), m))))
+          )
+
+      }
+
+      def handleClassDef(scope: Scope, s: Symbol): EligibleValues = {
         (s.declaredMethods ::: s.declaredFields)
           .filter(m => !m.fullName.startsWith("java.lang.Object") && !m.fullName.startsWith("scala.Any"))
           .map(_.tree)
-          .collect {
-            case m: ValDef => EligibleValue(m.rhs.map(_.tpe).getOrElse(m.tpt.tpe), m)
-            case m: DefDef if m.termParamss.flatMap(_.params).isEmpty =>
-              EligibleValue(m.rhs.map(_.tpe).getOrElse(m.returnTpt.tpe), m)
-          }
+          .foldLeft(EligibleValues.empty)((values, tree) =>
+            merge(values, buildEligibleValue(scope).applyOrElse(tree, _ => EligibleValues.empty))
+          )
 
-      def handleDefDef(s: Symbol): List[EligibleValue] =
+      }
+
+      def handleDefDef(scope: Scope, s: Symbol): EligibleValues =
         s.tree match {
           case DefDef(_, _, _, Some(Match(_, cases))) =>
             report.throwError(s"Wire for deconstructed case is not supported yet") //TODO
           case DefDef(s, lpc, tt, ot) =>
-            lpc.flatMap(_.params).collect {
-              case m: ValDef => EligibleValue(m.rhs.map(_.tpe).getOrElse(m.tpt.tpe), m)
-              case m: DefDef if m.termParamss.flatMap(_.params).isEmpty =>
-                EligibleValue(m.rhs.map(_.tpe).getOrElse(m.returnTpt.tpe), m)
-            }
+            lpc
+              .flatMap(_.params)
+              .foldLeft(EligibleValues.empty)((values, tree) =>
+                merge(values, buildEligibleValue(scope).applyOrElse(tree, _ => EligibleValues.empty))
+              )
         }
 
-      if symbol.isNoSymbol then Map.empty[Scope, List[EligibleValue]]
-      else if symbol.isDefDef then merge(Map((scope, handleDefDef(symbol))), doFind(symbol.maybeOwner, scope))
-      else if symbol.isClassDef && !symbol.isPackageDef then Map((scope.widen, handleClassDef(symbol)))
-      else if symbol == defn.RootPackage then Map.empty
-      else if symbol == defn.RootClass then Map.empty
+      if symbol.isNoSymbol then EligibleValues.empty
+      else if symbol.isDefDef then merge(handleDefDef(scope, symbol), doFind(symbol.maybeOwner, scope))
+      else if symbol.isClassDef && !symbol.isPackageDef then handleClassDef(scope.widen, symbol)
+      else if symbol == defn.RootPackage then EligibleValues.empty
+      else if symbol == defn.RootClass then EligibleValues.empty
       else doFind(symbol.maybeOwner, scope.widen)
     }
 
-    EligibleValues(doFind(Symbol.spliceOwner, Scope.init))
+    doFind(Symbol.spliceOwner, Scope.init)
   }
+
+  private def merge(
+      ev1: EligibleValues,
+      ev2: EligibleValues
+  ): EligibleValues =
+    EligibleValues(merge(ev1.values, ev2.values))
 
   private def merge(
       m1: Map[Scope, List[EligibleValue]],

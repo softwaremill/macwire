@@ -20,6 +20,7 @@ private[macwire] class DependencyResolver[Q <: Quotes, T: Type](using val q: Q)(
 
     eligibleValues.findInFirstScope(t).toList match {
       case Nil          => resolutionFallback(t)
+      case (value: Term) :: Nil => value
       case value :: Nil => Ref(value.symbol).changeOwner(Symbol.spliceOwner.owner.owner)
       case values       => report.throwError(s"Found multiple values of type [${showTypeName(t)}]: [$values]")
     }
@@ -29,7 +30,10 @@ private[macwire] class DependencyResolver[Q <: Quotes, T: Type](using val q: Q)(
     *   all the instances of type `t` that are accessible.
     */
   def resolveAll(t: TypeRepr): Iterable[Tree] = {
-    eligibleValues.findInAllScope(t).map(x => buildRef(x.symbol))
+    eligibleValues.findInAllScope(t).map { 
+      case x: Term => x
+      case x =>  buildRef(x.symbol) 
+  }
   }
 
   private def buildRef(sym: Symbol): Tree = Ref(sym).changeOwner(Symbol.spliceOwner.owner.owner)
