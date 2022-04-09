@@ -94,7 +94,7 @@ lazy val util = projectMatrix
   .settings(libraryDependencies += tagging)
   .settings(commonSettings)
   .jvmPlatform(scalaVersions = scala2And3Versions)
-  .jsPlatform(scalaVersions = scala2)
+  .jsPlatform(scalaVersions = scala2And3Versions)
 
 lazy val macros = projectMatrix
   .in(file("macros"))
@@ -105,7 +105,7 @@ lazy val macros = projectMatrix
   )
   .dependsOn(util % "provided")
   .jvmPlatform(scalaVersions = scala2And3Versions)
-  .jsPlatform(scalaVersions = scala2)
+  .jsPlatform(scalaVersions = scala2And3Versions)
 
 lazy val proxy = projectMatrix
   .in(file("proxy"))
