@@ -9,5 +9,3 @@ trait SomeModule {
 
   def x: Scope
 }
-
-
