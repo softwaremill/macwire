@@ -8,7 +8,7 @@ import sbt.Keys._
 excludeLintKeys in Global ++= Set(ideSkipProject)
 
 val scala2_12 = "2.12.13"
-val scala2_13 = "2.13.6"
+val scala2_13 = "2.13.8"
 
 val scala2 = List(scala2_12, scala2_13)
 val scala3 = "3.0.1"
