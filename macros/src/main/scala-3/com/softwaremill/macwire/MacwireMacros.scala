@@ -14,7 +14,7 @@ object MacwireMacros {
     wire[T](using q)(dependencyResolver)
   }
 
-  //TODO build failure path
+  // TODO build failure path
   def wireRecImpl[T: Type](using q: Quotes): Expr[T] = {
     import q.reflect.*
 
