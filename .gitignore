@@ -1,4 +1,5 @@
 .idea
+.sbt
 *.iml
 *.ipr
 target
