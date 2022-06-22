@@ -7,11 +7,11 @@ import sbt.Keys._
 
 excludeLintKeys in Global ++= Set(ideSkipProject)
 
-val scala2_12 = "2.12.13"
-val scala2_13 = "2.13.6"
+val scala2_12 = "2.12.16"
+val scala2_13 = "2.13.8"
 
 val scala2 = List(scala2_12, scala2_13)
-val scala3 = "3.0.1"
+val scala3 = "3.0.2"
 
 val scala2And3Versions = scala2 :+ scala3
 
@@ -62,12 +62,12 @@ val testSettings = commonSettings ++ Seq(
 )
 
 val tagging = "com.softwaremill.common" %% "tagging" % "2.3.1"
-val scalatest = "org.scalatest" %% "scalatest" % "3.2.12"
-val javassist = "org.javassist" % "javassist" % "3.28.0-GA"
-val akkaActor = "com.typesafe.akka" %% "akka-actor" % "2.6.15"
+val scalatest = "org.scalatest" %% "scalatest" % "3.2.9"
+val javassist = "org.javassist" % "javassist" % "3.29.0-GA"
+val akkaActor = "com.typesafe.akka" %% "akka-actor" % "2.6.19"
 val javaxInject = "javax.inject" % "javax.inject" % "1"
-val cats = "org.typelevel" %% "cats-core" % "2.6.1"
-val catsEffect = "org.typelevel" %% "cats-effect" % "3.2.1"
+val cats = "org.typelevel" %% "cats-core" % "2.8.0"
+val catsEffect = "org.typelevel" %% "cats-effect" % "3.2.9"
 
 lazy val root = project
   .in(file("."))
