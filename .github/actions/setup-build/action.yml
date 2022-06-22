@@ -1,0 +1,17 @@
+name: Setup build
+description: Setup sbt build
+inputs:
+  targetPlatform:
+    description: Target platform
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Cache sbt
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.sbt
+          ~/.ivy2/cache
+          ~/.coursier
+        key: sbt-cache-${{ runner.os }}-${{ inputs.targetPlatform }}-${{ hashFiles('project/build.properties') }}

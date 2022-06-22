@@ -15,38 +15,29 @@ jobs:
         java: [ '8', '11', '17' ]
       fail-fast: false
     steps:
-    - name: Set environment variables for Java 8
-      if: matrix.java == '8'
-      run: echo 'JAVA_OPTS=-Xmx5G' >> $GITHUB_ENV
-    - name: Set environment variables for Java 9+
-      if: matrix.java != '8'
-      run: echo 'JAVA_OPTS=-Xmx5G --add-opens java.base/java.lang=ALL-UNNAMED' >> $GITHUB_ENV
-    - name: Checkout
-      uses: actions/checkout@v2
-    - name: Set up JDK
-      uses: actions/setup-java@v2
-      with:
-        distribution: 'adopt'
-        java-version: ${{ matrix.java }}
-    - name: Cache sbt
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.sbt
-          ~/.ivy2/cache
-          ~/.coursier
-        key: sbt-cache-${{ runner.os }}-${{ hashFiles('project/build.properties') }}-${{ matrix.java }}
-    - name: Compile
-      run: sbt -v compile
-    - name: Test
-      run: sbt -v test
-    - name: Cleanup
-      run: |
-        rm -rf "$HOME/.ivy2/local" || true
-        find $HOME/.ivy2/cache                       -name "ivydata-*.properties" -delete || true
-        find $HOME/.ivy2/cache                       -name "*-LM-SNAPSHOT*"       -delete || true
-        find $HOME/.cache/coursier/v1                -name "ivydata-*.properties" -delete || true
-        find $HOME/.sbt                              -name "*.lock"               -delete || true
+      - name: Set environment variables for Java 8
+        if: matrix.java == '8'
+        run: echo 'JAVA_OPTS=-Xmx5G' >> $GITHUB_ENV
+      - name: Set environment variables for Java 9+
+        if: matrix.java != '8'
+        run: echo 'JAVA_OPTS=-Xmx5G --add-opens java.base/java.lang=ALL-UNNAMED' >> $GITHUB_ENV
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up JDK
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'
+          java-version: ${{ matrix.java }}
+      - name: Setup build
+        uses: ./.github/actions/setup-build
+        with:
+          targetPlatform: ${{ matrix.java }}
+      - name: Compile
+        run: sbt -v compile
+      - name: Test
+        run: sbt -v test
+      - name: Cleanup build
+        uses: ./.github/actions/cleanup-build
 
   publish:
     name: Publish release
@@ -62,14 +53,10 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 11
-      - name: Cache sbt
-        uses: actions/cache@v2
+      - name: Setup build
+        uses: ./.github/actions/setup-build
         with:
-          path: |
-            ~/.sbt
-            ~/.ivy2/cache
-            ~/.coursier
-          key: sbt-cache-${{ runner.os }}-${{ hashFiles('project/build.properties') }}
+          targetPlatform: 11
       - name: Compile
         run: sbt compile
       - name: Publish artifacts
@@ -95,10 +82,5 @@ jobs:
           version: "v${{ env.VERSION }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Cleanup
-        run: |
-          rm -rf "$HOME/.ivy2/local" || true
-          find $HOME/.ivy2/cache                       -name "ivydata-*.properties" -delete || true
-          find $HOME/.ivy2/cache                       -name "*-LM-SNAPSHOT*"       -delete || true
-          find $HOME/.cache/coursier/v1                -name "ivydata-*.properties" -delete || true
-          find $HOME/.sbt                              -name "*.lock"               -delete || true
+      - name: Cleanup build
+        uses: ./.github/actions/cleanup-build
