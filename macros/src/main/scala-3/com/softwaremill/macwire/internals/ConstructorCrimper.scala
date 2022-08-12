@@ -88,7 +88,7 @@ private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](using val q: Q)(
     // val pTpe = param.signature.substituteTypes(sym.asClass.typeParams, tpeArgs)
     // if (param.asTerm.isByNameParam) pTpe.typeArgs.head else pTpe
 
-    //FIXME assertion error in test inheritanceHKT.success, selfTypeHKT.success
+    // FIXME assertion error in test inheritanceHKT.success, selfTypeHKT.success
     Ref(param).tpe.widen
   }
 
