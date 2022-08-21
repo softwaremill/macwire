@@ -1,0 +1,13 @@
+#include commonSimpleClasses
+
+trait Base {
+  val aA: A = A()
+}
+
+object Module extends Base {
+  val theA: A = A()
+  lazy val b: B = wire[B]
+  lazy val c: C = wire[C]
+}
+
+require(Module.c.a eq Module.theA)
