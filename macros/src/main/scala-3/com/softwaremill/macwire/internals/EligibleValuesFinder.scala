@@ -35,7 +35,7 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
       def handleDefDef(scope: Scope, s: Symbol): EligibleValues =
         s.tree match {
           case DefDef(_, _, _, Some(Match(_, cases))) =>
-            report.throwError(s"Wire for deconstructed case is not supported yet") //TODO
+            report.throwError(s"Wire for deconstructed case is not supported yet") // TODO
           case DefDef(s, lpc, tt, ot) =>
             EligibleValues.build(symbol, scope, lpc.flatMap(_.params))
         }
@@ -57,8 +57,8 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
     !member.fullName.startsWith("scala.AnyRef") &&
     !member.fullName.endsWith("<init>") &&
     !member.fullName.endsWith("$init$") &&
-    !member.fullName.contains("$default$") && //default params for copy on case classes
-    !member.fullName.matches(".*_\\d+") //tuple methods on case classes
+    !member.fullName.contains("$default$") && // default params for copy on case classes
+    !member.fullName.matches(".*_\\d+") // tuple methods on case classes
   }
 
   private def isPublic(member: Symbol): Boolean = {
@@ -70,7 +70,7 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
     override def hashCode() = expr.toString().hashCode
 
     override def equals(obj: scala.Any) = obj match {
-      case EligibleValue(_, e) => expr == e //FIXME not sure if `equalsStructure` -> `==`
+      case EligibleValue(_, e) => expr == e // FIXME not sure if `equalsStructure` -> `==`
       case _                   => false
     }
   }
