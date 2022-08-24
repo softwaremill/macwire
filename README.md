@@ -213,7 +213,7 @@ This feature is inspired by @yakivy's work on [jam](https://github.com/yakivy/ja
 
 **Warning**: `autowire` is an experimental feature, if you have any feedback regarding its usage, let us know! Future releases might break source/binary compatibility. It is available for Scala 2 only for now.
 
-Dependency: `"com.softwaremill.macwire" %% "macrosautocats" % "2.5.7"`
+Dependency: `"com.softwaremill.macwire" %% "macrosautocats" % "2.5.8"`
 
 In case you need to build an instance from some particular instances and factory methods you can leverage `autowire`. This feature is intended to integrate with effect-management libraries (currently we support [cats-effect](https://github.com/typelevel/cats-effect)).
 
@@ -687,13 +687,13 @@ The jars are deployed to [Sonatype's OSS repository](https://oss.sonatype.org/co
 To use MacWire in your project, add a dependency:
 
 ````scala
-libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.5.7" % "provided"
+libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.5.8" % "provided"
 
-libraryDependencies += "com.softwaremill.macwire" %% "macrosakka" % "2.5.7" % "provided"
+libraryDependencies += "com.softwaremill.macwire" %% "macrosakka" % "2.5.8" % "provided"
 
-libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.5.7"
+libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.5.8"
 
-libraryDependencies += "com.softwaremill.macwire" %% "proxy" % "2.5.7"
+libraryDependencies += "com.softwaremill.macwire" %% "proxy" % "2.5.8"
 ````
 
 MacWire is available for Scala 2.12, 2.13, 3 on the JVM and JS.
