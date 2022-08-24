@@ -44,19 +44,20 @@ object CompanionCrimper {
   def applyTree[C <: blackbox.Context](
       c: C,
       log: Logger
-  )(targetType: c.Type, resolver: (c.Symbol, c.Type) => c.Tree): Option[c.Tree] =
+  )(targetType: c.Type, resolver: (c.Symbol, c.Type) => c.Tree): Option[c.Tree] = 
     applyFactory(c, log)(targetType).map { case (_, paramLists, factory) =>
-      import c.universe._
+    
+    import c.universe._
 
-      val targetTypeD = targetType.dealias
+    val targetTypeD = targetType.dealias
 
-      def wireParams(paramList: List[Symbol]): List[Tree] =
-        paramList.map(p => resolver(p, paramType(c)(targetTypeD, p)))
+    def wireParams(paramList: List[Symbol]): List[Tree] =
+      paramList.map(p => resolver(p, paramType(c)(targetTypeD, p)))
 
-      lazy val applyArgs: List[List[Tree]] = paramLists.map(x => wireParams(x))
+    lazy val applyArgs: List[List[Tree]] = paramLists.map(x => wireParams(x))
 
-      factory(applyArgs)
-    }
+    factory(applyArgs)
+  }
 
   def applyFactory[C <: blackbox.Context](
       c: C,
@@ -78,11 +79,11 @@ object CompanionCrimper {
     def factory(applyMethod: Tree)(applyArgs: List[List[Tree]]) =
       applyArgs.foldLeft(applyMethod)((acc: Tree, args: List[Tree]) => Apply(acc, args))
 
-    for {
-      params <- applyParamLists
-      applyMethod <- applySelect
-      a <- apply
-    } yield (a, params, factory(applyMethod)(_))
+      for {
+        params <- applyParamLists
+        applyMethod <- applySelect
+        a <- apply
+      } yield (a, params, factory(applyMethod)(_))
   }
 
 }

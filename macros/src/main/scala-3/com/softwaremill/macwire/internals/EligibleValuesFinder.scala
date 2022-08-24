@@ -37,7 +37,7 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
               case m: DefDef if m.termParamss.flatMap(_.params).isEmpty =>
                 EligibleValue(m.rhs.map(_.tpe).getOrElse(m.returnTpt.tpe), Select.unique(Ref(expr.symbol), m.name))
             }
-
+            
             Some(EligibleValues(Map(scope.widen -> r)))
           }
         } else {
@@ -73,7 +73,7 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
       def handleDefDef(scope: Scope, s: Symbol): EligibleValues =
         s.tree match {
           case DefDef(_, _, _, Some(Match(_, cases))) =>
-            report.throwError(s"Wire for deconstructed case is not supported yet") // TODO
+            report.throwError(s"Wire for deconstructed case is not supported yet") //TODO
           case DefDef(s, lpc, tt, ot) =>
             lpc
               .flatMap(_.params)
@@ -110,7 +110,7 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
     override def hashCode() = expr.toString().hashCode
 
     override def equals(obj: scala.Any) = obj match {
-      case EligibleValue(_, e) => expr == e // FIXME not sure if `equalsStructure` -> `==`
+      case EligibleValue(_, e) => expr == e //FIXME not sure if `equalsStructure` -> `==`
       case _                   => false
     }
   }

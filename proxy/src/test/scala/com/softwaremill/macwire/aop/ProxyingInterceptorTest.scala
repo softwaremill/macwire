@@ -28,13 +28,13 @@ class ProxyingInterceptorTest extends AnyFlatSpec with Matchers {
     val bResult = intercepted.methodB(10)
 
     // then
-    toIntercept.a should be(1)
-    toIntercept.b should be(11)
+    toIntercept.a should be (1)
+    toIntercept.b should be (11)
 
-    bResult should be(11)
+    bResult should be (11)
 
-    before should be(2)
-    after should be(2)
+    before should be (2)
+    after should be (2)
   }
 
   class SomeClass {

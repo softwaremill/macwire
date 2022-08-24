@@ -8,9 +8,10 @@ import play.api.test.Helpers._
 
 import scala.concurrent.Future
 
-/** Spec for testing controller logic, independent of external dependencies. Since our controllers don't really have any
-  * logic, just testing the output
-  */
+/**
+ * Spec for testing controller logic, independent of external dependencies. Since our controllers don't really have any
+ * logic, just testing the output
+ */
 class CoffeeControllerSpec extends Specification {
   "Coffee Controller" should {
     "return all" in new ControllerContext {

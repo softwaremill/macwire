@@ -7,9 +7,8 @@ import play.api.mvc.{Action, Controller}
 import scala.concurrent.ExecutionContext
 
 class CoffeeController(
-    coffeeDao: CoffeeDao
-)(implicit ec: ExecutionContext)
-    extends Controller {
+  coffeeDao: CoffeeDao
+)(implicit ec: ExecutionContext) extends Controller {
 
   def fetchAll() = Action.async { request =>
     coffeeDao.all.map { coffees =>

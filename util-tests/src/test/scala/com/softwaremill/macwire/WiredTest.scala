@@ -7,9 +7,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 class WiredTest extends AnyFlatSpec with Matchers {
   import WiredTest._
 
-  def createInstanceFactoryMap(instances: AnyRef*): InstanceFactoryMap = Map(
-    instances.map(i => i.getClass -> (() => i)): _*
-  )
+  def createInstanceFactoryMap(instances: AnyRef*): InstanceFactoryMap = Map(instances.map(i => i.getClass -> (() => i)): _*)
 
   val implsMap1 = createInstanceFactoryMap(new X, new Y, new Z)
   val implsMap2 = createInstanceFactoryMap(new Z, new M)
@@ -50,7 +48,7 @@ class WiredTest extends AnyFlatSpec with Matchers {
   def testLookup(map: InstanceFactoryMap, cls: Class[_], expectedCount: Int): Unit = {
     val result = new Wired(map).lookup(cls)
     result should have size (expectedCount)
-    result.foreach(r => cls.isAssignableFrom(r.getClass) should be(true))
+    result.foreach(r => cls.isAssignableFrom(r.getClass) should be (true))
   }
 
   it should "expand the wired instance factories map with the given instances" in {
@@ -61,11 +59,11 @@ class WiredTest extends AnyFlatSpec with Matchers {
     val wired = original.withInstances(new Y, new Z)
 
     // then
-    original.lookup(classOf[A]).size should be(0)
-    wired.lookup(classOf[A]).size should be(2)
+    original.lookup(classOf[A]).size should be (0)
+    wired.lookup(classOf[A]).size should be (2)
 
-    original.lookup(classOf[Z]).size should be(0)
-    wired.lookup(classOf[Z]).size should be(1)
+    original.lookup(classOf[Z]).size should be (0)
+    wired.lookup(classOf[Z]).size should be (1)
   }
 
   it should "expand the wired instance factories map with the given instance factory" in {
@@ -76,10 +74,10 @@ class WiredTest extends AnyFlatSpec with Matchers {
     val wired = original.withInstanceFactory(() => new Y)
 
     // then
-    original.lookup(classOf[Y]).size should be(0)
-    wired.lookup(classOf[Y]).size should be(1)
+    original.lookup(classOf[Y]).size should be (0)
+    wired.lookup(classOf[Y]).size should be (1)
 
-    (wired.lookup(classOf[Y]).apply(0) eq wired.lookup(classOf[Y]).apply(0)) should be(false)
+    (wired.lookup(classOf[Y]).apply(0) eq wired.lookup(classOf[Y]).apply(0)) should be (false)
   }
 
   val x = new X
@@ -93,33 +91,33 @@ class WiredTest extends AnyFlatSpec with Matchers {
     val result = wiredXYZM.wireClassInstance(classOf[NoDeps])
 
     result should not be (null)
-    result.getClass should be(classOf[NoDeps])
+    result.getClass should be (classOf[NoDeps])
   }
 
   it should "create an instance of a class with one exact dependency" in {
     val result = wiredXYZM.wireClassInstance(classOf[OneExactDep])
 
-    result.x should be(x)
+    result.x should be (x)
   }
 
   it should "create an instance of a class with one subtype dependency" in {
     val result = wiredXYZM.wireClassInstance(classOf[OneSubtypeDep])
 
-    result.c should be(z)
+    result.c should be (z)
   }
 
   it should "create an instance of a class with multiple dependencies" in {
     val result = wiredXYZM.wireClassInstance(classOf[MultipleDeps])
 
-    result.y should be(y)
-    result.c should be(z)
+    result.y should be (y)
+    result.c should be (z)
   }
 
   it should "create an instance of a class given by string" in {
     val result = wiredXYZM.wireClassInstanceByName(classOf[OneExactDep].getName)
 
-    result.isInstanceOf[OneExactDep] should be(true)
-    result.asInstanceOf[OneExactDep].x should be(x)
+    result.isInstanceOf[OneExactDep] should be (true)
+    result.asInstanceOf[OneExactDep].x should be (x)
   }
 
   it should "fail to create an instance of a class if dependencies are not found" in {

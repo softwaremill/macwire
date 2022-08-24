@@ -128,7 +128,7 @@ object ConstructorCrimper {
 
     val constructorParamLists: Option[List[List[Symbol]]] =
       constructor.map(_.asMethod.paramLists.filterNot(_.headOption.exists(_.isImplicit)))
-
+  
     val constructionMethodTree: Tree = Select(New(Ident(targetTypeD.typeSymbol)), termNames.CONSTRUCTOR)
 
     def factory(constructorArgs: List[List[Tree]]): Tree = {

@@ -9,7 +9,7 @@ class CoffeeSpec extends PlaySpecification {
 
       println(status(response.get))
 
-      response must beSome.which(status(_) == OK)
+      response must beSome.which (status(_) == OK)
     }
   }
 
@@ -17,7 +17,7 @@ class CoffeeSpec extends PlaySpecification {
     "return priced coffees" in new IntegrationContext {
       val response = route(FakeRequest(GET, "/coffee/priced/9"))
 
-      response must beSome.which(status(_) == OK)
+      response must beSome.which (status(_) == OK)
     }
   }
 }

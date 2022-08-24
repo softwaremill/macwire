@@ -27,7 +27,7 @@ but
 - special handling for wire, new ... needed; still wouldn't work in the general case
 - can you do macro inside a macro?
 
- */
+*/
 class ThreadLocalScopeTest extends AnyFlatSpec with Matchers {
   it should "store object values per-storage" in {
     // Given
@@ -49,15 +49,15 @@ class ThreadLocalScopeTest extends AnyFlatSpec with Matchers {
 
     // Then
     scope.associate(storage1)
-    bean.data should be("2")
+    bean.data should be ("2")
     scope.disassociate()
 
     scope.associate(storage2)
-    bean.data should be("3")
+    bean.data should be ("3")
     scope.disassociate()
 
     scope.associate(storage3)
-    bean.data should be("1")
+    bean.data should be ("1")
     scope.disassociate()
   }
 
@@ -75,7 +75,7 @@ class ThreadLocalScopeTest extends AnyFlatSpec with Matchers {
 
     // Then
     scope.associate(storage)
-    bean.data should be("2")
+    bean.data should be ("2")
     scope.disassociate()
   }
 
@@ -98,7 +98,7 @@ class ThreadLocalScopeTest extends AnyFlatSpec with Matchers {
 
     // Then
     scope.associate(storage)
-    Beans.service1.fetchData should be("2")
+    Beans.service1.fetchData should be ("2")
     scope.disassociate()
   }
 }

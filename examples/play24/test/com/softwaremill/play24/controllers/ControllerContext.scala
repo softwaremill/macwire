@@ -7,10 +7,11 @@ import org.specs2.specification.Scope
 import scala.concurrent.ExecutionContext
 
 trait ControllerContext
-    extends ControllerModule
-    with MockDaoModule
-    with MockWsClient
-    with Scope
-    with MustThrownExpectations {
+  extends ControllerModule
+  with MockDaoModule
+  with MockWsClient
+  with Scope
+  with MustThrownExpectations
+{
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 }

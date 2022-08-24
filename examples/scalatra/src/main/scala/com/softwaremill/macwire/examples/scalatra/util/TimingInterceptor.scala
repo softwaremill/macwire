@@ -11,7 +11,7 @@ object TimingInterceptor extends ProxyingInterceptor {
       ctx.proceed()
     } finally {
       val end = System.currentTimeMillis()
-      println(s"Invocation of $classWithMethodName took: ${end - start}ms")
+      println(s"Invocation of $classWithMethodName took: ${end-start}ms")
     }
   }
 }

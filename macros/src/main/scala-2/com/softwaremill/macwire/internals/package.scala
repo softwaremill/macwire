@@ -30,10 +30,11 @@ package object internals {
     val cl = c.universe.definitions.ByNameParamClass
     val isByName = tpe match {
       case TypeRef(_, `cl`, _) => true
-      case _                   => false
+      case _ => false
     }
 
     if (isByName) tpe.typeArgs.head else tpe
   }
+    
 
 }

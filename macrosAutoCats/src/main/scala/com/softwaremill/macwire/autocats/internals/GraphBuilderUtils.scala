@@ -9,8 +9,9 @@ trait GraphBuilderUtils[C <: blackbox.Context] { this: CatsProviders[C] =>
   val c: C
   val log: Logger
 
-  /** Lazy representation of FactoryMethod It's required because we may need to use a factory method to construct an
-    * intermediate instance in graph building process
+  /**
+    * Lazy representation of FactoryMethod 
+    * It's required because we may need to use a factory method to construct an intermediate instance in graph building process
     */
   case class FactoryMethodTree(params: List[c.universe.ValDef], fun: c.Tree, resultType: c.Type)
   object FactoryMethodTree {
@@ -27,9 +28,7 @@ trait GraphBuilderUtils[C <: blackbox.Context] { this: CatsProviders[C] =>
   ) {
     import c.universe._
 
-    def logContext = log(
-      s"Available instances in context: [${providers.map(_.resultType)}] & [${notResolvedFactoryMethods.map(_.resultType)}]"
-    )
+    def logContext = log(s"Available instances in context: [${providers.map(_.resultType)}] & [${notResolvedFactoryMethods.map(_.resultType)}]")
     def resolvedFactoryMethod(provider: FactoryMethod): BuilderContext = copy(
       providers = provider :: providers,
       notResolvedFactoryMethods = notResolvedFactoryMethods.filter(p => p.resultType != provider.resultType)
