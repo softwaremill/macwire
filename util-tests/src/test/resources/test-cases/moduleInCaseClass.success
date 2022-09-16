@@ -1,0 +1,16 @@
+#include commonSimpleClasses
+
+@Module
+class AModule {
+    lazy val a = wire[A]
+}
+case class X(aModule: AModule) {
+    lazy val b = wire[B]
+    lazy val c = wire[C]
+}
+object CaseTest {
+    lazy val aModule = wire[AModule]
+    lazy val X = wire[X]
+}
+
+require(CaseTest.X.c.a eq CaseTest.aModule.a)

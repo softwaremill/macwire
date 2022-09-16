@@ -1,0 +1,19 @@
+#include commonSimpleClasses
+
+class Parent {
+    protected def bb = wire[B]
+    lazy val b = wire[B]
+}
+@Module
+class AModule extends Parent {
+    protected def x(i:Int) = wire[B]
+    protected def d: D = ???
+    protected lazy val dd: D = ???
+    lazy val a = wire[A]
+}
+object ParentTest {
+    lazy val aModule = wire[AModule]
+    lazy val c = wire[C]
+}
+
+require(ParentTest.c.a eq ParentTest.aModule.a)
