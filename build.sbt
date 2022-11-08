@@ -11,7 +11,7 @@ val scala2_12 = "2.12.16"
 val scala2_13 = "2.13.10"
 
 val scala2 = List(scala2_12, scala2_13)
-val scala3 = "3.0.2"
+val scala3 = "3.2.1"
 
 val scala2And3Versions = scala2 :+ scala3
 
