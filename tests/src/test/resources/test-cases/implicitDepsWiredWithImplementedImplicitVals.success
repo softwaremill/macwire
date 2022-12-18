@@ -5,7 +5,7 @@ trait Abstract {
 }
 
 object Test extends Abstract {
-  override implicit val dependency = new Dependency
+  override implicit val dependency: Dependency = new Dependency
   val service = wire[Service]
 }
 
