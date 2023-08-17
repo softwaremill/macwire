@@ -65,6 +65,7 @@ val tagging = "com.softwaremill.common" %% "tagging" % "2.3.1"
 val scalatest = "org.scalatest" %% "scalatest" % "3.2.9"
 val javassist = "org.javassist" % "javassist" % "3.29.2-GA"
 val akkaActor = "com.typesafe.akka" %% "akka-actor" % "2.6.20"
+val pekkoActor = "org.apache.pekko" %% "pekko-actor" % "1.0.1"
 val javaxInject = "javax.inject" % "javax.inject" % "1"
 val cats = "org.typelevel" %% "cats-core" % "2.10.0"
 val catsEffect = "org.typelevel" %% "cats-effect" % "3.5.1"
@@ -160,6 +161,14 @@ lazy val macrosAkka = projectMatrix
   .jvmPlatform(scalaVersions = scala2)
   .jsPlatform(scalaVersions = scala2)
 
+lazy val macrosPekko = projectMatrix
+  .in(file("macrosPekko"))
+  .settings(commonSettings)
+  .settings(libraryDependencies ++= Seq(pekkoActor % "provided"))
+  .dependsOn(macros)
+  .jvmPlatform(scalaVersions = scala2)
+  .jsPlatform(scalaVersions = scala2)
+
 lazy val macrosAkkaTests = projectMatrix
   .in(file("macrosAkkaTests"))
   .settings(
@@ -171,6 +180,19 @@ lazy val macrosAkkaTests = projectMatrix
   .settings(testSettings)
   .settings(libraryDependencies ++= Seq(scalatest, tagging, akkaActor))
   .dependsOn(macrosAkka, testUtil)
+  .jvmPlatform(scalaVersions = scala2)
+
+lazy val macrosPekkoTests = projectMatrix
+  .in(file("macrosPekkoTests"))
+  .settings(
+    // Needed to avoid cryptic EOFException crashes in forked tests in Travis
+    // example failure: https://travis-ci.org/adamw/macwire/builds/191382122
+    // see: https://github.com/travis-ci/travis-ci/issues/3775
+    javaOptions += "-Xmx1G"
+  )
+  .settings(testSettings)
+  .settings(libraryDependencies ++= Seq(scalatest, tagging, pekkoActor))
+  .dependsOn(macrosPekko, testUtil)
   .jvmPlatform(scalaVersions = scala2)
 
 lazy val macrosAutoCats = projectMatrix

@@ -1,0 +1,19 @@
+import org.apache.pekko.actor.{Actor, ActorSystem}
+import com.softwaremill.macwire.pekkosupport._
+
+/**
+  * In this example I am constructing simple actor without dependencies.
+  */
+
+class SomeActor extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+val system = ActorSystem("wireActor-4-noDependenciesAtAll")
+AfterAllTerminate(system)
+
+val someActor = wireActor[SomeActor]("Bob")
+
+someActor ! "Hey someActor"

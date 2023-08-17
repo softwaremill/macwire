@@ -1,0 +1,45 @@
+import org.apache.pekko.actor.{Actor, ActorRef, ActorSystem, Props}
+import com.softwaremill.macwire.pekkosupport._
+
+/**
+  * In this example I am constructing actor within actor.
+  * SomeActor is created by system but Subordinates are created as children of SomeActor.
+  *
+  */
+
+trait A
+class B
+trait C
+
+class Subordinate(a: A, b: B, c: C) extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+object Subordinate {
+  def get(a: A, b: B) = new Subordinate(a, b, new C{})
+}
+
+class SomeActor(a: A) extends Actor {
+
+  val b = new B {}
+
+  val subordinates: Seq[ActorRef] = (0 to 2).map { i =>
+    //subordinate factory depends on A and B which are in scope
+    wireActorWith(Subordinate.get _)(s"sub$i")
+  }
+
+  override def receive: Receive = {
+    case m => subordinates.foreach(_ ! m)
+  }
+}
+
+val system = ActorSystem("wireActorWithFactory-10-makeActorInActor")
+AfterAllTerminate(system)
+
+val a = new A {}
+
+val someActor = wireActor[SomeActor]("bob")
+
+someActor ! "Hey SomeActor"

@@ -1,0 +1,17 @@
+import org.apache.pekko.actor.{Actor, ActorSystem, Props}
+import com.softwaremill.macwire.pekkosupport._
+
+/**
+  * In this example I am trying to make props with a factory returning T which is not subtype of Actor class.
+  * This will not compile.
+  */
+
+class NotActor {}
+
+object NotActor {
+  def get() = new NotActor
+}
+
+val system = ActorSystem("wireAnonymousActorWithFactory-7-notActorFactory")
+
+wireAnonymousActorWith(NotActor.get _)

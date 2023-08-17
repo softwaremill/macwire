@@ -1,0 +1,34 @@
+import org.apache.pekko.actor.{Actor, ActorSystem, IndirectActorProducer}
+import com.softwaremill.macwire.pekkosupport._
+
+/**
+  * In this example I am constructing simple actor with 1 dependency.
+  * There is AA object which is subtype of A in scope.
+  */
+
+trait A
+trait AA extends A
+trait B
+
+//TODO include cases for classes, extends A with B, objects extends trait etc
+
+class SomeActor(a: A, b: B) extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+class SomeActorProducer(a: A) extends IndirectActorProducer {
+  override def produce(): Actor = new SomeActor(a, new B{})
+  override def actorClass: Class[_ <: Actor] = classOf[SomeActor]
+}
+
+val a: AA = new AA {}
+lazy val b: B = throw new UnsupportedOperationException()
+
+val system = ActorSystem("wireAnonymousActorWithProducer-9-subtypeDependencyInScope")
+AfterAllTerminate(system)
+
+val someActor = wireAnonymousActorWith[SomeActorProducer]
+
+someActor ! "Hey someActor"
