@@ -1,0 +1,41 @@
+import org.apache.pekko.actor.{Actor, ActorSystem}
+import com.softwaremill.macwire.pekkosupport._
+
+/**
+  * In this example SomeActor has no public constructors.
+  * Thus wireAnonymousActor will not find suitable one and fail compilation.
+  */
+
+trait A
+trait B
+trait C
+trait D
+
+class SomeActor private (a: A) extends Actor {
+
+  private def this(b: B) = {
+    this(new A{})
+    throw new UnsupportedOperationException()
+  }
+
+  private def this(c: C) = this(new A{})
+
+  @javax.inject.Inject
+  private def this(d: D) = this(new A{})
+
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+lazy val a: A = throw new UnsupportedOperationException()
+lazy val b: B = throw new UnsupportedOperationException()
+val c = new C {}
+val d = new D {}
+
+val system = ActorSystem("wireAnonymousActor-12-noPublicConstructor")
+AfterAllTerminate(system)
+
+val someActor = wireAnonymousActor[SomeActor]
+
+someActor ! "Hey someActor"

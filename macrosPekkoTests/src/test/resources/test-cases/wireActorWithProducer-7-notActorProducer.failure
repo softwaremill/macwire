@@ -1,0 +1,10 @@
+import com.softwaremill.macwire.pekkosupport._
+
+/**
+  * In this example I am trying to make props of T which is not subtype of IndirectActorProducer class.
+  * This will not compile.
+  */
+
+class NotProducer {}
+
+wireActorWith[NotProducer]("bob")

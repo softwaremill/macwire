@@ -1,0 +1,23 @@
+import org.apache.pekko.actor.{Actor, ActorSystem}
+import com.softwaremill.macwire.pekkosupport._
+
+/**
+  * In this example I am constructing simple actor with 1 dependency.
+  */
+
+trait A
+
+class SomeActor(a: A) extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+val a = new A {}
+
+val system = ActorSystem("wireActor-1-simple")
+AfterAllTerminate(system)
+
+val someActor = wireActor[SomeActor]("bob")
+
+someActor ! "Hey someActor"

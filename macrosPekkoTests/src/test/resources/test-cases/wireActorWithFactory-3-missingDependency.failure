@@ -1,0 +1,27 @@
+import org.apache.pekko.actor.{Actor, ActorSystem, Props}
+import com.softwaremill.macwire.pekkosupport._
+
+/**
+  * In this example I am constructing simple actor but I don't provide dependency for it.
+  * `wireActorWithProducer` will not find it and then not compile.
+  */
+
+trait A
+trait B
+
+class SomeActor(a: A, b: B) extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+object SomeActor {
+  def get(a: A) = new SomeActor(a, new B{})
+}
+
+//no dependency of type A in scope
+
+val system = ActorSystem("wireActorWithFactory-3-missingDependency")
+AfterAllTerminate(system)
+
+wireActorWith(SomeActor.get _)("bob")

@@ -1,0 +1,35 @@
+import org.apache.pekko.actor.{Actor, ActorSystem, Props}
+import com.softwaremill.macwire.pekkosupport._
+
+/**
+  * In this example I am constructing simple actor with 1 dependency.
+  * There is AA object which is subtype of A in scope.
+  */
+
+trait A
+trait AA extends A
+trait B
+
+//TODO include cases for classes, extends A with B, objects extends trait etc
+
+class SomeActor(a: A, b: B) extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+object SomeActor {
+  def get(a: A) = new SomeActor(a, new B{})
+}
+
+val a: AA = new AA {}
+lazy val b: B = throw new UnsupportedOperationException()
+
+val system = ActorSystem("wirePropsWithFactory-9-subtypeDependencyInScope")
+AfterAllTerminate(system)
+
+val props: Props = wirePropsWith(SomeActor.get _)
+
+val someActor = system.actorOf(props, "someActor")
+
+someActor ! "Hey someActor"

@@ -1,0 +1,35 @@
+import org.apache.pekko.actor.{Actor, ActorSystem, IndirectActorProducer}
+import com.softwaremill.macwire.pekkosupport._
+
+/**
+  * In this example I am constructing simple actor with many parameter lists and an implicit parameter list.
+  */
+
+trait A
+trait B
+trait C
+trait D
+
+class SomeActor(a: A)(b: B, c: C)(implicit d: D)  extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+class SomeActorProducer(a: A)(c: C)(implicit d: D) extends IndirectActorProducer {
+  override def produce(): Actor = new SomeActor(a)(new B{}, c)(d)
+  override def actorClass: Class[_ <: Actor] = classOf[SomeActor]
+}
+
+val a = new A {}
+lazy val b: B = throw new UnsupportedOperationException()
+val c = new C {}
+implicit val d = new D {}
+
+val system = ActorSystem("wireActorWithProducer-14-implicitParameters")
+AfterAllTerminate(system)
+
+val someActor = wireActorWith[SomeActorProducer]("bob")
+
+someActor ! "Hey someActor"
+

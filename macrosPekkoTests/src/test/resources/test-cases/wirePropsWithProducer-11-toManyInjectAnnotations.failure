@@ -1,0 +1,49 @@
+import org.apache.pekko.actor.{Actor, ActorSystem, IndirectActorProducer, Props}
+import com.softwaremill.macwire.pekkosupport._
+
+/**
+  * There are to many constructors annotated with @Inject
+  */
+
+trait A
+trait B
+trait C
+trait D
+
+class SomeActor(a: A, b: B) extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+class SomeActorProducer(a: A) extends IndirectActorProducer {
+
+  def this(b: B) = {
+    this(new A{})
+    throw new UnsupportedOperationException()
+  }
+
+  @javax.inject.Inject
+  def this(c: C) = this(new A{})
+
+  @javax.inject.Inject
+  def this(d: D) = this(new A{})
+
+  override def produce(): Actor = new SomeActor(a, new B{})
+  override def actorClass: Class[_ <: Actor] = classOf[SomeActor]
+}
+
+
+lazy val a: A = throw new UnsupportedOperationException()
+lazy val b: B = throw new UnsupportedOperationException()
+val c = new C {}
+val d = new D {}
+
+val system = ActorSystem("wirePropsWithProducer-11-toManyInjectAnnotations")
+AfterAllTerminate(system)
+
+val props: Props = wirePropsWith[SomeActorProducer]
+
+val someActor = system.actorOf(props, "someActor")
+
+someActor ! "Hey someActor"

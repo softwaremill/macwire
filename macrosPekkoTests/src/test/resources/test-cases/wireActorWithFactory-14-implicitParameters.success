@@ -1,0 +1,30 @@
+import org.apache.pekko.actor.{Actor, ActorSystem, Props}
+import com.softwaremill.macwire.pekkosupport._
+
+/**
+  * In this example I am constructing simple actor with an implicit parameter list.
+  */
+
+trait A
+trait B
+trait C
+
+class SomeActor(a: A, b: B)(implicit c: C)  extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+object SomeActor {
+  def get(a: A)(implicit c: C) = new SomeActor(a, new B{})
+}
+
+val a = new A {}
+implicit val c = new C {}
+
+val system = ActorSystem("wireActorWithFactory-14-implicitParameters")
+AfterAllTerminate(system)
+
+val someActor = wireActorWith(SomeActor.get _)("bob")
+
+someActor ! "Hey someActor"

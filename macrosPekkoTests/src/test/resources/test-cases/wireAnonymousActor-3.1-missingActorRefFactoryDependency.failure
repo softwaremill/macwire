@@ -1,0 +1,22 @@
+import org.apache.pekko.actor.Actor
+import com.softwaremill.macwire.pekkosupport._
+
+/**
+  * In this example I am constructing simple actor but I don't provide dependency for it.
+  * `wire*` will not find it and then not compile.
+  */
+
+trait A
+
+class SomeActor(a: A) extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+val a = new A {}
+
+//no dependency of type ActorRefFactory in scope
+wireAnonymousActor[SomeActor]
+
+
