@@ -84,7 +84,9 @@ lazy val root = project
       testUtil,
       utilTests,
       macrosAkka,
+      macrosPekko,
       macrosAkkaTests,
+      macrosPekkoTests,
       macrosAutoCats,
       macrosAutoCatsTests
     ).flatMap(_.projectRefs): _*
