@@ -1,0 +1,26 @@
+import org.apache.pekko.actor.{Actor, ActorSystem, Props}
+import com.softwaremill.macwire.pekkosupport._
+
+/**
+  * In this example SomeActor factory is a private method.
+  * Thus wireProps will not find it suitable and fail compilation.
+  */
+
+trait A
+
+class SomeActor(a: A) extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+object SomeActor {
+  private def get(a: A) = new SomeActor(a)
+}
+
+val a = new A{}
+
+val system = ActorSystem("wireAnonymousActorWithFactory-12-privateMethod")
+AfterAllTerminate(system)
+
+val someActor = wireAnonymousActorWith(SomeActor.get _)

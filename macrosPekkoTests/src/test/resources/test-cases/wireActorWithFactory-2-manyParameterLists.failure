@@ -1,0 +1,31 @@
+import org.apache.pekko.actor.{Actor, ActorSystem, Props}
+import com.softwaremill.macwire.pekkosupport._
+
+/**
+  * In this example I am constructing simple actor with many parameter lists.
+  */
+
+trait A
+trait B
+trait C
+
+class SomeActor(a: A)(b: B, c: C) extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+object SomeActor {
+  def get(a: A)(c: C) = new SomeActor(a)(new B{}, c)
+}
+
+val a = new A {}
+lazy val b: B = throw new UnsupportedOperationException()
+val c = new C {}
+
+val system = ActorSystem("wireActorWithFactory-2-manyParameterLists")
+AfterAllTerminate(system)
+
+val someActor = wireActorWith(SomeActor.get _)("bob")
+
+someActor ! "Hey someActor"

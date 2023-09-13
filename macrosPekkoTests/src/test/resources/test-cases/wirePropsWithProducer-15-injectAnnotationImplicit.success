@@ -1,0 +1,48 @@
+import org.apache.pekko.actor.{Actor, ActorSystem, IndirectActorProducer, Props}
+import com.softwaremill.macwire.pekkosupport._
+
+/**
+  * In this example I am creating actor that has 3 constructors.
+  * However `wire*` will find dependencies for the constructor annotated
+  * with @Inject and provide it's arguments to Props factory method.
+  */
+
+trait A
+trait B
+trait C
+trait D
+
+class SomeActor(a: A, d: D) extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+class SomeActorProducer(a: A, d: D) extends IndirectActorProducer {
+
+  def this(b: B) = {
+    this(new A{}, new D{})
+    throw new UnsupportedOperationException()
+  }
+
+  @javax.inject.Inject
+  def this(c: C)(implicit d: D) = this(new A{}, d)
+
+  override def produce(): Actor = new SomeActor(a, d)
+  override def actorClass: Class[_ <: Actor] = classOf[SomeActor]
+}
+
+lazy val a: A = throw new UnsupportedOperationException()
+lazy val b: B = throw new UnsupportedOperationException()
+val c = new C {}
+implicit val d = new D {}
+
+val system = ActorSystem("wirePropsWithProducer-15-injectAnnotation")
+AfterAllTerminate(system)
+
+val props: Props = wirePropsWith[SomeActorProducer]
+
+val someActor = system.actorOf(props, "someActor")
+
+someActor ! "Hey someActor"
+

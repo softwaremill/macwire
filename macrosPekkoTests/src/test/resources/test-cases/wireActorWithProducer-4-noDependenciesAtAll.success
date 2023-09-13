@@ -1,0 +1,29 @@
+import org.apache.pekko.actor.{Actor, ActorSystem, IndirectActorProducer}
+import com.softwaremill.macwire.pekkosupport._
+
+/**
+  * In this example I am constructing simple actor without dependencies.
+  */
+
+trait A
+
+class SomeActor(a: A) extends Actor {
+  override def receive: Receive = {
+    case m => //println(m)
+  }
+}
+
+class SomeActorProducer extends IndirectActorProducer {
+  override def produce(): Actor = new SomeActor(new A{})
+  override def actorClass: Class[_ <: Actor] = classOf[SomeActor]
+}
+
+lazy val a: A = throw new UnsupportedOperationException()
+
+val system = ActorSystem("wireActorWithProducer-4-noDependenciesAtAll")
+AfterAllTerminate(system)
+
+val someActor = wireActorWith[SomeActorProducer]("bob")
+
+someActor ! "Hey someActor"
+
