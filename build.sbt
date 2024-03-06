@@ -68,7 +68,7 @@ val akkaActor = "com.typesafe.akka" %% "akka-actor" % "2.6.20"
 val pekkoActor = "org.apache.pekko" %% "pekko-actor" % "1.0.2"
 val javaxInject = "javax.inject" % "javax.inject" % "1"
 val cats = "org.typelevel" %% "cats-core" % "2.10.0"
-val catsEffect = "org.typelevel" %% "cats-effect" % "3.5.3"
+val catsEffect = "org.typelevel" %% "cats-effect" % "3.5.4"
 
 lazy val root = project
   .in(file("."))
