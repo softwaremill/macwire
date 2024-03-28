@@ -24,12 +24,12 @@ class AppApplicationLoader extends ApplicationLoader {
 }
 
 trait AppComponents
-extends BuiltInComponents
-with NingWSComponents // for wsClient
-with DatabaseModule // Database injection
-with DaoModule
-with ControllerModule // Application controllers
-{
+    extends BuiltInComponents
+    with NingWSComponents // for wsClient
+    with DatabaseModule // Database injection
+    with DaoModule
+    with ControllerModule // Application controllers
+    {
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
   lazy val assets: Assets = wire[Assets]
@@ -48,4 +48,3 @@ with ControllerModule // Application controllers
 }
 
 class Z(as: ActorSystem)
-
