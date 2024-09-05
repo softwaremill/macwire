@@ -49,7 +49,7 @@ val versionSpecificScalaSources = {
 
 val commonSettings = commonSmlBuildSettings ++ ossPublishSettings ++ Seq(
   organization := "com.softwaremill.macwire",
-  ideSkipProject := (scalaVersion.value != scala2_13) || thisProjectRef.value.project.contains("JS"),
+  ideSkipProject := (scalaVersion.value != scala3) || thisProjectRef.value.project.contains("JS"),
   scalacOptions ~= (_.filterNot(Set("-Wconf:cat=other-match-analysis:error"))) // doesn't play well with macros
 )
 
