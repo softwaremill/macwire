@@ -10,6 +10,8 @@ import scala.io.Source
 private[macwire] trait BaseCompileTestsSupport extends AnyFlatSpec with Matchers {
   type ExpectedFailures = List[String]
 
+  protected val testsSubdirectory: Option[String] = None
+
   val GlobalImports = "import com.softwaremill.macwire._\n\n"
   val DirectiveRegexp = "#include ([a-zA-Z]+)".r
   val EmptyResult = "\n\n()"
@@ -121,16 +123,18 @@ private[macwire] trait BaseCompileTestsSupport extends AnyFlatSpec with Matchers
   ): Unit
 
   private def findTestCaseFiles(basedOn: String): List[File] = {
-    val resource = this.getClass.getResource("/test-cases/" + basedOn)
+    val resource = this.getClass.getResource(baseDirectory + basedOn)
     if (resource == null) {
-      sys.error(s"No test found, make sure /test-cases/$basedOn exists in your classpath.")
+      sys.error(s"No test found, make sure $baseDirectory$basedOn exists in your classpath.")
     }
     val file = new File(resource.toURI)
     file.getParentFile.listFiles().toList.filter(_.isFile) match {
-      case Nil           => sys.error(s"No test found, make sure /test-cases/$basedOn exists in your classpath.")
+      case Nil           => sys.error(s"No test found, make sure /$baseDirectory/$basedOn exists in your classpath.")
       case testCaseFiles => testCaseFiles
     }
   }
+
+  def baseDirectory = "/test-cases/" + testsSubdirectory.fold("")(_ + "/")
 
   def loadResource(name: String) = {
     val resource = this.getClass.getResourceAsStream(name)

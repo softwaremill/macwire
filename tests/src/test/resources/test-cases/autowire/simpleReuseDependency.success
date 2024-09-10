@@ -1,0 +1,10 @@
+case class A()
+case class B(a: A)
+case class C(a: A)
+case class D(b: B, c: C)
+
+val a = A()
+val d = autowire[D](a)
+
+require(d.b.a eq a)
+require(d.c.a eq a)

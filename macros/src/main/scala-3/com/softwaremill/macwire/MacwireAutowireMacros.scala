@@ -89,7 +89,7 @@ object MacwireAutowireMacros {
       * @param breadcrumb
       *   The type path the leads to expanding the graph with the type `t`, excluding `t`.
       * @return
-      *   The identifier in the updated graph, which corresponds to an instance of type `t`.
+      *   The symbol in the updated graph, which corresponds to an instance of type `t`, and the updated graph.
       */
     def expandGraph(t: TypeRepr, g: Graph, breadcrumb: Vector[TypeRepr]): (Symbol, Graph) =
       log.withBlock(s"wiring ${showTypeName(t)}"):
@@ -104,7 +104,9 @@ object MacwireAutowireMacros {
 
             // Otherwise, looking for a provider which has a type <:< t; if not found, generating a provider based on a constructor/apply in companion.
             val tProvider = findOrGenerateProvider(t).getOrElse(
-              report.errorAndAbort(s"Cannot find a dependency or a constructor for [$t]")
+              report.errorAndAbort(
+                s"Cannot find a dependency or a public constructor for: ${showTypeName(t)}, while wiring: ${showBreadcrumb(breadcrumb :+ t)}."
+              )
             )
 
             log(s"found provider $tProvider")
