@@ -1,4 +1,4 @@
-package com.softwaremill.macwire
+package com.softwaremill.macwire.internals
 
 import com.softwaremill.macwire.internals.*
 import scala.quoted.*
@@ -7,14 +7,12 @@ object MacwireMacros {
   private val log = new Logger()
 
   def wireImpl[T: Type](using q: Quotes): Expr[T] = {
-    import q.reflect.*
-
     val dependencyResolver = DependencyResolver.throwErrorOnResolutionFailure[q.type, T](log)
 
     wire[T](using q)(dependencyResolver)
   }
 
-  //TODO build failure path
+  // TODO build failure path
   def wireRecImpl[T: Type](using q: Quotes): Expr[T] = {
     import q.reflect.*
 
@@ -25,7 +23,7 @@ object MacwireMacros {
     val dependencyResolver = new DependencyResolver[q.type, T](using q)(
       log,
       tpe =>
-        if !isWireable(tpe) then report.throwError(s"Cannot find a value of type: [${showTypeName(tpe)}]")
+        if !isWireable(tpe) then report.errorAndAbort(s"Cannot find a value of type: [${showTypeName(tpe)}]")
         else
           tpe.asType match {
             case '[t] => wireRecImpl[t].asTerm
@@ -52,7 +50,7 @@ object MacwireMacros {
     }
 
     val code: Tree = (constructorCrimper.constructorTree orElse companionCrimper.applyTree)
-      .getOrElse(report.throwError(whatWasWrong))
+      .getOrElse(report.errorAndAbort(whatWasWrong))
 
     log(s"Generated code: ${code.show}, ${code}")
     code.asExprOf[T]
@@ -61,12 +59,11 @@ object MacwireMacros {
   def wireWith_impl[T: Type](using q: Quotes)(factory: Expr[Any]): Expr[T] = {
     import q.reflect.*
 
-    val typeCheckUtil = new TypeCheckUtil[q.type](log)
     val dependencyResolver = DependencyResolver.throwErrorOnResolutionFailure[q.type, T](log)
 
     val (params, fun) = factory.asTerm match {
       case Inlined(_, _, Block(List(DefDef(_, List(p), _, Some(Apply(f, _)))), _)) => (p.params, f)
-      case _ => report.throwError(s"Not supported factory type: [$factory]")
+      case _ => report.errorAndAbort(s"Not supported factory type: [$factory]")
     }
 
     val values = params.map {

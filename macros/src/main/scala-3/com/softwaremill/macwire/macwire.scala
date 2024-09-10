@@ -1,6 +1,7 @@
 package com.softwaremill.macwire
 
 import com.softwaremill.macwire.internals.autowire.autowireImpl
+import com.softwaremill.macwire.internals.MacwireMacros
 
 /** Wire an instance of the `T`, using the given instances and factory methods. The instance of type `T`, as well as any
   * other required instances will be created using their primary constructors.
