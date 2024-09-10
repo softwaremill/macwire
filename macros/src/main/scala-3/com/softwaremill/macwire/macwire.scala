@@ -3,12 +3,13 @@ package com.softwaremill.macwire
 import com.softwaremill.macwire.internals.autowire.autowireImpl
 import com.softwaremill.macwire.internals.MacwireMacros
 
-/** Wire an instance of the `T`, using the given instances and factory methods. The instance of type `T`, as well as any
-  * other required instances will be created using their primary constructors.
+/** Wire an instance of type `T`, using the given dependencies.
   *
-  * @param dependencies
-  *   The instances or factory methods to use, when creating an instance of type `T`.
-  * @return
+  * Each dependency might be:
+  *   - an instance to use
+  *   - a function to create an instance
+  *
+  * Any missing dependenciess will be created using the publicly available primary constructors, or apply methods.
   */
 inline def autowire[T](inline dependencies: Any*): T = ${ autowireImpl[T]('dependencies) }
 
