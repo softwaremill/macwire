@@ -5,3 +5,7 @@ target
 out
 .sbt
 .bsp
+.bloop
+.metals
+.vscode
+metals.sbt

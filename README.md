@@ -716,8 +716,7 @@ libraryDependencies += "com.softwaremill.macwire" %% "runtime" % "1.0.7"
 ## Debugging
 
 To print debugging information on what MacWire does when looking for values, and what code is generated, set the
-`macwire.debug` system property. E.g. with SBT, just add a `System.setProperty("macwire.debug", "")` line to your
-build file.
+`macwire.debug` system property. E.g. with SBT, start using `sbt -Dmacwire.debug`.
 
 ## Scala.js
 

@@ -15,6 +15,8 @@ val scala3 = "3.3.3"
 
 val scala2And3Versions = scala2 :+ scala3
 
+val ideScalaVersion = scala3
+
 def compilerLibrary(scalaVersion: String) = {
   if (scalaVersion == scala3) {
     Seq("org.scala-lang" %% "scala3-compiler" % scalaVersion)
@@ -49,7 +51,8 @@ val versionSpecificScalaSources = {
 
 val commonSettings = commonSmlBuildSettings ++ ossPublishSettings ++ Seq(
   organization := "com.softwaremill.macwire",
-  ideSkipProject := (scalaVersion.value != scala3) || thisProjectRef.value.project.contains("JS"),
+  ideSkipProject := (scalaVersion.value != ideScalaVersion) || thisProjectRef.value.project.contains("JS"),
+  bspEnabled := !ideSkipProject.value,
   scalacOptions ~= (_.filterNot(Set("-Wconf:cat=other-match-analysis:error"))) // doesn't play well with macros
 )
 
@@ -211,10 +214,3 @@ lazy val macrosAutoCatsTests = projectMatrix
   .settings(libraryDependencies ++= Seq(scalatest, catsEffect, tagging))
   .dependsOn(macrosAutoCats, testUtil)
   .jvmPlatform(scalaVersions = scala2)
-
-Compile / compile := {
-  // Enabling debug project-wide. Can't find a better way to pass options to scalac.
-  System.setProperty("macwire.debug", "")
-
-  (Compile / compile).value
-}

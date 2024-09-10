@@ -1,6 +1,16 @@
 package com.softwaremill
 
 package object macwire {
+
+  /** Wire an instance of the `T`, using the given instances and factory methods. The instance of type `T`, as well as
+    * any other required instances will be created using their primary constructors.
+    *
+    * @param dependencies
+    *   The instances or factory methods to use, when creating an instance of type `T`.
+    * @return
+    */
+  inline def autowire[T](inline dependencies: Any*): T = ${ MacwireAutowireMacros.autowireImpl[T]('dependencies) }
+
   inline def wire[T]: T = ${ MacwireMacros.wireImpl[T] }
 
   inline def wireSet[T]: Set[T] = ${ MacwireMacros.wireSet_impl[T] }
