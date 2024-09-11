@@ -39,7 +39,9 @@ class Constructor[Q <: Quotes](using val q: Q)(
   private def paramType(param: Symbol): TypeRepr = Ref(param).tpe.widen.dealias
 
 object Constructor:
-  def find[Q <: Quotes](using q: Q)(forType: q.reflect.TypeRepr, log: Logger): Option[Constructor[Q]] =
+  def find[Q <: Quotes](using
+      q: Q
+  )(forType: q.reflect.TypeRepr, log: Logger, reportError: ReportError[Q]): Option[Constructor[Q]] =
     import q.reflect.*
 
     def isAccessibleConstructor(s: Symbol) =
@@ -85,9 +87,7 @@ object Constructor:
 
     val injectConstructor: Option[Symbol] =
       if injectConstructors.size > 1 then
-        report.errorAndAbort(
-          s"Multiple constructors annotated with @javax.inject.Inject for type: ${showTypeName(forType)}."
-        )
+        reportError(s"Multiple constructors annotated with @javax.inject.Inject for type: ${showTypeName(forType)}.")
       else injectConstructors.headOption
 
     log.withBlock(s"looking for constructor for ${showTypeName(forType)}"):

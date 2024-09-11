@@ -5,6 +5,8 @@ class AutowireCompileTests extends CompileTestsSupport:
 
   runTestsWith(
     expectedFailures = List(
-      "privateConstructor" -> List("Cannot find a dependency or a public constructor for: A, while wiring: A")
+      "privateConstructor" -> List("Cannot find a dependency or a public constructor for: A.", "Wiring path: A"),
+      "cyclicDependency" -> List("Cyclic dependencies detected.", "Wiring path: A -> B -> A"),
+      "primitives" -> List("Cannot use a primitive type or String in autowiring.", "Wiring path: A -> String")
     )
   )

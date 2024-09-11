@@ -56,11 +56,11 @@ class AutowireProviders[Q <: Quotes](using val q: Q)(rawDependencies: List[Expr[
   end providersFromRawDependencies
 
   object Provider:
-    def forType(t: TypeRepr): Option[Provider] =
+    def forType(t: TypeRepr, reportError: ReportError[q.type]): Option[Provider] =
       providersFromRawDependencies
         .find(_.tpe <:< t)
         .orElse:
           Constructor
-            .find[q.type](t, log)
+            .find[q.type](t, log, reportError)
             .map: constructor =>
               InstanceProvider(t, constructor.paramFlatTypes, constructor.applied, None)
