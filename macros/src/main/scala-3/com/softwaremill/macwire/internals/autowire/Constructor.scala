@@ -5,7 +5,8 @@ import scala.quoted.Quotes
 
 class Constructor[Q <: Quotes](using val q: Q)(
     constructorSymbol: q.reflect.Symbol,
-    forType: q.reflect.TypeRepr
+    forType: q.reflect.TypeRepr,
+    reportError: ReportError[q.type]
 ):
   import q.reflect.*
 
@@ -35,7 +36,7 @@ class Constructor[Q <: Quotes](using val q: Q)(
 
   private def resolveImplicitOrFail(param: Symbol): Term = Implicits.search(paramType(param)) match {
     case iss: ImplicitSearchSuccess => iss.tree
-    case isf: ImplicitSearchFailure => report.errorAndAbort(s"Failed to resolve an implicit for [$param].")
+    case isf: ImplicitSearchFailure => reportError(s"Failed to resolve an implicit for [$param].")
   }
 
   private def paramType(param: Symbol): TypeRepr = Ref(param).tpe.widen.dealias
@@ -43,7 +44,7 @@ class Constructor[Q <: Quotes](using val q: Q)(
 object Constructor:
   def find[Q <: Quotes](using
       q: Q
-  )(forType: q.reflect.TypeRepr, log: Logger, reportError: ReportError[Q]): Option[Constructor[Q]] =
+  )(forType: q.reflect.TypeRepr, log: Logger, reportError: ReportError[q.type]): Option[Constructor[q.type]] =
     import q.reflect.*
 
     def isAccessibleConstructor(s: Symbol) =
@@ -95,4 +96,4 @@ object Constructor:
     log.withBlock(s"looking for constructor for ${showTypeName(forType)}"):
       (injectConstructor orElse primaryConstructor).map: ctor =>
         log(s"found $ctor")
-        Constructor[Q](ctor, forType)
+        Constructor[q.type](ctor, forType, reportError)
