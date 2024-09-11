@@ -95,13 +95,14 @@ def autowireImpl[T: Type](dependencies: Expr[Seq[Any]])(using q: Quotes): Expr[T
   //
 
   val t = TypeRepr.of[T]
-  val (rootSymbol, fullGraph) = expandGraph(t, Graph(Nil), Vector.empty)
-  val sortedGraph = fullGraph.sortTopological
+  val (rootSymbol, fullGraph) = expandGraph(t, Graph(Vector.empty), Vector.empty)
+
+  // the graph is already sorted topologically: nodes are appended, and added only once all dependencies are present
 
   // TODO: verify each dependency used
 
   val code = Block(
-    sortedGraph.nodes.map(node => ValDef(node.symbol, Some(node.createInstance))),
+    fullGraph.nodes.map(node => ValDef(node.symbol, Some(node.createInstance))).toList,
     Ref(rootSymbol)
   )
 

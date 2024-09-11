@@ -6,7 +6,8 @@ import scala.annotation.tailrec
 class AutowireProviders[Q <: Quotes](using val q: Q)(rawDependencies: List[Expr[Any]]):
   import q.reflect.*
 
-  /** Providers define how to create an instance of a type, and what dependencies are needed. Used to create graph nodes
+  /** Providers define how to create an instance of a type, and what dependencies are needed. Used to create graph
+    * nodes, which contain generated wiring code fragments.
     */
   trait Provider:
     /** The type of instances that the provider providers. */

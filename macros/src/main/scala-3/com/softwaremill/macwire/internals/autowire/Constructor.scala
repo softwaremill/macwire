@@ -16,6 +16,9 @@ class Constructor[Q <: Quotes](using val q: Q)(
     _.flatMap(param => if param.flags is Flags.Implicit then None else Some(paramType(param)))
   )
 
+  /** Creates a term which corresponds to invoking the constructor using the given parameters. Each term in the
+    * [[paramFlatValues]] list should correspond to the corresponding type returned by [[paramFlatTypes]].
+    */
   def applied(paramFlatValues: List[Term]): Term =
     val paramsFlatValuesIterator = paramFlatValues.iterator
     val paramValuesLists = paramSymbolsLists.map { paramSymbolList =>
@@ -65,7 +68,7 @@ object Constructor:
       val ctors = forType.typeSymbol.declarations
         .filter(isAccessibleConstructor)
         .filterNot(isPhantomConstructor)
-      log.withBlock(s"There are ${ctors.size} eligible constructors") { ctors.foreach(c => log(c.toString)) }
+      log.withBlock(s"there are ${ctors.size} eligible constructors") { ctors.foreach(c => log(c.toString)) }
       ctors
 
     val primaryConstructor: Option[Symbol] = forType.typeSymbol.primaryConstructor match
@@ -89,5 +92,5 @@ object Constructor:
 
     log.withBlock(s"looking for constructor for ${showTypeName(forType)}"):
       (injectConstructor orElse primaryConstructor).map: ctor =>
-        log(s"Found $ctor")
+        log(s"found $ctor")
         Constructor[Q](ctor, forType)
