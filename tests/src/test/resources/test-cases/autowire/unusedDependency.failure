@@ -1,0 +1,5 @@
+case class A()
+case class B(a: A)
+case class C()
+
+autowire[B](C())

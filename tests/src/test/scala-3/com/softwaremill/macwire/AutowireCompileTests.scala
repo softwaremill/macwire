@@ -10,6 +10,7 @@ class AutowireCompileTests extends CompileTestsSupport:
         "Wiring path: A"
       ),
       "cyclicDependency" -> List("Cyclic dependencies detected.", "Wiring path: A -> B -> A"),
-      "primitives" -> List("Cannot use a primitive type or String in autowiring.", "Wiring path: A -> String")
+      "primitives" -> List("Cannot use a primitive type or String in autowiring.", "Wiring path: A -> String"),
+      "unusedDependency" -> List("Unused dependencies: C.apply().")
     )
   )

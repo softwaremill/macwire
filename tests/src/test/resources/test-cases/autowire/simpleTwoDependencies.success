@@ -5,8 +5,7 @@ case class D(c: C)
 
 val a = A()
 val b = B()
-val c = C(a, b)
-val d = D(c)
-val d2 = autowire[D](a, b, c, d)
+val d = autowire[D](a, b)
 
-require (d2 eq d)
+require (d.c.a eq a)
+require (d.c.b eq b)

@@ -73,7 +73,7 @@ def autowireImpl[T: Type](dependencies: Expr[Seq[Any]])(using q: Quotes): Expr[T
                 Symbol.noSymbol
               )
             val updatedGraph2 = updatedGraph.addNode(
-              Node(t, tSymbol, dependencySymbols, tProvider.create(dependencySymbols.map(Ref(_))))
+              Node(t, tSymbol, dependencySymbols, tProvider.create(dependencySymbols.map(Ref(_))), tProvider.raw)
             )
 
             (tSymbol, updatedGraph2)
@@ -89,6 +89,16 @@ def autowireImpl[T: Type](dependencies: Expr[Seq[Any]])(using q: Quotes): Expr[T
       case '[Int] | '[Long] | '[Byte] | '[Short] | '[Char] | '[Boolean] | '[Double] | '[Float] | '[String] =>
         reportError(s"Cannot use a primitive type or String in autowiring.")
       case _ => // ok
+  end verifyNotPrimitive
+
+  def verifyEachDependencyUsed(nodes: Vector[Node]): Unit =
+    val usedDependencies = nodes.flatMap(_.raw).toSet
+    val unusedDependencies = rawDependencies.filterNot(usedDependencies.contains)
+    if unusedDependencies.nonEmpty then
+      reportError(
+        s"Unused dependencies: ${unusedDependencies.map(_.asTerm.show(using Printer.TreeShortCode)).mkString(", ")}."
+      )
+
   //
 
   val t = TypeRepr.of[T]
@@ -96,7 +106,7 @@ def autowireImpl[T: Type](dependencies: Expr[Seq[Any]])(using q: Quotes): Expr[T
 
   // the graph is already sorted topologically: nodes are appended, and added only once all dependencies are present
 
-  // TODO: verify each dependency used
+  verifyEachDependencyUsed(fullGraph.nodes)
 
   val code = Block(
     fullGraph.nodes.map(node => ValDef(node.symbol, Some(node.createInstance))).toList,

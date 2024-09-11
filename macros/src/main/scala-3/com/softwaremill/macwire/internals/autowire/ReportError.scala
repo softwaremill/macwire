@@ -14,6 +14,7 @@ class ReportError[Q <: Quotes](using val q: Q):
     finally path = path.init
 
   def apply(msg: String): Nothing =
-    report.errorAndAbort(s"$msg\nWiring path: $showPath")
+    val suffix = if path.nonEmpty then s"\nWiring path: $showPath" else ""
+    report.errorAndAbort(s"$msg$suffix")
 
   private def showPath: String = path.map(showTypeName).mkString(" -> ")

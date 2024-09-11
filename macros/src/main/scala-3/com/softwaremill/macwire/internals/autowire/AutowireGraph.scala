@@ -1,6 +1,7 @@
 package com.softwaremill.macwire.internals.autowire
 
 import scala.quoted.Quotes
+import scala.quoted.Expr
 
 class AutowireGraph[Q <: Quotes](using val q: Q):
   import q.reflect.*
@@ -9,7 +10,8 @@ class AutowireGraph[Q <: Quotes](using val q: Q):
       tpe: TypeRepr, // the type of the instance that will be created
       symbol: Symbol, // the symbol of the val-def that will hold the instance
       dependencies: List[Symbol], // incoming edges: the nodes for types that need to be created before this one
-      createInstance: Term // code to create an instance of `tpe`
+      createInstance: Term, // code to create an instance of `tpe`
+      raw: Option[Expr[Any]] // the raw dependency as provided by the user, if any
   )
 
   /** A fully resolved graph, i.e. for each node's dependency there's a node with that symbol. */
