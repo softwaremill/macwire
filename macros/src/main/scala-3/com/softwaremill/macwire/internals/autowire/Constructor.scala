@@ -11,9 +11,11 @@ class Constructor[Q <: Quotes](using val q: Q)(
 
   private val paramSymbolsLists: List[List[Symbol]] = constructorSymbol.paramSymss
 
+  private def isImplicit(f: Flags): Boolean = f.is(Flags.Implicit) || f.is(Flags.Given)
+
   // all non-implicit parmaters
   val paramFlatTypes: List[TypeRepr] = paramSymbolsLists.flatMap(
-    _.flatMap(param => if param.flags is Flags.Implicit then None else Some(paramType(param)))
+    _.flatMap(param => if isImplicit(param.flags) then None else Some(paramType(param)))
   )
 
   /** Creates a term which corresponds to invoking the constructor using the given parameters. Each term in the
@@ -23,7 +25,7 @@ class Constructor[Q <: Quotes](using val q: Q)(
     val paramsFlatValuesIterator = paramFlatValues.iterator
     val paramValuesLists = paramSymbolsLists.map { paramSymbolList =>
       paramSymbolList.map { paramSymbol =>
-        if paramSymbol.flags is Flags.Implicit
+        if isImplicit(paramSymbol.flags)
         then resolveImplicitOrFail(paramSymbol)
         else paramsFlatValuesIterator.next()
       }
