@@ -9,3 +9,4 @@ out
 .metals
 .vscode
 metals.sbt
+Workpad.scala
