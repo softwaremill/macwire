@@ -19,11 +19,12 @@ def autowireImpl[T: Type](dependencies: Expr[Seq[Any]])(using q: Quotes): Expr[T
         s"Depedencies need to be provided directly as parameters to the autowire call. Got: $dependencies."
       )
 
-  val ap = new AutowireProviders[q.type](rawDependencies.toList)
+  val reportError = new ReportError[q.type]
+
+  val ap = new AutowireProviders[q.type](rawDependencies.toList, reportError)
   import ap.*
 
   val uniqueNames = new UniqueNames
-  val reportError = new ReportError[q.type]
 
   //
 
@@ -48,7 +49,7 @@ def autowireImpl[T: Type](dependencies: Expr[Seq[Any]])(using q: Quotes): Expr[T
 
             // Otherwise, looking for a provider which has a type <:< t; if not found, generating a provider based on a constructor/apply in companion.
             val tProvider = Provider
-              .forType(t, reportError)
+              .forType(t)
               .getOrElse(
                 reportError(
                   s"Cannot find a provided dependency, public constructor or public apply method for: ${showTypeName(t)}."
@@ -96,7 +97,7 @@ def autowireImpl[T: Type](dependencies: Expr[Seq[Any]])(using q: Quotes): Expr[T
     val unusedDependencies = rawDependencies.filterNot(usedDependencies.contains)
     if unusedDependencies.nonEmpty then
       reportError(
-        s"Unused dependencies: ${unusedDependencies.map(_.asTerm.show(using Printer.TreeShortCode)).mkString(", ")}."
+        s"Unused dependencies: ${unusedDependencies.map(showExprShort).mkString(", ")}."
       )
 
   //

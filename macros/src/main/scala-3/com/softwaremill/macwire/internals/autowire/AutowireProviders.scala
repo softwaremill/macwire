@@ -2,8 +2,13 @@ package com.softwaremill.macwire.internals.autowire
 
 import scala.quoted.*
 import scala.annotation.tailrec
+import com.softwaremill.macwire.internals.showTypeName
+import com.softwaremill.macwire.internals.showExprShort
 
-class AutowireProviders[Q <: Quotes](using val q: Q)(rawDependencies: List[Expr[Any]]):
+class AutowireProviders[Q <: Quotes](using val q: Q)(
+    rawDependencies: List[Expr[Any]],
+    reportError: ReportError[q.type]
+):
   import q.reflect.*
 
   /** Providers define how to create an instance of a type, and what dependencies are needed. Used to create graph
@@ -42,7 +47,7 @@ class AutowireProviders[Q <: Quotes](using val q: Q)(rawDependencies: List[Expr[
           val term = dep.asTerm
           val tpe = term.tpe
           if seenTpes.exists(seenTpe => seenTpe =:= tpe) then
-            report.errorAndAbort("Duplicate type $tpe in dependencies list, for: $dep!")
+            reportError(s"Duplicate type in dependencies list: ${showTypeName(tpe)}, for: ${showExprShort(dep)}.")
 
           val instanceProvider = InstanceProvider(tpe, Nil, _ => term, Some(dep))
 
@@ -56,7 +61,7 @@ class AutowireProviders[Q <: Quotes](using val q: Q)(rawDependencies: List[Expr[
   end providersFromRawDependencies
 
   object Provider:
-    def forType(t: TypeRepr, reportError: ReportError[q.type]): Option[Provider] =
+    def forType(t: TypeRepr): Option[Provider] =
       providersFromRawDependencies
         .find(_.tpe <:< t)
         .orElse:
