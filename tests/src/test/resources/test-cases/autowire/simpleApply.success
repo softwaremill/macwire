@@ -1,0 +1,6 @@
+case class B()
+case class A private (b: B)
+object A:
+  def apply(b: B): A = new A(b)
+
+autowire[A]()

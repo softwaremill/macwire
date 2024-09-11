@@ -49,7 +49,11 @@ def autowireImpl[T: Type](dependencies: Expr[Seq[Any]])(using q: Quotes): Expr[T
             // Otherwise, looking for a provider which has a type <:< t; if not found, generating a provider based on a constructor/apply in companion.
             val tProvider = Provider
               .forType(t, reportError)
-              .getOrElse(reportError(s"Cannot find a dependency or a public constructor for: ${showTypeName(t)}."))
+              .getOrElse(
+                reportError(
+                  s"Cannot find a provided dependency, public constructor or public apply method for: ${showTypeName(t)}."
+                )
+              )
 
             // Recursively resolving each dependency, collecting dependency symbols
             val (updatedGraph, reverseSymbols) = tProvider.dependencies.foldLeft((g, Nil: List[Symbol])) {

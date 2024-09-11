@@ -62,5 +62,6 @@ class AutowireProviders[Q <: Quotes](using val q: Q)(rawDependencies: List[Expr[
         .orElse:
           Constructor
             .find[q.type](t, log, reportError)
-            .map: constructor =>
-              InstanceProvider(t, constructor.paramFlatTypes, constructor.applied, None)
+            .orElse(Companion.find[q.type](t, log, reportError))
+            .map: creator =>
+              InstanceProvider(t, creator.paramFlatTypes, creator.applied, None)
