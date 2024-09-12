@@ -14,27 +14,18 @@ class AutowireProviders[Q <: Quotes](using val q: Q)(
   /** Providers define how to create an instance of a type, and what dependencies are needed. Used to create graph
     * nodes, which contain generated wiring code fragments.
     */
-  trait Provider:
-    /** The type of instances that the provider providers. */
-    def tpe: TypeRepr
-
-    /** The types of dependencies that need to be provided, in order to create an instance of `tpe`. */
-    def dependencies: List[TypeRepr]
-
-    /** Given a list of terms, one corresponding to each dependency, returns a terms which creates an instance of
-      * [[tpe]].
-      */
-    def create: List[Term] => Term
-
-    /** The raw dependency as provided by the user, if any. */
-    def raw: Option[Expr[Any]]
-
-  private case class InstanceProvider(
+  case class Provider(
+      /** The type of instances that the provider providers. */
       tpe: TypeRepr,
+      /** The types of dependencies that need to be provided, in order to create an instance of `tpe`. */
       dependencies: List[TypeRepr],
+      /** Given a list of terms, one corresponding to each dependency, returns a terms which creates an instance of
+        * [[tpe]].
+        */
       create: List[Term] => Term,
+      /** The raw dependency as provided by the user, if any. */
       raw: Option[Expr[Any]] = None
-  ) extends Provider
+  )
 
   private val classTypeRepr = TypeRepr.of[Class[_]]
 
@@ -50,7 +41,7 @@ class AutowireProviders[Q <: Quotes](using val q: Q)(
             if seenTpes.exists(seenTpe => seenTpe =:= tpe) then
               reportError(s"Duplicate type in dependencies list: ${showTypeName(tpe)}, for: ${showExprShort(dep)}.")
 
-            val instanceProvider = InstanceProvider(tpe, Nil, _ => term)
+            val instanceProvider = Provider(tpe, Nil, _ => term)
 
             val factoryProvider =
               if tpe.isFunctionType then Vector(providerFromFunction(term, tpe))
@@ -75,15 +66,15 @@ class AutowireProviders[Q <: Quotes](using val q: Q)(
     createProviders(rawDependencies, Vector.empty, Set.empty)
   end providersFromRawDependencies
 
-  private def providerFromFunction(t: Term, tpe: TypeRepr): InstanceProvider =
+  private def providerFromFunction(t: Term, tpe: TypeRepr): Provider =
     val typeArgs = tpe.typeArgs
     val depTypes = typeArgs.init
     val resultType = typeArgs.last.dealias.widen // the types provided by dependencies should always be possibly general
     log(s"detected a function provider, for: ${resultType.show}, deps: ${depTypes.map(_.show)}")
     val createInstance = (deps: List[Term]) => Apply(Select.unique(t, "apply"), deps)
-    InstanceProvider(resultType, depTypes, createInstance)
+    Provider(resultType, depTypes, createInstance)
 
-  private def providersFromMembersOf(t: Term): Vector[InstanceProvider] =
+  private def providersFromMembersOf(t: Term): Vector[Provider] =
     def nonSyntethic(member: Symbol): Boolean =
       !member.fullName.startsWith("java.lang.Object") &&
         !member.fullName.startsWith("scala.Any") &&
@@ -103,21 +94,21 @@ class AutowireProviders[Q <: Quotes](using val q: Q)(
         .flatMap { s =>
           if s.isValDef then
             log(s"found a value member: ${s.typeRef.show}")
-            Some(InstanceProvider(s.typeRef, Nil, _ => Select(membersOf, s)))
+            Some(Provider(s.typeRef, Nil, _ => Select(membersOf, s)))
           else if s.isDefDef && s.paramSymss.isEmpty then
             log(s"found a no-arg method member: ${s.typeRef.show}")
-            Some(InstanceProvider(s.typeRef, Nil, _ => Select(membersOf, s)))
+            Some(Provider(s.typeRef, Nil, _ => Select(membersOf, s)))
           else None
         }
   end providersFromMembersOf
 
   /** For the given type, try to create a provider based on a constructor or apply method. */
-  private def creatorProviderForType(t: TypeRepr): Option[InstanceProvider] =
+  private def creatorProviderForType(t: TypeRepr): Option[Provider] =
     Constructor
       .find[q.type](t, log, reportError)
       .orElse(Companion.find[q.type](t, log, reportError))
       .map: creator =>
-        InstanceProvider(t, creator.paramFlatTypes, creator.applied)
+        Provider(t, creator.paramFlatTypes, creator.applied)
 
   object Provider:
     def forType(t: TypeRepr): Option[Provider] =
