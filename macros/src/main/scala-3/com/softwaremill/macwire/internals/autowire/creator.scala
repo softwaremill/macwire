@@ -73,33 +73,37 @@ object Constructor:
         */
       def isPhantomConstructor(constructor: Symbol): Boolean = constructor.fullName.endsWith("$init$")
 
-      val publicConstructors: Iterable[Symbol] =
-        val ctors = forType.typeSymbol.declarations
-          .filter(isAccessibleConstructor)
-          .filterNot(isPhantomConstructor)
-        log.withBlock(s"there are ${ctors.size} eligible constructors") { ctors.foreach(c => log(c.toString)) }
-        ctors
+      if forType.typeSymbol.flags is Flags.Trait then None
+      else
+        val publicConstructors: Iterable[Symbol] =
+          val ctors = forType.typeSymbol.declarations
+            .filter(isAccessibleConstructor)
+            .filterNot(isPhantomConstructor)
+          log.withBlock(s"there are ${ctors.size} eligible constructors") { ctors.foreach(c => log(c.toString)) }
+          ctors
 
-      val primaryConstructor: Option[Symbol] = forType.typeSymbol.primaryConstructor match
-        case c if isAccessibleConstructor(c) => Some(c)
-        case c                               => None
+        val primaryConstructor: Option[Symbol] = forType.typeSymbol.primaryConstructor match
+          case c if isAccessibleConstructor(c) => Some(c)
+          case c                               => None
 
-      val injectConstructors: Iterable[Symbol] =
-        val isInjectAnnotation = (a: Term) => a.tpe.typeSymbol.fullName == "javax.inject.Inject"
-        val ctors = publicConstructors.filter(_.annotations.exists(isInjectAnnotation))
-        log.withBlock(s"there are ${ctors.size} constructors annotated with @javax.inject.Inject") {
-          ctors.foreach(c => log(c.toString))
-        }
-        ctors
+        val injectConstructors: Iterable[Symbol] =
+          val isInjectAnnotation = (a: Term) => a.tpe.typeSymbol.fullName == "javax.inject.Inject"
+          val ctors = publicConstructors.filter(_.annotations.exists(isInjectAnnotation))
+          log.withBlock(s"there are ${ctors.size} constructors annotated with @javax.inject.Inject") {
+            ctors.foreach(c => log(c.toString))
+          }
+          ctors
 
-      val injectConstructor: Option[Symbol] =
-        if injectConstructors.size > 1 then
-          reportError(s"Multiple constructors annotated with @javax.inject.Inject for type: ${showTypeName(forType)}.")
-        else injectConstructors.headOption
+        val injectConstructor: Option[Symbol] =
+          if injectConstructors.size > 1 then
+            reportError(
+              s"Multiple constructors annotated with @javax.inject.Inject for type: ${showTypeName(forType)}."
+            )
+          else injectConstructors.headOption
 
-      (injectConstructor orElse primaryConstructor).map: ctor =>
-        log(s"found $ctor")
-        Creator[q.type](New(TypeIdent(forType.typeSymbol)), ctor, reportError)
+        (injectConstructor orElse primaryConstructor).map: ctor =>
+          log(s"found $ctor")
+          Creator[q.type](New(TypeIdent(forType.typeSymbol)), ctor, reportError)
 
 object Companion:
   def find[Q <: Quotes](using
