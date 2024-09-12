@@ -38,6 +38,8 @@ class AutowireProviders[Q <: Quotes](using val q: Q)(
   // trait ClassOfProvider
   // trait MembersOfProvider
 
+  private val classTypeRepr = TypeRepr.of[Class[_]]
+
   private val providersFromRawDependencies =
     @tailrec
     def createProviders(deps: List[Expr[Any]], acc: Vector[Provider], seenTpes: Set[TypeRepr]): Vector[Provider] =
@@ -46,27 +48,41 @@ class AutowireProviders[Q <: Quotes](using val q: Q)(
         case dep :: otherDeps =>
           val term = dep.asTerm
           val tpe = term.tpe
-          if seenTpes.exists(seenTpe => seenTpe =:= tpe) then
-            reportError(s"Duplicate type in dependencies list: ${showTypeName(tpe)}, for: ${showExprShort(dep)}.")
+          val providersToAdd = log.withBlock(s"processing dependency: ${showExprShort(dep)}"):
+            if seenTpes.exists(seenTpe => seenTpe =:= tpe) then
+              reportError(s"Duplicate type in dependencies list: ${showTypeName(tpe)}, for: ${showExprShort(dep)}.")
 
-          val instanceProvider = InstanceProvider(tpe, Nil, _ => term, Some(dep))
+            val instanceProvider = InstanceProvider(tpe, Nil, _ => term, Some(dep))
 
-          val factoryProvider =
-            if term.tpe.isFunctionType then Vector() // TODO
-            else Vector.empty
+            val factoryProvider =
+              if term.tpe.isFunctionType then Vector() // TODO
+              else Vector.empty
 
-          createProviders(otherDeps, (acc :+ instanceProvider) ++ factoryProvider, seenTpes + tpe)
+            val classOfProvider =
+              if term.tpe <:< classTypeRepr then
+                val classOfTypeParameter = term.tpe.baseType(classTypeRepr.typeSymbol).typeArgs.head
+                log(s"detected a classOf provider: ${classOfTypeParameter.show}")
+                creatorProviderForType(classOfTypeParameter).map(_.copy(raw = Some(dep))).toVector
+              else Vector.empty
+
+            Vector(instanceProvider) ++ factoryProvider ++ classOfProvider
+
+          createProviders(otherDeps, acc ++ providersToAdd, seenTpes + tpe)
 
     createProviders(rawDependencies, Vector.empty, Set.empty)
   end providersFromRawDependencies
+
+  private def creatorProviderForType(t: TypeRepr): Option[InstanceProvider] =
+    Constructor
+      .find[q.type](t, log, reportError)
+      .orElse(Companion.find[q.type](t, log, reportError))
+      .map: creator =>
+        InstanceProvider(t, creator.paramFlatTypes, creator.applied, None)
 
   object Provider:
     def forType(t: TypeRepr): Option[Provider] =
       providersFromRawDependencies
         .find(_.tpe <:< t)
         .orElse:
-          Constructor
-            .find[q.type](t, log, reportError)
-            .orElse(Companion.find[q.type](t, log, reportError))
-            .map: creator =>
-              InstanceProvider(t, creator.paramFlatTypes, creator.applied, None)
+          log("no provider foudn in raw depdencies, trying to create one using a constructor/apply method")
+          creatorProviderForType(t)
