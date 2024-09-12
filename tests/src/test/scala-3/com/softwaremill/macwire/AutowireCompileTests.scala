@@ -16,6 +16,7 @@ class AutowireCompileTests extends CompileTestsSupport:
       "plainTrait" -> List(
         "Cannot find a provided dependency, public constructor or public apply method for: A.",
         "Wiring path: B -> A."
-      )
+      ),
+      "membersOfDuplicate" -> List("Duplicate type in dependencies list: A, for: new A().")
     )
   )
