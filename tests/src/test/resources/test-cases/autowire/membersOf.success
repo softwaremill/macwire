@@ -1,0 +1,12 @@
+trait A
+trait B
+class Deps(val a: A, b: B):
+  def bb: B = b
+  def cc(z: Int): A = a
+case class C(a: A, b: B)
+
+val d = new Deps(new A {}, new B {})
+val c = autowire[C](membersOf(d))
+
+assert(c.a eq d.a)
+assert(c.b eq d.bb)

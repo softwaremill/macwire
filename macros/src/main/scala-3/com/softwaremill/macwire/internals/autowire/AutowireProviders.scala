@@ -35,7 +35,6 @@ class AutowireProviders[Q <: Quotes](using val q: Q)(
       create: List[Term] => Term,
       raw: Option[Expr[Any]] = None
   ) extends Provider
-  // trait MembersOfProvider
 
   private val classTypeRepr = TypeRepr.of[Class[_]]
 
@@ -64,7 +63,12 @@ class AutowireProviders[Q <: Quotes](using val q: Q)(
                 creatorProviderForType(classOfTypeParameter).toVector
               else Vector.empty
 
-            Vector(instanceProvider) ++ factoryProvider ++ classOfProvider
+            val membersOfProviders =
+              if term.show.startsWith("com.softwaremill.macwire.macwire$package.membersOf") then
+                providersFromMembersOf(term)
+              else Vector.empty
+
+            Vector(instanceProvider) ++ factoryProvider ++ classOfProvider ++ membersOfProviders
 
           createProviders(otherDeps, acc ++ providersToAdd.map(_.copy(raw = Some(dep))), seenTpes + tpe)
 
@@ -74,10 +78,38 @@ class AutowireProviders[Q <: Quotes](using val q: Q)(
   private def providerFromFunction(t: Term, tpe: TypeRepr): InstanceProvider =
     val typeArgs = tpe.typeArgs
     val depTypes = typeArgs.init
-    val resultType = typeArgs.last
+    val resultType = typeArgs.last.dealias.widen // the types provided by dependencies should always be possibly general
     log(s"detected a function provider, for: ${resultType.show}, deps: ${depTypes.map(_.show)}")
     val createInstance = (deps: List[Term]) => Apply(Select.unique(t, "apply"), deps)
     InstanceProvider(resultType, depTypes, createInstance)
+
+  private def providersFromMembersOf(t: Term): Vector[InstanceProvider] =
+    def nonSyntethic(member: Symbol): Boolean =
+      !member.fullName.startsWith("java.lang.Object") &&
+        !member.fullName.startsWith("scala.Any") &&
+        !member.fullName.startsWith("scala.AnyRef") &&
+        !member.fullName.endsWith("<init>") &&
+        !member.fullName.endsWith("$init$") &&
+        !member.fullName.contains("$default$") && // default params for copy on case classes
+        !member.fullName.matches(".*_\\d+") // tuple methods on case classes
+
+    def isPublic(member: Symbol): Boolean = !((member.flags is Flags.Private) || (member.flags is Flags.Protected))
+
+    log.withBlock(s"detected a membersOf provider"):
+      val Apply(_, List(membersOf)) = t: @unchecked
+      val membersOfSymbol = membersOf.tpe.typeSymbol
+      (membersOfSymbol.fieldMembers ++ membersOfSymbol.methodMembers).toVector
+        .filter(m => nonSyntethic(m) && isPublic(m))
+        .flatMap { s =>
+          if s.isValDef then
+            log(s"found a value member: ${s.typeRef.show}")
+            Some(InstanceProvider(s.typeRef, Nil, _ => Select(membersOf, s)))
+          else if s.isDefDef && s.paramSymss.isEmpty then
+            log(s"found a no-arg method member: ${s.typeRef.show}")
+            Some(InstanceProvider(s.typeRef, Nil, _ => Select(membersOf, s)))
+          else None
+        }
+  end providersFromMembersOf
 
   /** For the given type, try to create a provider based on a constructor or apply method. */
   private def creatorProviderForType(t: TypeRepr): Option[InstanceProvider] =
