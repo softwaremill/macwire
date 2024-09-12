@@ -1,0 +1,9 @@
+case class C()
+trait A
+case class AImpl(c: C) extends A
+case class B(a: A)
+
+def createA(c: C): A = AImpl(c)
+
+val b = autowire[B](createA)
+assert(b.a.isInstanceOf[AImpl])
