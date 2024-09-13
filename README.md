@@ -29,10 +29,10 @@ To use, add the following dependency:
 
 ```
 // sbt
-"com.softwaremill.macwire" %% "macros" % "2.5.9" % "provided"
+"com.softwaremill.macwire" %% "macros" % "2.6.0" % "provided"
 
 // scala-cli
-//> using dep com.softwaremill.macwire::macros:2.5.9
+//> using dep com.softwaremill.macwire::macros:2.6.0
 ```
 
 # Table of Contents
@@ -421,7 +421,7 @@ class SocialModule(userModule: UserModule) {
 Dependency:
 
 ```scala
-"com.softwaremill.macwire" %% "util" % "2.5.9"
+"com.softwaremill.macwire" %% "util" % "2.6.0"
 ```
 
 If you are using that pattern a lot, you can annotate your modules using `@Module`, and they will be used when
@@ -443,7 +443,7 @@ class SocialModule(userModule: UserModule) {
 Dependency:
 
 ```
-"com.softwaremill.macwire" %% "proxy" % "2.5.9"
+"com.softwaremill.macwire" %% "proxy" % "2.6.0"
 ```
 
 There are two "built-in" scopes, depending on how the dependency is defined:
@@ -493,7 +493,7 @@ frameworks.
 Dependency:
 
 ```scala
-"com.softwaremill.macwire" %% "util" % "2.5.9"
+"com.softwaremill.macwire" %% "util" % "2.6.0"
 ```
 
 To integrate with some frameworks (e.g. [Play 2](http://www.playframework.com/)) or to create instances of classes
@@ -581,7 +581,7 @@ that the wired class extends, instead of the full implementation.
 Dependency:
 
 ```scala
-"com.softwaremill.macwire" %% "macrosakka" % "2.5.9" % "provided"
+"com.softwaremill.macwire" %% "macrosakka" % "2.6.0" % "provided"
 ```
 
 Macwire provides wiring suport for [akka](http://akka.io) through the `macrosAkka` module.
@@ -742,7 +742,7 @@ trait RockBandModule {
 
 **Warning**: `autowire` is an experimental feature, if you have any feedback regarding its usage, let us know! Future releases might break source/binary compatibility. It is available for Scala 2 only for now.
 
-Dependency: `"com.softwaremill.macwire" %% "macrosautocats" % "2.5.9"`
+Dependency: `"com.softwaremill.macwire" %% "macrosautocats" % "2.6.0"`
 
 In case you need to build an instance from some particular instances and factory methods you can leverage `autowire`. This feature is intended to integrate with effect-management libraries (currently we support [cats-effect](https://github.com/typelevel/cats-effect)).
 
@@ -800,7 +800,7 @@ object UserModule {
 Dependency:
 
 ```
-"com.softwaremill.macwire" %% "proxy" % "2.5.9"
+"com.softwaremill.macwire" %% "proxy" % "2.6.0"
 ```
 
 MacWire contains an implementation of interceptors, which can be applied to class instances in the modules.
