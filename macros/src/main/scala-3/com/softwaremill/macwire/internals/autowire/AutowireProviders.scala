@@ -55,7 +55,7 @@ class AutowireProviders[Q <: Quotes](using val q: Q)(
               else Vector.empty
 
             val membersOfProviders =
-              if term.show.startsWith("com.softwaremill.macwire.macwire$package.membersOf") then
+              if term.show.startsWith("com.softwaremill.macwire.macwire$package.autowireMembersOf") then
                 providersFromMembersOf(term)
               else Vector.empty
 

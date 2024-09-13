@@ -109,7 +109,7 @@ of the default construct/`apply` mechanism. These are described in detail below.
 * an instance to use
 * a function to create an instance
 * a class to instantiate to provide a dependency for the types it implements (provided as: `classOf[SomeType]`)
-* a `membersOf(instance)` call, to use the members of the given instance as dependencies
+* a `autowireMembersOf(instance)` call, to use the members of the given instance as dependencies
 
 `autowire` is context-free: its result does not depend on the environment, within which it is called (except for
 implicit parameters, which are looked up using the usual mechanism). It only depends on the type that is specified
@@ -183,7 +183,7 @@ Without the `classOf[]`, MacWire wouldn't know how to create an instance impleme
 
 ## Using dependencies contained in objects
 
-Finally, it's possible to use the members of a given instance as dependencies. Simply pass a `memberOf(someInstance)` 
+Finally, it's possible to use the members of a given instance as dependencies. Simply pass a `autowireMembersOf(someInstance)` 
 as a parameter to `autowire`.
 
 ## Errors
