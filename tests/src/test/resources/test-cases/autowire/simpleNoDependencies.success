@@ -1,0 +1,11 @@
+case class A()
+case class B()
+case class C(a: A, b: B)
+case class D(c: C)
+
+val d = autowire[D]()
+
+require(d != null)
+require(d.c != null)
+require(d.c.a != null)
+require(d.c.b != null)

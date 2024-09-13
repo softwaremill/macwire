@@ -47,7 +47,7 @@ trait CompileTestsSupport extends BaseCompileTestsSupport with OptionValues {
     else { it should description in testFun }
 
     op {
-      withTempFile(loadTest("/test-cases/" + testName, imports)) { path =>
+      withTempFile(loadTest(testName, imports)) { path =>
         val driver = Driver()
         val testReporter = new TestReporter
         val reporter = testReporter
@@ -76,7 +76,7 @@ trait CompileTestsSupport extends BaseCompileTestsSupport with OptionValues {
   }
 
   private def loadTest(name: String, imports: String) = wrapInMainObject(
-    imports + resolveDirectives(loadResource(name))
+    imports + resolveDirectives(loadResource(baseDirectory + name))
   )
 
   private def wrapInMainObject(source: String) = s"object Main {\n  ${source.linesIterator.mkString("\n  ")}\n}"

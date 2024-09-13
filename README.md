@@ -1,36 +1,221 @@
 ![MacWire](https://github.com/softwaremill/macwire/raw/master/banner.png)
 
+[![Ideas, suggestions, problems, questions](https://img.shields.io/badge/Discourse-ask%20question-blue)](https://softwaremill.community/c/macwire)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.softwaremill.macwire/macros_2.13/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.softwaremill.macwire/macros_2.13)
+
+Zero-cost, compile-time, type-safe dependency injection library.
+
+The core of MacWire is a set of macros, that is code which runs at compile-time. The macros generate the `new` instance
+creation code automatically, allowing you to avoid a ton of boilerplate code, while maintaining type-safety.
+
+The core library has no dependencies, and incurs no run-time overhead. The main mechanism of defining dependencies of a
+class are plain constructors or `apply` methods in companion objects. MacWire doesn't impact the code of your classes 
+in any way, there are no annotations that you have to use or conventions to follow.
+
+There's a couple of wiring variants that you can choose from:
+
+* `autowire` creates instances of the given type, using the provided dependencies. Any missing dependencies are created
+  using constructors/`apply` methods.
+* `wire` creates instances of the given type, using dependencies from the context, within which it is called. 
+  Dependencies are looked up in the enclosing trait/class/object and parents (via inheritance).
+* `wireRec` is a variant of `wire`, which creates missing dependencies using constructors.
+
+In other words, `autowire` is context-free, while the `wire` family of macros is context-dependent.
+
+MacWire is available for Scala 2.12, 2.13 and 3 on the JVM and JS platforms. Not all functionalities are available for
+each Scala version.
+
+To use, add the following dependency:
+
+```
+// sbt
+"com.softwaremill.macwire" %% "macros" % "2.5.9" % "provided"
+
+// scala-cli
+//> using dep com.softwaremill.macwire::macros:2.5.9
+```
+
 # Table of Contents
 
 - [Table of Contents](#table-of-contents)
-- [MacWire](#macwire)
+- [autowire](#autowire)
+  - [Providing instantiated dependencies](#providing-instantiated-dependencies)
+  - [Using factories](#using-factories)
+  - [Specifying implementations to use](#specifying-implementations-to-use)
+  - [Using dependencies contained in objects](#using-dependencies-contained-in-objects)
+  - [Errors](#errors)
+- [wire](#wire)
 	- [How wiring works](#how-wiring-works)
 	- [Factories](#factories)
 	- [Factory methods](#factory-methods)
 	- [`lazy val` vs. `val`](#lazy-val-vs-val)
 	- [Recursive wiring](#recursive-wiring)
-	- [Autowire](#autowire)
 	- [Composing modules](#composing-modules)
 	- [Scopes](#scopes)
 	- [Accessing wired instances dynamically](#accessing-wired-instances-dynamically)
-	- [Interceptors](#interceptors)
-	- [Qualifiers](#qualifiers)
-	- [Multi Wiring (wireSet)](#multi-wiring-wireset)
-	- [Limitations](#limitations)
-	- [Akka integration](#akka-integration)
-	- [Installation, using with SBT](#installation-using-with-sbt)
+  - [Limitations](#limitations)
+  - [Akka integration](#akka-integration)
+  - [Multi Wiring (wireSet)](#multi-wiring-wireset)
+- [Autowire for cats-effect](#autowire-for-cats-effect)  
+- [Interceptors](#interceptors)
+- [Qualifiers](#qualifiers)
+- [Development](#development)	
 	- [Debugging](#debugging)
-	- [Scala.js](#scalajs)
 	- [Future development - vote!](#future-development---vote)
-	- [Migrating from 1.x <a id="migrating"></a>](#migrating-from-1x-a-id%22migrating%22a)
-	- [Play 2.4.x <a id="play24x"></a>](#play-24x-a-id%22play24x%22a)
-	- [Play 2.5.x <a id="play25x"></a>](#play-25x-a-id%22play25x%22a)
-    - [Scala3 support](#scala3-support)
+- [Platform and version-specifics](#platform-and-version-specifics)  
+	- [Scala.js](#scalajs)
+  - [Scala3 support](#scala3-support)
+- [Other](#other)
+  - [Commerical support](#commercial-support)
+  - [Copyright](#copyright)
 
-# MacWire
+# autowire
 
-[![Ideas, suggestions, problems, questions](https://img.shields.io/badge/Discourse-ask%20question-blue)](https://softwaremill.community/c/macwire)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.softwaremill.macwire/macros_2.13/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.softwaremill.macwire/macros_2.13)
+![Scala 3](https://img.shields.io/badge/Scala%203-8A2BE2)
+![direct-style](https://img.shields.io/badge/direct--style-228B22)
+
+Autowire generates the code needed to instantiate the given type. To create the instance, the public primary 
+constructor is used, or if one is absent - the `apply` method from the companion object. Any dependencies are
+created recursively. For example, given the following classes:
+
+```scala
+class DatabaseAccess()
+class SecurityFilter()
+class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
+class UserStatusReader(userFinder: UserFinder)
+```
+
+invoking `autowire` as below:
+
+```scala
+import com.softwaremill.macwire.*
+val userStatusReader = autowire[UserStatusReader]()
+```
+
+generates following code:
+
+```scala
+val userStatusReader =
+  val wiredDatabaseAccess   = new DatabaseAccess()
+  val wiredSecurityFilter   = new SecurityFilter()
+  val wiredUserFinder       = new UserFinder(wiredDatabaseAccess, wiredSecurityFilter)
+  val wiredUserStatusReader = new UserStatusReader(wiredUserFinder)
+  wiredUserStatusReader
+```
+
+`autowire` accepts an arbitrary number of parameters, which specify how to lookup or create dependencies, instead
+of the default construct/`apply` mechanism. These are described in detail below. Each such parameter might be:
+
+* an instance to use
+* a function to create an instance
+* a class to instantiate to provide a depedency for the types it implements (provided as: `classOf[SomeType]`)
+* a `membersOf(instance)` call, to use the members of the given instance as dependencies
+
+`autowire` is context-free: its result does not depend on the environment, within which it is called (except for
+implicit parameters, which are looked up using the usual mechanism). It only depends on the type that is specified
+for wiring, and any parameters that are passed.
+
+## Providing instantiated dependencies
+
+In some cases it's necessary to instantiate a dependency by hand, e.g. to initialise it with some configuration,
+or to manage its lifecycle. In such cases, dependencies can be provided as parameters to the `autowire` invocation.
+They will be used whenever a value of the given type is needed.
+
+As an example, consider a `DataSource`, which needs to be configured with a JDBC connection string, and has a 
+managed life-cycle:
+
+```scala
+import java.io.Closeable
+
+class DataSource(jdbcConn: String) extends Closeable { def close() = () }
+class DatabaseAccess(ds: DataSource)
+class SecurityFilter()
+class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
+class UserStatusReader(userFinder: UserFinder)
+```
+
+We can provide a `DataSource` instance to be used by `autowire`:
+
+```scala
+import com.softwaremill.macwire.*
+import scala.util.Using
+
+Using.resource(DataSource("jdbc:h2:~/test")): ds =>
+  autowire[UserStatusReader](ds)
+```
+
+## Using factories
+
+In addition to instances, which should be used by `autowire`, it's also possible to provide factory methods. They will
+be used to create instances of types which is the result of the provided function, using the dependencies which are the
+function's parameters. Any dependencies are recursively created. 
+
+For example, we can provide a custom way to create a `UserFinder`:
+
+```scala
+class DatabaseAccess()
+class SecurityFilter()
+class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter, adminOnly: Boolean)
+class UserStatusReader(userFinder: UserFinder)
+
+autowire[UserStatusReader](UserFinder(_, _, adminOnly = true))
+```
+
+## Specifying implementations to use
+
+You can specify which classes to use to create instances. This is useful when the dependencies are expressed for 
+example using `trait`s, not the concrete types. Such a dependency can be expressed by providing a `classOf[]`
+parameter to `autowire`:
+
+```scala
+trait DatabaseAccess
+class DatabaseAccessImpl() extends DatabaseAccess
+
+class SecurityFilter()
+class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
+class UserStatusReader(userFinder: UserFinder)
+
+autowire[UserStatusReader](classOf[DatabaseAccessImpl])
+```
+
+Without the `classOf[]`, MacWire wouldn't know how to create an instance implementing `DatabaseAccess`.
+
+## Using dependencies contained in objects
+
+Finally, it's possible to use the members of a given instance as dependencies. Simply pass a `memberOf(someInstance)` 
+as a parameter to `autowire`.
+
+## Errors
+
+`autowire` reports an error when:
+
+* a dependency can't be created (e.g. there are no public constructors / `apply` methods)
+* there are circular dependencies
+* the provided dependencies contain a duplicate
+* a provided dependency is not used
+* a primitive or `String` type is used as a dependency (instead, use e.g. an opaque type)
+
+Each error contains the wiring path. For example, below there's no public constructor for `DatabaseAccess`, which
+results in a compile-time error:
+
+```scala
+class DatabaseAccess private ()
+class SecurityFilter()
+class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
+class UserStatusReader(userFinder: UserFinder)
+
+autowire[UserStatusReader]()
+
+// compile-time error:
+// cannot find a provided dependency, public constructor or public apply method for: DatabaseAccess;
+// wiring path: UserStatusReader -> UserFinder -> DatabaseAccess
+```
+
+# wire
+
+![Scala 2](https://img.shields.io/badge/Scala%202-8A2BE2)
+![Scala 3](https://img.shields.io/badge/Scala%203-8A2BE2)
+![direct-style](https://img.shields.io/badge/direct--style-228B22)
 
 MacWire generates `new` instance creation code of given classes, using values in the enclosing type for constructor
 parameters, with the help of Scala Macros.
@@ -51,41 +236,41 @@ instantiated, typesafety and using only language (Scala) mechanisms.
 
 Example usage:
 
-````scala
+```scala
 class DatabaseAccess()
 class SecurityFilter()
 class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
 class UserStatusReader(userFinder: UserFinder)
 
 trait UserModule {
-    import com.softwaremill.macwire._
+  import com.softwaremill.macwire._
 
-    lazy val theDatabaseAccess   = wire[DatabaseAccess]
-    lazy val theSecurityFilter   = wire[SecurityFilter]
-    lazy val theUserFinder       = wire[UserFinder]
-    lazy val theUserStatusReader = wire[UserStatusReader]
+  lazy val theDatabaseAccess   = wire[DatabaseAccess]
+  lazy val theSecurityFilter   = wire[SecurityFilter]
+  lazy val theUserFinder       = wire[UserFinder]
+  lazy val theUserStatusReader = wire[UserStatusReader]
 }
-````
+```
 
 will generate:
 
-````scala
+```scala
 trait UserModule {
-    lazy val theDatabaseAccess   = new DatabaseAccess()
-    lazy val theSecurityFilter   = new SecurityFilter()
-    lazy val theUserFinder       = new UserFinder(theDatabaseAccess, theSecurityFilter)
-    lazy val theUserStatusReader = new UserStatusReader(theUserFinder)
+  lazy val theDatabaseAccess   = new DatabaseAccess()
+  lazy val theSecurityFilter   = new SecurityFilter()
+  lazy val theUserFinder       = new UserFinder(theDatabaseAccess, theSecurityFilter)
+  lazy val theUserStatusReader = new UserStatusReader(theUserFinder)
 }
-````
+```
 
 For testing, just extend the base module and override any dependencies with mocks/stubs etc, e.g.:
 
-````scala
+```scala
 trait UserModuleForTests extends UserModule {
-    override lazy val theDatabaseAccess = mockDatabaseAccess
-    override lazy val theSecurityFilter = mockSecurityFilter
+  override lazy val theDatabaseAccess = mockDatabaseAccess
+  override lazy val theSecurityFilter = mockSecurityFilter
 }
-````
+```
 
 The core library has no dependencies.
 
@@ -127,38 +312,38 @@ the factory (method) parameters, and from the enclosing/super type(s).
 
 For example:
 
-````scala
+```scala
 class DatabaseAccess()
 class TaxDeductionLibrary(databaseAccess: DatabaseAccess)
 class TaxCalculator(taxBase: Double, taxDeductionLibrary: TaxDeductionLibrary)
 
 trait TaxModule {
-    import com.softwaremill.macwire._
+  import com.softwaremill.macwire._
 
-    lazy val theDatabaseAccess      = wire[DatabaseAccess]
-    lazy val theTaxDeductionLibrary = wire[TaxDeductionLibrary]
-    def taxCalculator(taxBase: Double) = wire[TaxCalculator]
-    // or: lazy val taxCalculator = (taxBase: Double) => wire[TaxCalculator]
+  lazy val theDatabaseAccess      = wire[DatabaseAccess]
+  lazy val theTaxDeductionLibrary = wire[TaxDeductionLibrary]
+  def taxCalculator(taxBase: Double) = wire[TaxCalculator]
+  // or: lazy val taxCalculator = (taxBase: Double) => wire[TaxCalculator]
 }
-````
+```
 
 will generate:
 
-````scala
+```scala
 trait TaxModule {
-    lazy val theDatabaseAccess      = new DatabaseAccess()
-    lazy val theTaxDeductionLibrary = new TaxDeductionLibrary(theDatabaseAccess)
-    def taxCalculator(taxBase: Double) =
-       new TaxCalculator(taxBase, theTaxDeductionLibrary)
+  lazy val theDatabaseAccess      = new DatabaseAccess()
+  lazy val theTaxDeductionLibrary = new TaxDeductionLibrary(theDatabaseAccess)
+  def taxCalculator(taxBase: Double) =
+    new TaxCalculator(taxBase, theTaxDeductionLibrary)
 }
-````
+```
 
 ## Factory methods
 
 You can also wire an object using a factory method, instead of a constructor. For that, use `wireWith` instead of
 `wire`. For example:
 
-````scala
+```scala
 class A()
 
 class C(a: A, specialValue: Int)
@@ -170,7 +355,7 @@ trait MyModule {
   lazy val a = wire[A]
   lazy val c = wireWith(C.create _)
 }
-````
+```
 
 ## `lazy val` vs. `val`
 
@@ -185,86 +370,29 @@ only those objects, which are referenced from the code, skipping helper or inter
 
 The previous example becomes:
 
-````scala
+```scala
 class DatabaseAccess()
 class SecurityFilter()
 class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
 class UserStatusReader(userFinder: UserFinder)
 
 trait UserModule {
-    import com.softwaremill.macwire._
+  import com.softwaremill.macwire._
 
-    lazy val theUserStatusReader = wireRec[UserStatusReader]
+  lazy val theUserStatusReader = wireRec[UserStatusReader]
 }
-````
+```
 
 and will generate:
 
-````scala
+```scala
 trait UserModule {
-    lazy val theUserStatusReader = new UserStatusReader(
+  lazy val theUserStatusReader = new UserStatusReader(
 		new UserFinder(new DatabaseAccess(), new SecurityFilter()))
 }
-````
+```
 
 This feature is inspired by @yakivy's work on [jam](https://github.com/yakivy/jam).
-
-## Autowire
-
-**Warning**: `autowire` is an experimental feature, if you have any feedback regarding its usage, let us know! Future releases might break source/binary compatibility. It is available for Scala 2 only for now.
-
-Dependency: `"com.softwaremill.macwire" %% "macrosautocats" % "2.5.9"`
-
-In case you need to build an instance from some particular instances and factory methods you can leverage `autowire`. This feature is intended to integrate with effect-management libraries (currently we support [cats-effect](https://github.com/typelevel/cats-effect)).
-
-`autowire` takes as an argument a list of arguments which may contain:
-
-* values (e.g. `new A()`)
-* factory methods (e.g. `C.create _`)
-* factory methods that return `cats.effect.Resource` or `cats.effect.IO` (e.g. `C.createIO _`)
-* `cats.effect.Resource` (e.g. `cats.effect.Resource[IO].pure(new A())`)
-* `cats.effect.IO` (e.g. `cats.effect.IO.pure(new A())`)
-
-Using the dependencies from the given arguments it creates an instance of the given type. Any missing instances are created using their primary constructor, provided that the dependencies are met. If this is not possible, a compile-time error is reported. In other words, a `wireRec` is performed, bypassing the instances search phase. 
-
-The result of the wiring is always wrapped in `cats.effect.Resource`. For example:
-
-```scala
-import cats.effect._
-
-class DatabaseAccess()
-
-class SecurityFilter private (databaseAccess: DatabaseAccess)
-object SecurityFilter {
-  def apply(databaseAccess: DatabaseAccess): SecurityFilter = new SecurityFilter(databaseAccess)
-}
-
-class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
-class UserStatusReader(databaseAccess: DatabaseAccess, userFinder: UserFinder)
-
-object UserModule {
-  import com.softwaremill.macwire.autocats._
-
-  val theDatabaseAccess: Resource[IO, DatabaseAccess] = Resource.pure(new DatabaseAccess())
-
-  val theUserStatusReader: Resource[IO, UserStatusReader] = autowire[UserStatusReader](theDatabaseAccess)
-}
-```
-
-will generate:
-
-```scala
-[...]
-object UserModule {
-  import com.softwaremill.macwire.autocats._
-
-  val theDatabaseAccess: Resource[IO, DatabaseAccess] = Resource.pure(new DatabaseAccess())
-
-  val theUserStatusReader: Resource[IO, UserStatusReader] = UserModule.this.theDatabaseAccess.flatMap(
-    da => Resource.pure[IO, UserStatusReader](new UserStatusReader(da, new UserFinder(da, SecurityFilter.apply(da))))
-  )
-}
-```
 
 ## Composing modules
 
@@ -274,7 +402,7 @@ you need to tell MacWire that it should look inside the nested modules.
 
 To do that, you can use imports:
 
-````scala
+```scala
 class FacebookAccess(userFind: UserFinder)
 
 class UserModule {
@@ -286,12 +414,20 @@ class SocialModule(userModule: UserModule) {
 
   lazy val facebookAccess = wire[FacebookAccess]
 }
-````
+```
 
-Or, if you are using that pattern a lot, you can annotate your modules using `@Module`, and they will be used when
+### Avoiding imports
+
+Dependency:
+
+```scala
+"com.softwaremill.macwire" %% "util" % "2.5.9"
+```
+
+If you are using that pattern a lot, you can annotate your modules using `@Module`, and they will be used when
 searching for values automatically:
 
-````scala
+```scala
 class FacebookAccess(userFind: UserFinder)
 
 @Module
@@ -300,12 +436,15 @@ class UserModule { ... } // as before
 class SocialModule(userModule: UserModule) {
   lazy val facebookAccess = wire[FacebookAccess]
 }
-````
-
-**Warning**: the `@Module` annotation is an experimental feature, if you have any feedback regarding its usage, let
-us know!
+```
 
 ## Scopes
+
+Dependency:
+
+```
+"com.softwaremill.macwire" %% "proxy" % "2.5.9"
+```
 
 There are two "built-in" scopes, depending on how the dependency is defined:
 * singleton: `lazy val` / `val`
@@ -351,6 +490,12 @@ frameworks.
 
 ## Accessing wired instances dynamically
 
+Dependency:
+
+```scala
+"com.softwaremill.macwire" %% "util" % "2.5.9"
+```
+
 To integrate with some frameworks (e.g. [Play 2](http://www.playframework.com/)) or to create instances of classes
 which names are only known at run-time (e.g. plugins) it is necessary to access the wired instances dynamically.
 MacWire contains a utility class in the `util` subproject, `Wired`, to support such functionality.
@@ -366,14 +511,14 @@ new objects using the available dependencies. You can also extend `Wired` with n
 
 For example:
 
-````scala
+```scala
 // 1. Defining the object graph and the module
 trait DatabaseConnector
 class MysqlDatabaseConnector extends DatabaseConnector
 
 class MyApp {
-    def securityFilter = new SecurityFilter()
-    val databaseConnector = new MysqlDatabaseConnector()
+  def securityFilter = new SecurityFilter()
+  val databaseConnector = new MysqlDatabaseConnector()
 }
 
 // 2. Creating a Wired instance
@@ -389,132 +534,12 @@ wired.lookup(classOf[DatabaseConnector])
 
 // 4. Instantiation using the available dependencies
 {
-    package com.softwaremill
-    class AuthenticationPlugin(databaseConnector: DatabaseConnector)
+  package com.softwaremill
+  class AuthenticationPlugin(databaseConnector: DatabaseConnector)
 }
 
 // Creates a new instance of the given class using the dependencies available in MyApp
 wired.wireClassInstanceByName("com.softwaremill.AuthenticationPlugin")
-````
-
-## Interceptors
-
-MacWire contains an implementation of interceptors, which can be applied to class instances in the modules.
-Similarly to scopes, the `proxy` subproject defines an `Interceptor` trait, which has only one method: `apply`.
-When applied to an instance, it should return an instance of the same class, but with the interceptor applied.
-
-There are two implementations of the `Interceptor` trait provided:
-
-* `NoOpInterceptor`: returns the given instance without changes
-* `ProxyingInterceptor`: proxies the instance, and returns the proxy. A provided function is called
-with information on the invocation
-
-Interceptors can be abstract in modules. E.g.:
-
-```scala
-trait BusinessLogicModule {
-   lazy val moneyTransferer = transactional(wire[MoneyTransferer])
-
-   def transactional: Interceptor
-}
-```
-
-During tests, you can then use the `NoOpInterceptor`. In production code or integration tests, you can specify a real
-interceptor, either by extending the `ProxyingInterceptor` trait, or by passing a function to the
-`ProxyingInterceptor` object:
-
-```scala
-object MyApplication extends BusinessLogicModule {
-    lazy val tm = wire[TransactionManager]
-
-    lazy val transactional = ProxyingInterceptor { ctx =>
-        try {
-            tm.begin()
-            val result = ctx.proceed()
-            tm.commit()
-
-            result
-        } catch {
-            case e: Exception => tm.rollback()
-        }
-    }
-}
-```
-
-The `ctx` is an instance of an `InvocationContext`, and contains information on the parameters passed to the method,
-the method itself, and the target object. It also allows to proceed with the invocation with the same or changed
-parameters.
-
-For more general AOP, e.g. if you want to apply an interceptor to all methods matching a given pointcut expression,
-you should use [AspectJ](http://eclipse.org/aspectj/) or an equivalent library. The interceptors that are implemented
-in MacWire correspond to annotation-based interceptors in Java.
-
-## Qualifiers
-
-Sometimes you have multiple objects of the same type that you want to use during wiring. Macwire needs to have some
-way of telling the instances apart. As with other things, the answer is: types! Even when not using `wire`, it may
-be useful to give the instances distinct types, to get compile-time checking.
-
-For that purpose Macwire includes support for tagging via [scala-common](https://github.com/softwaremill/scala-common),
-which lets you attach tags to instances to qualify them. This
-is a compile-time only operation, and doesn't affect the runtime. The tags are derived from
-[Miles Sabin's gist](https://gist.github.com/milessabin/89c9b47a91017973a35f).
-
-To bring the tagging into scope, import `com.softwaremill.tagging._`.
-
-Using tagging has two sides. In the constructor, when declaring a dependency, you need to declare what tag it needs
-to have. You can do this with the `_ @@ _` type constructor, or if you prefer another syntax `Tagged[_, _]`. The first
-type parameter is the type of the dependency, the second is a tag.
-
-The tag can be any type, but usually it is just an empty marker trait.
-
-When defining the available instances, you need to specify which instance has which tag. This can be done with the
-`taggedWith[_]` method, which returns a tagged instance (`A.taggedWith[T]: A @@ T`). Tagged instances can be used
-as regular ones, without any constraints.
-
-The `wire` macro does not contain any special support for tagging, everything is handled by subtyping. For example:
-
-````scala
-class Berry()
-trait Black
-trait Blue
-
-case class Basket(blueberry: Berry @@ Blue, blackberry: Berry @@ Black)
-
-lazy val blueberry = wire[Berry].taggedWith[Blue]
-lazy val blackberry = wire[Berry].taggedWith[Black]
-lazy val basket = wire[Basket]
-````
-
-Multiple tags can be combined using the `andTaggedWith` method. E.g. if we had a berry that is both blue and black:
-
-````scala
-lazy val blackblueberry = wire[Berry].taggedWith[Black].andTaggedWith[Blue]
-````
-
-The resulting value has type `Berry @ (Black with Blue)` and can be used both as a blackberry and as a blueberry.
-
-## Multi Wiring (wireSet)
-
-Using `wireSet` you can obtain a set of multiple instances of the same type. This is done without constructing the set explicitly. All instances of the same type which are found by MacWire are used to construct the set.
-
-Consider the below example. Let's suppose that you want to create a `RockBand(musicians: Set[Musician])` object. It's easy to do so using the `wireSet` functionality:
-
-```scala
-trait Musician
-class RockBand(musicians: Set[Musician])
-
-trait RockBandModule {
-  lazy val singer    = new Musician {}
-  lazy val guitarist = new Musician {}
-  lazy val drummer   = new Musician {}
-  lazy val bassist   = new Musician {}
-
-  lazy val musicians = wireSet[Musician] // all above musicians will be wired together
-                                         // musicians has type Set[Musician]
-
-  lazy val rockBand  = wire[RockBand]
-}
 ```
 
 ## Limitations
@@ -533,7 +558,7 @@ can be wired.
 
 For example:
 
-````scala
+```scala
 class A()
 class B(a: A)
 
@@ -541,7 +566,7 @@ class B(a: A)
 lazy val theA: A = wire[A]
 // reference to theA; if for some reason we need explicitly write the constructor call
 lazy val theB = new B(theA)
-````
+```
 
 This is an inconvenience, but hopefully will get resolved once post-typer macros are introduced to the language.
 
@@ -552,6 +577,12 @@ Note that the type ascription may be a subtype of the wired type. This can be us
 that the wired class extends, instead of the full implementation.
 
 ## Akka integration
+
+Dependency:
+
+```scala
+"com.softwaremill.macwire" %% "macrosakka" % "2.5.9" % "provided"
+```
 
 Macwire provides wiring suport for [akka](http://akka.io) through the `macrosAkka` module.
 [Here](https://github.com/adamw/macwire/blob/master/macrosAkkaTests/src/test/scala/com/softwaremill/macwire/akkasupport/demo/Demo.scala)
@@ -671,7 +702,7 @@ For that, the module provides three additional macros `wireAnonymousActorWith`, 
 Their usage is similar to `wireWith` (see [Factory methods](#factory-methods)).
 For example:
 
-````scala
+```scala
 class UserFinderActor(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter) extends Actor { ... }
 
 object UserFinderActor {
@@ -679,129 +710,217 @@ object UserFinderActor {
 }
 
 val theUserFinder = wireActorWith(UserFinderActor.get _)("userFinder")
-````
+```
 
-## Installation, using with SBT
+## Multi Wiring (wireSet)
 
-The jars are deployed to [Sonatype's OSS repository](https://oss.sonatype.org/content/repositories/snapshots/com/softwaremill/macwire/).
-To use MacWire in your project, add a dependency:
+Using `wireSet` you can obtain a set of multiple instances of the same type. This is done without constructing the set explicitly. All instances of the same type which are found by MacWire are used to construct the set.
 
-````scala
-libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.5.9" % "provided"
+Consider the below example. Let's suppose that you want to create a `RockBand(musicians: Set[Musician])` object. It's easy to do so using the `wireSet` functionality:
 
-libraryDependencies += "com.softwaremill.macwire" %% "macrosakka" % "2.5.9" % "provided"
+```scala
+trait Musician
+class RockBand(musicians: Set[Musician])
 
-libraryDependencies += "com.softwaremill.macwire" %% "util" % "2.5.9"
+trait RockBandModule {
+  lazy val singer    = new Musician {}
+  lazy val guitarist = new Musician {}
+  lazy val drummer   = new Musician {}
+  lazy val bassist   = new Musician {}
 
-libraryDependencies += "com.softwaremill.macwire" %% "proxy" % "2.5.9"
-````
+  lazy val musicians = wireSet[Musician] // all above musicians will be wired together
+                                         // musicians has type Set[Musician]
 
-MacWire is available for Scala 2.12, 2.13, 3 on the JVM and JS.
+  lazy val rockBand  = wire[RockBand]
+}
+```
 
-The `macros` subproject contains only code which is used at compile-time, hence the `provided` scope.
+# Autowire for cats-effect
 
-The `util` subproject contains tagging, `Wired` and the `@Module` annotation; if you don't use these features, you don't
-need to include this dependency.
+![Scala 2](https://img.shields.io/badge/Scala%202-8A2BE2)
+![cats-effect](https://img.shields.io/badge/cats--effect-228B22)
 
-The `proxy` subproject contains interceptors and scopes, and has a dependency on `javassist`.
+**Warning**: `autowire` is an experimental feature, if you have any feedback regarding its usage, let us know! Future releases might break source/binary compatibility. It is available for Scala 2 only for now.
 
-Older 1.x release for Scala 2.10 and 2.11:
+Dependency: `"com.softwaremill.macwire" %% "macrosautocats" % "2.5.9"`
 
-````scala
-libraryDependencies += "com.softwaremill.macwire" %% "macros" % "1.0.7"
+In case you need to build an instance from some particular instances and factory methods you can leverage `autowire`. This feature is intended to integrate with effect-management libraries (currently we support [cats-effect](https://github.com/typelevel/cats-effect)).
 
-libraryDependencies += "com.softwaremill.macwire" %% "runtime" % "1.0.7"
-````
+`autowire` takes as an argument a list of arguments which may contain:
+
+* values (e.g. `new A()`)
+* factory methods (e.g. `C.create _`)
+* factory methods that return `cats.effect.Resource` or `cats.effect.IO` (e.g. `C.createIO _`)
+* `cats.effect.Resource` (e.g. `cats.effect.Resource[IO].pure(new A())`)
+* `cats.effect.IO` (e.g. `cats.effect.IO.pure(new A())`)
+
+Using the dependencies from the given arguments it creates an instance of the given type. Any missing instances are created using their primary constructor, provided that the dependencies are met. If this is not possible, a compile-time error is reported. In other words, a `wireRec` is performed, bypassing the instances search phase. 
+
+The result of the wiring is always wrapped in `cats.effect.Resource`. For example:
+
+```scala
+import cats.effect._
+
+class DatabaseAccess()
+
+class SecurityFilter private (databaseAccess: DatabaseAccess)
+object SecurityFilter {
+  def apply(databaseAccess: DatabaseAccess): SecurityFilter = new SecurityFilter(databaseAccess)
+}
+
+class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
+class UserStatusReader(databaseAccess: DatabaseAccess, userFinder: UserFinder)
+
+object UserModule {
+  import com.softwaremill.macwire.autocats._
+
+  val theDatabaseAccess: Resource[IO, DatabaseAccess] = Resource.pure(new DatabaseAccess())
+
+  val theUserStatusReader: Resource[IO, UserStatusReader] = autowire[UserStatusReader](theDatabaseAccess)
+}
+```
+
+will generate:
+
+```scala
+[...]
+object UserModule {
+  import com.softwaremill.macwire.autocats._
+
+  val theDatabaseAccess: Resource[IO, DatabaseAccess] = Resource.pure(new DatabaseAccess())
+
+  val theUserStatusReader: Resource[IO, UserStatusReader] = UserModule.this.theDatabaseAccess.flatMap(
+    da => Resource.pure[IO, UserStatusReader](new UserStatusReader(da, new UserFinder(da, SecurityFilter.apply(da))))
+  )
+}
+```
+
+# Interceptors
+
+Dependency:
+
+```
+"com.softwaremill.macwire" %% "proxy" % "2.5.9"
+```
+
+MacWire contains an implementation of interceptors, which can be applied to class instances in the modules.
+Similarly to scopes, the `proxy` subproject defines an `Interceptor` trait, which has only one method: `apply`.
+When applied to an instance, it should return an instance of the same class, but with the interceptor applied.
+
+There are two implementations of the `Interceptor` trait provided:
+
+* `NoOpInterceptor`: returns the given instance without changes
+* `ProxyingInterceptor`: proxies the instance, and returns the proxy. A provided function is called
+with information on the invocation
+
+Interceptors can be abstract in modules. E.g.:
+
+```scala
+trait BusinessLogicModule {
+   lazy val moneyTransferer = transactional(wire[MoneyTransferer])
+
+   def transactional: Interceptor
+}
+```
+
+During tests, you can then use the `NoOpInterceptor`. In production code or integration tests, you can specify a real
+interceptor, either by extending the `ProxyingInterceptor` trait, or by passing a function to the
+`ProxyingInterceptor` object:
+
+```scala
+object MyApplication extends BusinessLogicModule {
+  lazy val tm = wire[TransactionManager]
+
+  lazy val transactional = ProxyingInterceptor { ctx =>
+    try {
+      tm.begin()
+      val result = ctx.proceed()
+      tm.commit()
+
+      result
+    } catch {
+      case e: Exception => tm.rollback()
+    }
+  }
+}
+```
+
+The `ctx` is an instance of an `InvocationContext`, and contains information on the parameters passed to the method,
+the method itself, and the target object. It also allows to proceed with the invocation with the same or changed
+parameters.
+
+For more general AOP, e.g. if you want to apply an interceptor to all methods matching a given pointcut expression,
+you should use [AspectJ](http://eclipse.org/aspectj/) or an equivalent library. The interceptors that are implemented
+in MacWire correspond to annotation-based interceptors in Java.
+
+# Qualifiers
+
+> [!NOTE]
+> While the below works both in Scala 2 & Scala 3, in Scala 3, you can use the built-in
+> [opaque types](https://docs.scala-lang.org/scala3/reference/other-new-features/opaques.html)
+> instead.
+
+Sometimes you have multiple objects of the same type that you want to use during wiring. Macwire needs to have some
+way of telling the instances apart. As with other things, the answer is: types! Even when not using `wire`, it may
+be useful to give the instances distinct types, to get compile-time checking.
+
+For that purpose Macwire includes support for tagging via [scala-common](https://github.com/softwaremill/scala-common),
+which lets you attach tags to instances to qualify them. This
+is a compile-time only operation, and doesn't affect the runtime. The tags are derived from
+[Miles Sabin's gist](https://gist.github.com/milessabin/89c9b47a91017973a35f).
+
+To bring the tagging into scope, import `com.softwaremill.tagging._`.
+
+Using tagging has two sides. In the constructor, when declaring a dependency, you need to declare what tag it needs
+to have. You can do this with the `_ @@ _` type constructor, or if you prefer another syntax `Tagged[_, _]`. The first
+type parameter is the type of the dependency, the second is a tag.
+
+The tag can be any type, but usually it is just an empty marker trait.
+
+When defining the available instances, you need to specify which instance has which tag. This can be done with the
+`taggedWith[_]` method, which returns a tagged instance (`A.taggedWith[T]: A @@ T`). Tagged instances can be used
+as regular ones, without any constraints.
+
+The `wire` macro does not contain any special support for tagging, everything is handled by subtyping. For example:
+
+```scala
+class Berry()
+trait Black
+trait Blue
+
+case class Basket(blueberry: Berry @@ Blue, blackberry: Berry @@ Black)
+
+lazy val blueberry = wire[Berry].taggedWith[Blue]
+lazy val blackberry = wire[Berry].taggedWith[Black]
+lazy val basket = wire[Basket]
+```
+
+Multiple tags can be combined using the `andTaggedWith` method. E.g. if we had a berry that is both blue and black:
+
+```scala
+lazy val blackblueberry = wire[Berry].taggedWith[Black].andTaggedWith[Blue]
+```
+
+The resulting value has type `Berry @ (Black with Blue)` and can be used both as a blackberry and as a blueberry.
+
+# Development
 
 ## Debugging
 
 To print debugging information on what MacWire does when looking for values, and what code is generated, set the
-`macwire.debug` system property. E.g. with SBT, just add a `System.setProperty("macwire.debug", "")` line to your
-build file.
-
-## Scala.js
-
-Macwire also works with [Scala.js](http://www.scala-js.org/). For an example, see here:
-[Macwire+Scala.js example](https://github.com/adamw/macwire/tree/master/examples/scalajs).
+`macwire.debug` system property. E.g. with SBT, start using `sbt -Dmacwire.debug`.
 
 ## Future development - vote!
 
 Take a look at the [available issues](https://github.com/adamw/macwire/issues). If you'd like to see one developed
 please vote on it. Or maybe you'll attempt to create a pull request?
 
-## Migrating from 1.x <a id="migrating"></a>
+# Platform and version-specifics
 
-* changed how code is split across modules. You'll need to depend on `util` to get tagging & `Wired`, and `proxy`
-to get interceptors and scopes
-* tagging moved to a separate package. If you use tagging, you'll need to import `com.softwaremill.tagging._`
-* removed `wireImplicit`
-* implicit parameters aren't handled by `wire` at all (they used to be subject to the same lookup procedure as normal
-parameters + implicit lookup)
+## Scala.js
 
-## Play 2.4.x <a id="play24x"></a>
-
-In Play 2.4.x, you can no longer use getControllerInstance in GlobalSettings for injection. Play has a new pattern for injecting controllers. You must extend ApplicationLoader, from there you can mix in your modules.
-
-````scala
-import controllers.{Application, Assets}
-import play.api.ApplicationLoader.Context
-import play.api._
-import play.api.routing.Router
-import router.Routes
-import com.softwaremill.macwire._
-
-class AppApplicationLoader extends ApplicationLoader {
-  def load(context: Context) = {
-
-    // make sure logging is configured
-    Logger.configure(context.environment)
-
-    (new BuiltInComponentsFromContext(context) with AppComponents).application
-  }
-}
-
-trait AppComponents extends BuiltInComponents with AppModule {
-  lazy val assets: Assets = wire[Assets]
-  lazy val prefix: String = "/"
-  lazy val router: Router = wire[Routes]
-}
-
-trait AppModule {
-  // Define your dependencies and controllers
-  lazy val applicationController = wire[Application]
-}
-````
-
-In application.conf, add the reference to the ApplicationLoader.
-
-````
-play.application.loader = "AppApplicationLoader"
-````
-
-
-For more information and to see the sample project, go to [examples/play24](https://github.com/adamw/macwire/tree/master/examples/play24)
-
-Reference Play docs for more information:
-
-* [ScalaCompileTimeDependencyInjection](https://www.playframework.com/documentation/2.4.x/ScalaCompileTimeDependencyInjection)
-
-
-## Play 2.5.x <a id="play25x"></a>
-
-For Play 2.5.x, you must do the same as for Play 2.4.x, except the `Logger` configuration.
-
-````scala
-import play.api.LoggerConfigurator
-class AppApplicationLoader extends ApplicationLoader {
-  def load(context: Context) = {
-
-    LoggerConfigurator(context.environment.classLoader).foreach {
-      _.configure(context.environment)
-    }
-    // ... do the same as for Play 2.4.x
-  }
-}
-````
+Macwire also works with [Scala.js](http://www.scala-js.org/). For an example, see here:
+[Macwire+Scala.js example](https://github.com/adamw/macwire/tree/master/examples/scalajs).
 
 ## Scala3 support
 
@@ -815,11 +934,13 @@ The Scala 3 version is written to be compatible with Scala 2 where possible. Cur
 
 For full list of incompatibilities take a look at `tests/src/test/resources/test-cases` and `util-tests/src/test/resources/test-cases` .
 
+# Other
+
 ## Commercial Support
 
 We offer commercial support for MacWire and related technologies, as well as development services. [Contact us](https://softwaremill.com) to learn more about our offer!
 
 ## Copyright
 
-Copyright (C) 2013-2021 SoftwareMill [https://softwaremill.com](https://softwaremill.com).
+Copyright (C) 2013-2024 SoftwareMill [https://softwaremill.com](https://softwaremill.com).
 

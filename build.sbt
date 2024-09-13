@@ -7,13 +7,15 @@ import sbt.Keys._
 
 excludeLintKeys in Global ++= Set(ideSkipProject)
 
-val scala2_12 = "2.12.16"
+val scala2_12 = "2.12.20"
 val scala2_13 = "2.13.14"
 
 val scala2 = List(scala2_12, scala2_13)
 val scala3 = "3.3.3"
 
 val scala2And3Versions = scala2 :+ scala3
+
+val ideScalaVersion = scala3
 
 def compilerLibrary(scalaVersion: String) = {
   if (scalaVersion == scala3) {
@@ -49,7 +51,8 @@ val versionSpecificScalaSources = {
 
 val commonSettings = commonSmlBuildSettings ++ ossPublishSettings ++ Seq(
   organization := "com.softwaremill.macwire",
-  ideSkipProject := (scalaVersion.value != scala3) || thisProjectRef.value.project.contains("JS"),
+  ideSkipProject := (scalaVersion.value != ideScalaVersion) || thisProjectRef.value.project.contains("JS"),
+  bspEnabled := !ideSkipProject.value,
   scalacOptions ~= (_.filterNot(Set("-Wconf:cat=other-match-analysis:error"))) // doesn't play well with macros
 )
 
@@ -61,10 +64,10 @@ val testSettings = commonSettings ++ Seq(
   Test / fork := true
 )
 
-val tagging = "com.softwaremill.common" %% "tagging" % "2.3.1"
-val scalatest = "org.scalatest" %% "scalatest" % "3.2.9"
+val tagging = "com.softwaremill.common" %% "tagging" % "2.3.5"
+val scalatest = "org.scalatest" %% "scalatest" % "3.2.19"
 val javassist = "org.javassist" % "javassist" % "3.30.2-GA"
-val akkaActor = "com.typesafe.akka" %% "akka-actor" % "2.6.20"
+val akkaActor = "com.typesafe.akka" %% "akka-actor" % "2.6.21"
 val pekkoActor = "org.apache.pekko" %% "pekko-actor" % "1.1.0"
 val javaxInject = "javax.inject" % "javax.inject" % "1"
 val cats = "org.typelevel" %% "cats-core" % "2.12.0"
@@ -211,10 +214,3 @@ lazy val macrosAutoCatsTests = projectMatrix
   .settings(libraryDependencies ++= Seq(scalatest, catsEffect, tagging))
   .dependsOn(macrosAutoCats, testUtil)
   .jvmPlatform(scalaVersions = scala2)
-
-Compile / compile := {
-  // Enabling debug project-wide. Can't find a better way to pass options to scalac.
-  System.setProperty("macwire.debug", "")
-
-  (Compile / compile).value
-}
