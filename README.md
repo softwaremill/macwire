@@ -155,7 +155,8 @@ For example, we can provide a custom way to create a `UserFinder`:
 ```scala
 class DatabaseAccess()
 class SecurityFilter()
-class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter, adminOnly: Boolean)
+class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter, 
+  adminOnly: Boolean)
 class UserStatusReader(userFinder: UserFinder)
 
 autowire[UserStatusReader](UserFinder(_, _, adminOnly = true))
@@ -207,7 +208,7 @@ class UserStatusReader(userFinder: UserFinder)
 autowire[UserStatusReader]()
 
 // compile-time error:
-// cannot find a provided dependency, public constructor or public apply method for: DatabaseAccess;
+// cannot find a provided dependency, constructor or apply method for: DatabaseAccess;
 // wiring path: UserStatusReader -> UserFinder -> DatabaseAccess
 ```
 
@@ -528,8 +529,8 @@ val wired = wiredInModule(new MyApp)
 // 3. Dynamic lookup of instances
 wired.lookup(classOf[SecurityFilter])
 
-// Returns the mysql database connector, even though its type is MysqlDatabaseConnector, which is
-// assignable to DatabaseConnector.
+// Returns the mysql database connector, even though its type is MysqlDatabaseConnector, 
+// which is assignable to DatabaseConnector.
 wired.lookup(classOf[DatabaseConnector])
 
 // 4. Instantiation using the available dependencies
