@@ -19,7 +19,7 @@ class Creator[Q <: Quotes](using val q: Q)(
 
   // all non-implicit parmaters
   val paramFlatTypes: List[TypeRepr] = paramSymbolsLists.flatMap(
-    _.flatMap(param => if isImplicit(param.flags) then None else Some(paramType(param)))
+    _.flatMap(param => if isImplicit(param.flags) || param.isType then None else Some(paramType(param)))
   )
 
   /** Creates a term which corresponds to invoking the creator using the given parameters. Each term in the

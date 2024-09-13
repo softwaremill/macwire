@@ -14,9 +14,9 @@ in any way, there are no annotations that you have to use or conventions to foll
 
 There's a couple of wiring variants that you can choose from:
 
-* `autowire` creates instances of the given type, using the provided dependencies. Any missing dependencies are created
+* `autowire` create an instance of the given type, using the provided dependencies. Any missing dependencies are created
   using constructors/`apply` methods.
-* `wire` creates instances of the given type, using dependencies from the context, within which it is called. 
+* `wire` create an instance of the given type, using dependencies from the context, within which it is called. 
   Dependencies are looked up in the enclosing trait/class/object and parents (via inheritance).
 * `wireRec` is a variant of `wire`, which creates missing dependencies using constructors.
 
@@ -108,7 +108,7 @@ of the default construct/`apply` mechanism. These are described in detail below.
 
 * an instance to use
 * a function to create an instance
-* a class to instantiate to provide a depedency for the types it implements (provided as: `classOf[SomeType]`)
+* a class to instantiate to provide a dependency for the types it implements (provided as: `classOf[SomeType]`)
 * a `membersOf(instance)` call, to use the members of the given instance as dependencies
 
 `autowire` is context-free: its result does not depend on the environment, within which it is called (except for
