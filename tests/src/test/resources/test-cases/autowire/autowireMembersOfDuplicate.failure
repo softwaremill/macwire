@@ -6,4 +6,4 @@ class Deps(val a: A, b: B):
 case class C(a: A, b: B)
 
 val d = new Deps(new A, new B)
-autowire[C](membersOf(d), new A)
+autowire[C](autowireMembersOf(d), new A)

@@ -6,7 +6,7 @@ class Deps(val a: A, b: B):
 case class C(a: A, b: B)
 
 val d = new Deps(new A {}, new B {})
-val c = autowire[C](membersOf(d))
+val c = autowire[C](autowireMembersOf(d))
 
 assert(c.a eq d.a)
 assert(c.b eq d.bb)
