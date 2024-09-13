@@ -243,12 +243,12 @@ class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
 class UserStatusReader(userFinder: UserFinder)
 
 trait UserModule {
-    import com.softwaremill.macwire._
+  import com.softwaremill.macwire._
 
-    lazy val theDatabaseAccess   = wire[DatabaseAccess]
-    lazy val theSecurityFilter   = wire[SecurityFilter]
-    lazy val theUserFinder       = wire[UserFinder]
-    lazy val theUserStatusReader = wire[UserStatusReader]
+  lazy val theDatabaseAccess   = wire[DatabaseAccess]
+  lazy val theSecurityFilter   = wire[SecurityFilter]
+  lazy val theUserFinder       = wire[UserFinder]
+  lazy val theUserStatusReader = wire[UserStatusReader]
 }
 ```
 
@@ -256,10 +256,10 @@ will generate:
 
 ```scala
 trait UserModule {
-    lazy val theDatabaseAccess   = new DatabaseAccess()
-    lazy val theSecurityFilter   = new SecurityFilter()
-    lazy val theUserFinder       = new UserFinder(theDatabaseAccess, theSecurityFilter)
-    lazy val theUserStatusReader = new UserStatusReader(theUserFinder)
+  lazy val theDatabaseAccess   = new DatabaseAccess()
+  lazy val theSecurityFilter   = new SecurityFilter()
+  lazy val theUserFinder       = new UserFinder(theDatabaseAccess, theSecurityFilter)
+  lazy val theUserStatusReader = new UserStatusReader(theUserFinder)
 }
 ```
 
@@ -267,8 +267,8 @@ For testing, just extend the base module and override any dependencies with mock
 
 ```scala
 trait UserModuleForTests extends UserModule {
-    override lazy val theDatabaseAccess = mockDatabaseAccess
-    override lazy val theSecurityFilter = mockSecurityFilter
+  override lazy val theDatabaseAccess = mockDatabaseAccess
+  override lazy val theSecurityFilter = mockSecurityFilter
 }
 ```
 
@@ -318,12 +318,12 @@ class TaxDeductionLibrary(databaseAccess: DatabaseAccess)
 class TaxCalculator(taxBase: Double, taxDeductionLibrary: TaxDeductionLibrary)
 
 trait TaxModule {
-    import com.softwaremill.macwire._
+  import com.softwaremill.macwire._
 
-    lazy val theDatabaseAccess      = wire[DatabaseAccess]
-    lazy val theTaxDeductionLibrary = wire[TaxDeductionLibrary]
-    def taxCalculator(taxBase: Double) = wire[TaxCalculator]
-    // or: lazy val taxCalculator = (taxBase: Double) => wire[TaxCalculator]
+  lazy val theDatabaseAccess      = wire[DatabaseAccess]
+  lazy val theTaxDeductionLibrary = wire[TaxDeductionLibrary]
+  def taxCalculator(taxBase: Double) = wire[TaxCalculator]
+  // or: lazy val taxCalculator = (taxBase: Double) => wire[TaxCalculator]
 }
 ```
 
@@ -331,10 +331,10 @@ will generate:
 
 ```scala
 trait TaxModule {
-    lazy val theDatabaseAccess      = new DatabaseAccess()
-    lazy val theTaxDeductionLibrary = new TaxDeductionLibrary(theDatabaseAccess)
-    def taxCalculator(taxBase: Double) =
-       new TaxCalculator(taxBase, theTaxDeductionLibrary)
+  lazy val theDatabaseAccess      = new DatabaseAccess()
+  lazy val theTaxDeductionLibrary = new TaxDeductionLibrary(theDatabaseAccess)
+  def taxCalculator(taxBase: Double) =
+    new TaxCalculator(taxBase, theTaxDeductionLibrary)
 }
 ```
 
@@ -377,9 +377,9 @@ class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
 class UserStatusReader(userFinder: UserFinder)
 
 trait UserModule {
-    import com.softwaremill.macwire._
+  import com.softwaremill.macwire._
 
-    lazy val theUserStatusReader = wireRec[UserStatusReader]
+  lazy val theUserStatusReader = wireRec[UserStatusReader]
 }
 ```
 
@@ -387,7 +387,7 @@ and will generate:
 
 ```scala
 trait UserModule {
-    lazy val theUserStatusReader = new UserStatusReader(
+  lazy val theUserStatusReader = new UserStatusReader(
 		new UserFinder(new DatabaseAccess(), new SecurityFilter()))
 }
 ```
@@ -517,8 +517,8 @@ trait DatabaseConnector
 class MysqlDatabaseConnector extends DatabaseConnector
 
 class MyApp {
-    def securityFilter = new SecurityFilter()
-    val databaseConnector = new MysqlDatabaseConnector()
+  def securityFilter = new SecurityFilter()
+  val databaseConnector = new MysqlDatabaseConnector()
 }
 
 // 2. Creating a Wired instance
@@ -534,8 +534,8 @@ wired.lookup(classOf[DatabaseConnector])
 
 // 4. Instantiation using the available dependencies
 {
-    package com.softwaremill
-    class AuthenticationPlugin(databaseConnector: DatabaseConnector)
+  package com.softwaremill
+  class AuthenticationPlugin(databaseConnector: DatabaseConnector)
 }
 
 // Creates a new instance of the given class using the dependencies available in MyApp
@@ -829,19 +829,19 @@ interceptor, either by extending the `ProxyingInterceptor` trait, or by passing 
 
 ```scala
 object MyApplication extends BusinessLogicModule {
-    lazy val tm = wire[TransactionManager]
+  lazy val tm = wire[TransactionManager]
 
-    lazy val transactional = ProxyingInterceptor { ctx =>
-        try {
-            tm.begin()
-            val result = ctx.proceed()
-            tm.commit()
+  lazy val transactional = ProxyingInterceptor { ctx =>
+    try {
+      tm.begin()
+      val result = ctx.proceed()
+      tm.commit()
 
-            result
-        } catch {
-            case e: Exception => tm.rollback()
-        }
+      result
+    } catch {
+      case e: Exception => tm.rollback()
     }
+  }
 }
 ```
 
