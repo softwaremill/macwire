@@ -8,7 +8,7 @@ import com.softwaremill.macwire.internals.MacwireMacros
   * Each dependency might be:
   *   - an instance to use
   *   - a function to create an instance
-  *   - a class to instantiate to provide a depedency for the types it implements (provided as: `classOf[SomeType]`)
+  *   - a class to instantiate to provide a dependency for the types it implements (provided as: `classOf[SomeType]`)
   *   - a `membersOf(instance)` call, to use the members of the given instance as dependencies
   *
   * Any missing dependenciess will be created using the publicly available primary constructors or apply methods.

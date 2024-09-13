@@ -19,7 +19,7 @@ class Creator[Q <: Quotes](using val q: Q)(
 
   // all non-implicit parmaters
   val paramFlatTypes: List[TypeRepr] = paramSymbolsLists.flatMap(
-    _.flatMap(param => if isImplicit(param.flags) then None else Some(paramType(param)))
+    _.flatMap(param => if isImplicit(param.flags) || param.isType then None else Some(paramType(param)))
   )
 
   /** Creates a term which corresponds to invoking the creator using the given parameters. Each term in the
@@ -39,7 +39,7 @@ class Creator[Q <: Quotes](using val q: Q)(
 
   private def resolveImplicitOrFail(param: Symbol): Term = Implicits.search(paramType(param)) match {
     case iss: ImplicitSearchSuccess => iss.tree
-    case isf: ImplicitSearchFailure => reportError(s"failed to resolve an implicit for: $param")
+    case isf: ImplicitSearchFailure => reportError(isf.explanation)
   }
 
   private def paramType(param: Symbol): TypeRepr = Ref(param).tpe.widen.dealias
