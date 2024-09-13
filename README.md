@@ -22,8 +22,8 @@ There's a couple of wiring variants that you can choose from:
 
 In other words, `autowire` is context-free, while the `wire` family of macros is context-dependent.
 
-MacWire is available for Scala 2.12, 2.13 and 3 on the JVM and JS platforms. Not all functionalities are available for
-each Scala version.
+MacWire is available for Scala 2.12, 2.13 and 3 on the JVM, JS and Native platforms. Not all functionalities are 
+available for each Scala version.
 
 To use, add the following dependency:
 
