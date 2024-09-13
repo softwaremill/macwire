@@ -6,17 +6,17 @@ class AutowireCompileTests extends CompileTestsSupport:
   runTestsWith(
     expectedFailures = List(
       "privateConstructor" -> List(
-        "Cannot find a provided dependency, public constructor or public apply method for: A.",
-        "Wiring path: A."
+        "cannot find a provided dependency, public constructor or public apply method for: A;",
+        "wiring path: A"
       ),
-      "cyclicDependency" -> List("Cyclic dependencies detected.", "Wiring path: A -> B -> A."),
-      "primitives" -> List("Cannot use a primitive type or String in autowiring.", "Wiring path: A -> String."),
-      "unusedDependency" -> List("Unused dependencies: C.apply()."),
-      "duplicate" -> List("Duplicate type in dependencies list: A, for: a."),
+      "cyclicDependency" -> List("cyclic dependencies detected;", "wiring path: A -> B -> A"),
+      "primitives" -> List("cannot use a primitive type or String in autowiring;", "wiring path: A -> String"),
+      "unusedDependency" -> List("unused dependencies: C.apply()"),
+      "duplicate" -> List("duplicate type in dependencies list: A, for: a"),
       "plainTrait" -> List(
-        "Cannot find a provided dependency, public constructor or public apply method for: A.",
-        "Wiring path: B -> A."
+        "cannot find a provided dependency, public constructor or public apply method for: A;",
+        "wiring path: B -> A"
       ),
-      "membersOfDuplicate" -> List("Duplicate type in dependencies list: A, for: new A().")
+      "membersOfDuplicate" -> List("duplicate type in dependencies list: A, for: new A()")
     )
   )

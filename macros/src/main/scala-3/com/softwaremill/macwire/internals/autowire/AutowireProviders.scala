@@ -39,7 +39,7 @@ class AutowireProviders[Q <: Quotes](using val q: Q)(
           val tpe = term.tpe.dealias.widen // dealias, and widen from singleton types
           val providersToAdd = log.withBlock(s"processing dependency: ${showExprShort(dep)}"):
             if seenTpes.exists(seenTpe => seenTpe <:< tpe || tpe <:< seenTpe) then
-              reportError(s"Duplicate type in dependencies list: ${showTypeName(tpe)}, for: ${showExprShort(dep)}.")
+              reportError(s"duplicate type in dependencies list: ${showTypeName(tpe)}, for: ${showExprShort(dep)}")
 
             val instanceProvider = Provider(tpe, Nil, _ => term)
 

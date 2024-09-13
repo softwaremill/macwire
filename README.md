@@ -39,6 +39,11 @@ To use, add the following dependency:
 
 - [Table of Contents](#table-of-contents)
 - [autowire](#autowire)
+  - [Providing instantiated dependencies](#providing-instantiated-dependencies)
+  - [Using factories](#using-factories)
+  - [Specifying implementations to use](#specifying-implementations-to-use)
+  - [Using dependencies contained in objects](#using-dependencies-contained-in-objects)
+  - [Errors](#errors)
 - [wire](#wire)
 	- [How wiring works](#how-wiring-works)
 	- [Factories](#factories)
@@ -68,6 +73,143 @@ To use, add the following dependency:
 
 ![Scala 3](https://img.shields.io/badge/Scala%203-8A2BE2)
 ![direct-style](https://img.shields.io/badge/direct--style-228B22)
+
+Autowire generates the code needed to instantiate the given type. To create the instance, the public primary 
+constructor is used, or if one is absent - the `apply` method from the companion object. Any dependencies are
+created recursively. For example, given the following classes:
+
+```scala
+class DatabaseAccess()
+class SecurityFilter()
+class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
+class UserStatusReader(userFinder: UserFinder)
+```
+
+invoking `autowire` as below:
+
+```scala
+import com.softwaremill.macwire.*
+val userStatusReader = autowire[UserStatusReader]()
+```
+
+generates following code:
+
+```scala
+val userStatusReader =
+  val wiredDatabaseAccess   = new DatabaseAccess()
+  val wiredSecurityFilter   = new SecurityFilter()
+  val wiredUserFinder       = new UserFinder(wiredDatabaseAccess, wiredSecurityFilter)
+  val wiredUserStatusReader = new UserStatusReader(wiredUserFinder)
+  wiredUserStatusReader
+```
+
+`autowire` accepts an arbitrary number of parameters, which specify how to lookup or create dependencies, instead
+of the default construct/`apply` mechanism. These are described in detail below. Each such parameter might be:
+
+* an instance to use
+* a function to create an instance
+* a class to instantiate to provide a depedency for the types it implements (provided as: `classOf[SomeType]`)
+* a `membersOf(instance)` call, to use the members of the given instance as dependencies
+
+`autowire` is context-free: its result does not depend on the environment, within which it is called (except for
+implicit parameters, which are looked up using the usual mechanism). It only depends on the type that is specified
+for wiring, and any parameters that are passed.
+
+## Providing instantiated dependencies
+
+In some cases it's necessary to instantiate a dependency by hand, e.g. to initialise it with some configuration,
+or to manage its lifecycle. In such cases, dependencies can be provided as parameters to the `autowire` invocation.
+They will be used whenever a value of the given type is needed.
+
+As an example, consider a `DataSource`, which needs to be configured with a JDBC connection string, and has a 
+managed life-cycle:
+
+```scala
+import java.io.Closeable
+
+class DataSource(jdbcConn: String) extends Closeable { def close() = () }
+class DatabaseAccess(ds: DataSource)
+class SecurityFilter()
+class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
+class UserStatusReader(userFinder: UserFinder)
+```
+
+We can provide a `DataSource` instance to be used by `autowire`:
+
+```scala
+import com.softwaremill.macwire.*
+import scala.util.Using
+
+Using.resource(DataSource("jdbc:h2:~/test")): ds =>
+  autowire[UserStatusReader](ds)
+```
+
+## Using factories
+
+In addition to instances, which should be used by `autowire`, it's also possible to provide factory methods. They will
+be used to create instances of types which is the result of the provided function, using the dependencies which are the
+function's parameters. Any dependencies are recursively created. 
+
+For example, we can provide a custom way to create a `UserFinder`:
+
+```scala
+class DatabaseAccess()
+class SecurityFilter()
+class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter, adminOnly: Boolean)
+class UserStatusReader(userFinder: UserFinder)
+
+autowire[UserStatusReader](UserFinder(_, _, adminOnly = true))
+```
+
+## Specifying implementations to use
+
+You can specify which classes to use to create instances. This is useful when the dependencies are expressed for 
+example using `trait`s, not the concrete types. Such a dependency can be expressed by providing a `classOf[]`
+parameter to `autowire`:
+
+```scala
+trait DatabaseAccess
+class DatabaseAccessImpl() extends DatabaseAccess
+
+class SecurityFilter()
+class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
+class UserStatusReader(userFinder: UserFinder)
+
+autowire[UserStatusReader](classOf[DatabaseAccessImpl])
+```
+
+Without the `classOf[]`, MacWire wouldn't know how to create an instance implementing `DatabaseAccess`.
+
+## Using dependencies contained in objects
+
+Finally, it's possible to use the members of a given instance as dependencies. Simply pass a `memberOf(someInstance)` 
+as a parameter to `autowire`.
+
+## Errors
+
+`autowire` reports an error when:
+
+* a dependency can't be created (e.g. there are no public constructors / `apply` methods)
+* there are circular dependencies
+* the provided dependencies contain a duplicate
+* a provided dependency is not used
+* a primitive or `String` type is used as a dependency (instead, use e.g. an opaque type)
+
+Each error contains the wiring path. For example, below there's no public constructor for `DatabaseAccess`, which
+results in a compile-time error:
+
+```scala
+class DatabaseAccess private ()
+class SecurityFilter()
+class UserFinder(databaseAccess: DatabaseAccess, securityFilter: SecurityFilter)
+class UserStatusReader(userFinder: UserFinder)
+
+autowire[UserStatusReader]()
+
+// compile-time error:
+// cannot find a provided dependency, public constructor or public apply method for: DatabaseAccess;
+// wiring path: UserStatusReader -> UserFinder -> DatabaseAccess
+```
 
 # wire
 

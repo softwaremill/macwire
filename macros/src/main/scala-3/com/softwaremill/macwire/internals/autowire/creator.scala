@@ -39,7 +39,7 @@ class Creator[Q <: Quotes](using val q: Q)(
 
   private def resolveImplicitOrFail(param: Symbol): Term = Implicits.search(paramType(param)) match {
     case iss: ImplicitSearchSuccess => iss.tree
-    case isf: ImplicitSearchFailure => reportError(s"Failed to resolve an implicit for [$param].")
+    case isf: ImplicitSearchFailure => reportError(s"failed to resolve an implicit for: $param")
   }
 
   private def paramType(param: Symbol): TypeRepr = Ref(param).tpe.widen.dealias
@@ -97,7 +97,7 @@ object Constructor:
         val injectConstructor: Option[Symbol] =
           if injectConstructors.size > 1 then
             reportError(
-              s"Multiple constructors annotated with @javax.inject.Inject for type: ${showTypeName(forType)}."
+              s"multiple constructors annotated with @javax.inject.Inject for type: ${showTypeName(forType)}"
             )
           else injectConstructors.headOption
 
@@ -132,7 +132,7 @@ object Companion:
         as
 
       val apply: Option[Symbol] =
-        if applies.size > 1 then reportError(s"Multiple public apply methods for type: ${showTypeName(forType)}.")
+        if applies.size > 1 then reportError(s"multiple public apply methods for type: ${showTypeName(forType)}")
         else applies.headOption
 
       apply.map: ctor =>

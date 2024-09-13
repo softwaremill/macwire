@@ -16,7 +16,7 @@ def autowireImpl[T: Type](dependencies: Expr[Seq[Any]])(using q: Quotes): Expr[T
     case Varargs(exprs) => exprs
     case _ =>
       report.errorAndAbort(
-        s"Depedencies need to be provided directly as parameters to the autowire call. Got: $dependencies."
+        s"depedencies need to be provided directly as parameters to the autowire call; got: $dependencies"
       )
 
   val reportError = new ReportError[q.type]
@@ -52,7 +52,7 @@ def autowireImpl[T: Type](dependencies: Expr[Seq[Any]])(using q: Quotes): Expr[T
               .forType(t)
               .getOrElse(
                 reportError(
-                  s"Cannot find a provided dependency, public constructor or public apply method for: ${showTypeName(t)}."
+                  s"cannot find a provided dependency, public constructor or public apply method for: ${showTypeName(t)}"
                 )
               )
 
@@ -83,12 +83,12 @@ def autowireImpl[T: Type](dependencies: Expr[Seq[Any]])(using q: Quotes): Expr[T
   // helper methods
 
   def verifyNotInProgress(t: TypeRepr, breadcrumb: Vector[TypeRepr]): Unit =
-    for ip <- breadcrumb do if ip <:< t then reportError("Cyclic dependencies detected.")
+    for ip <- breadcrumb do if ip <:< t then reportError("cyclic dependencies detected")
 
   def verifyNotPrimitive(t: TypeRepr, breadcrumb: Vector[TypeRepr]): Unit =
     t.asType match
       case '[Int] | '[Long] | '[Byte] | '[Short] | '[Char] | '[Boolean] | '[Double] | '[Float] | '[String] =>
-        reportError(s"Cannot use a primitive type or String in autowiring.")
+        reportError("cannot use a primitive type or String in autowiring")
       case _ => // ok
   end verifyNotPrimitive
 
@@ -97,7 +97,7 @@ def autowireImpl[T: Type](dependencies: Expr[Seq[Any]])(using q: Quotes): Expr[T
     val unusedDependencies = rawDependencies.filterNot(usedDependencies.contains)
     if unusedDependencies.nonEmpty then
       reportError(
-        s"Unused dependencies: ${unusedDependencies.map(showExprShort).mkString(", ")}."
+        s"unused dependencies: ${unusedDependencies.map(showExprShort).mkString(", ")}"
       )
 
   //
