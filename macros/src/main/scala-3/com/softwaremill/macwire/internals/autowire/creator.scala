@@ -17,7 +17,7 @@ class Creator[Q <: Quotes](using val q: Q)(
 
   private def isImplicit(f: Flags): Boolean = f.is(Flags.Implicit) || f.is(Flags.Given)
 
-  // all non-implicit parmaters
+  // all non-type, non-implicit parmaters
   val paramFlatTypes: List[TypeRepr] = paramSymbolsLists.flatMap(
     _.flatMap(param => if isImplicit(param.flags) || param.isType then None else Some(paramType(param)))
   )
@@ -28,10 +28,10 @@ class Creator[Q <: Quotes](using val q: Q)(
   def applied(paramFlatValues: List[Term]): Term =
     val paramsFlatValuesIterator = paramFlatValues.iterator
     val paramValuesLists = paramSymbolsLists.map { paramSymbolList =>
-      paramSymbolList.map { paramSymbol =>
-        if isImplicit(paramSymbol.flags)
-        then resolveImplicitOrFail(paramSymbol)
-        else paramsFlatValuesIterator.next()
+      paramSymbolList.flatMap { paramSymbol =>
+        if paramSymbol.isType then None
+        else if isImplicit(paramSymbol.flags) then Some(resolveImplicitOrFail(paramSymbol))
+        else Some(paramsFlatValuesIterator.next())
       }
     }
     val newTree: Term = Select(selectQualifier, creatorSymbol)
