@@ -44,6 +44,7 @@ To use, add the following dependency:
   - [Specifying implementations to use](#specifying-implementations-to-use)
   - [Using dependencies contained in objects](#using-dependencies-contained-in-objects)
   - [Errors](#errors)
+  - [Limitiations of autowire](#limitiations-of-autowire)
 - [wire](#wire)
 	- [How wiring works](#how-wiring-works)
 	- [Factories](#factories)
@@ -211,6 +212,16 @@ autowire[UserStatusReader]()
 // cannot find a provided dependency, constructor or apply method for: DatabaseAccess;
 // wiring path: UserStatusReader -> UserFinder -> DatabaseAccess
 ```
+
+## Limitiations of autowire
+
+`autowire` doesn't handle propagating generic type parameters, when creating missing dependencies using constructors or
+`apply` methods. E.g. if you have a `class B[X](a: A[X])`, and a `B[Int]` needs to be created, the specific value for 
+the type parameter `X` won't be propagated when resolving the dependencies.
+
+As a work-around, you need to explicitly provide the generic dependencies with concrete type parameters. A generic 
+dependency might appear multiple times, with different type parameters. To wire the classes from the example, you'd 
+need: `autowire[...](B[Int](_), someInstance: A[Int])` or similar.
 
 # wire
 
