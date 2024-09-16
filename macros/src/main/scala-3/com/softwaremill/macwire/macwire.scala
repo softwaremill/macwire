@@ -9,7 +9,7 @@ import com.softwaremill.macwire.internals.MacwireMacros
   *   - an instance to use
   *   - a function to create an instance
   *   - a class to instantiate to provide a dependency for the types it implements (provided as: `classOf[SomeType]`)
-  *   - a `membersOf(instance)` call, to use the members of the given instance as dependencies
+  *   - a `autowireMembersOf(instance)` call, to use the members of the given instance as dependencies
   *
   * Any missing dependenciess will be created using the publicly available primary constructors or apply methods.
   *
@@ -113,4 +113,4 @@ inline def wireRec[T]: T = ${ MacwireMacros.wireRecImpl[T] }
 /** Marker method to be used in [[autowire]], to specify that values defined in the given value should be used for
   * wiring.
   */
-def membersOf[T](t: T): T = ???
+def autowireMembersOf[T](t: T): T = ???
