@@ -51,7 +51,28 @@ private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](using val q: Q)(
     ctor
   }
 
-  lazy val constructorParamLists: Option[List[List[Symbol]]] = constructor.map(_.paramSymss)
+  private def constructorParamTypes(ctorType: TypeRepr): List[List[TypeRepr]] = {
+    ctorType match {
+      case MethodType(_, paramTypes, retType) =>
+        paramTypes.map(_.widen.simplified) :: constructorParamTypes(retType.simplified)
+      case _ =>
+        Nil
+    }
+  }
+
+  lazy val constructorParamLists: Option[List[List[(Symbol, TypeRepr)]]] = {
+    constructor.map { c =>
+      // paramSymss contains both type arg symbols (generic types) and value arg symbols
+      val symLists = c.paramSymss.filter(_.forall(!_.isTypeDef))
+      val ctorType =
+        if (targetType.typeArgs.isEmpty) targetType.memberType(c)
+        else targetType.memberType(c).appliedTo(targetType.typeArgs)
+      val typeLists = constructorParamTypes(ctorType)
+      symLists.zip(typeLists).map { case (syms, tpes) =>
+        syms.zip(tpes)
+      }
+    }
+  }
 
   lazy val constructorArgs: Option[List[List[Term]]] = log.withBlock("Looking for targetConstructor arguments") {
     constructorParamLists.map(wireConstructorParamsWithImplicitLookups)
@@ -62,35 +83,28 @@ private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](using val q: Q)(
       constructorValue <- constructor
       constructorArgsValue <- constructorArgs
     } yield {
-      val constructionMethodTree: Term = Select(New(TypeIdent(targetType.typeSymbol)), constructorValue)
+      val constructionMethodTree: Term = {
+        val ctor = Select(New(TypeIdent(targetType.typeSymbol)), constructorValue)
+        if (targetType.typeArgs.isEmpty) ctor else ctor.appliedToTypes(targetType.typeArgs)
+      }
       constructorArgsValue.foldLeft(constructionMethodTree)((acc: Term, args: List[Term]) => Apply(acc, args))
     }
   }
 
-  def wireConstructorParams(paramLists: List[List[Symbol]]): List[List[Term]] =
-    paramLists.map(_.map(p => dependencyResolver.resolve(p, /*SI-4751*/ paramType(p))))
+  def wireConstructorParams(paramLists: List[List[(Symbol, TypeRepr)]]): List[List[Term]] =
+    paramLists.map(_.map(p => dependencyResolver.resolve(p._1, /*SI-4751*/ p._2)))
 
-  def wireConstructorParamsWithImplicitLookups(paramLists: List[List[Symbol]]): List[List[Term]] = paramLists.map {
-    case params if params.forall(_.flags is Flags.Implicit) => params.map(resolveImplicitOrFail)
-    case params => params.map(p => dependencyResolver.resolve(p, /*SI-4751*/ paramType(p)))
-  }
+  def wireConstructorParamsWithImplicitLookups(paramLists: List[List[(Symbol, TypeRepr)]]): List[List[Term]] =
+    paramLists.map {
+      case params if params.forall(_._1.flags is Flags.Implicit) => params.map(resolveImplicitOrFail)
+      case params => params.map(p => dependencyResolver.resolve(p._1, /*SI-4751*/ p._2))
+    }
 
-  private def resolveImplicitOrFail(param: Symbol): Term = Implicits.search(paramType(param)) match {
-    case iss: ImplicitSearchSuccess => iss.tree
-    case isf: ImplicitSearchFailure => report.throwError(s"Failed to resolve an implicit for [$param].")
-  }
-
-  private def paramType(param: Symbol): TypeRepr = {
-    // val (sym: Symbol, tpeArgs: List[Type]) = targetTypeD match {
-    //   case TypeRef(_, sym, tpeArgs) => (sym, tpeArgs)
-    //   case t => abort(s"Target type not supported for wiring: $t. Please file a bug report with your use-case.")
-    // }
-    // val pTpe = param.signature.substituteTypes(sym.asClass.typeParams, tpeArgs)
-    // if (param.asTerm.isByNameParam) pTpe.typeArgs.head else pTpe
-
-    //FIXME assertion error in test inheritanceHKT.success, selfTypeHKT.success
-    Ref(param).tpe.widen
-  }
+  private def resolveImplicitOrFail(param: Symbol, paramType: TypeRepr): Term =
+    Implicits.search(paramType) match {
+      case iss: ImplicitSearchSuccess => iss.tree
+      case isf: ImplicitSearchFailure => report.throwError(s"Failed to resolve an implicit for [$param].")
+    }
 
   /** In some cases there is one extra (phantom) constructor. This happens when extended trait has implicit param:
     *
