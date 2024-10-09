@@ -1,0 +1,14 @@
+#include commonHKTClasses
+
+case class LocalA[X]()
+case class LocalB[X](la: LocalA[X])
+
+object Test {
+  val la = wire[LocalA[Int]]
+  val lb = wire[LocalB[Int]]
+  val a = wire[A[IO]]
+  val b = wire[B[IO]]
+}
+
+require(Test.lb.la == Test.la)
+require(Test.b.a == Test.a)
