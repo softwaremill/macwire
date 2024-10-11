@@ -10,5 +10,5 @@ object Test {
   val b = wire[B[IO]]
 }
 
-require(Test.lb.la == Test.la)
-require(Test.b.a == Test.a)
+require(Test.lb.la eq Test.la)
+require(Test.b.a eq Test.a)

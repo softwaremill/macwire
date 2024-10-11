@@ -61,17 +61,28 @@ object MacwireMacros {
 
     val dependencyResolver = DependencyResolver.throwErrorOnResolutionFailure[q.type, T](log)
 
-    val (params, fun) = factory.asTerm match {
-      case Inlined(_, _, Block(List(DefDef(_, List(p), _, Some(Apply(f, _)))), _)) => (p.params, f)
-      case _ => report.errorAndAbort(s"Not supported factory type: [$factory]")
+    def functionParamTypes(t: TypeRepr): List[List[TypeRepr]] = {
+      if (t.isFunctionType) {
+        // Handle curried function
+        t.typeArgs.init :: functionParamTypes(t.typeArgs.last)
+      } else {
+        Nil
+      }
     }
-
-    val values = params.map {
-      // case vd@ValDef(_, name, tpt, rhs) => dependencyResolver.resolve(vd.symbol, typeCheckIfNeeded(tpt))
-      case vd @ ValDef(name, tpt, rhs) => dependencyResolver.resolve(vd.symbol, tpt.tpe)
+    // Implicit params are pre-applied while passing to wireWith
+    val values = functionParamTypes(factory.asTerm.tpe).zipWithIndex.map { case (paramList, i) =>
+      paramList.zipWithIndex.map { case (tpe, j) =>
+        // Resolve require a symbol, create a fake symbol here
+        val fakeSymbol = Symbol.newVal(Symbol.noSymbol, s"p_${i}_${j}", tpe, Flags.Param, Symbol.noSymbol)
+        dependencyResolver.resolve(fakeSymbol, tpe)
+      }
     }
-
-    val code = Apply(fun, values).asExprOf[T]
+    val funApply: Term = Select.unique(factory.asTerm, "apply")
+    val code = values
+      .foldLeft(funApply) { (fun, args) =>
+        Apply(fun, args)
+      }
+      .asExprOf[T]
     log(s"Generated code: ${code.show}")
     code
   }

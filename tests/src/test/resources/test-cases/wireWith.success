@@ -2,11 +2,10 @@ case class A()
 case class B()
 
 object Test {
-    case class C(a: A, b: B, s: String)
+    case class C(a: A, b: B)
 
     object C {
         def factory(a: A, b: B): C = {
-            val s = "hey!"
             wire[C]
         }
     }
@@ -17,6 +16,5 @@ object Test {
     lazy val c: C = wireWith(C.factory _)
 }
 
-require(Test.c.s == "hey!")
 require(Test.c.a eq Test.a)
 require(Test.c.b eq Test.b)

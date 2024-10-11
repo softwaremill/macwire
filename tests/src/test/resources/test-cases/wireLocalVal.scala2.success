@@ -1,0 +1,9 @@
+case class A(s: String)
+
+object A {
+  def create() = {
+    val s = "foo"
+    wire[A]
+  }
+}
+require(A.create().s == "foo")
