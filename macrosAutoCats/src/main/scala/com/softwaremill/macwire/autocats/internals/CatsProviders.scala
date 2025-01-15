@@ -69,7 +69,7 @@ trait CatsProviders[C <: blackbox.Context] {
   }
 
   class FactoryMethod(
-    val symbol: c.Symbol,
+      val symbol: c.Symbol,
       methodType: c.Type,
       val resultType: c.Type,
       val dependencies: List[List[(c.Symbol, Provider)]],
@@ -78,10 +78,10 @@ trait CatsProviders[C <: blackbox.Context] {
     import c.universe._
 
     private lazy val appliedTree: Tree = apply(dependencies.map(_.map(_._2.ident)))
-    
+
     lazy val result: Provider = log.withResult {
       val fmResultType = resultType
-      //TODO support for FactoryMethods
+      // TODO support for FactoryMethods
       if (Resource.isResource(methodType)) new Resource(appliedTree) {
         override lazy val resultType: Type = Resource.underlyingType(methodType)
       }
@@ -135,7 +135,6 @@ trait CatsProviders[C <: blackbox.Context] {
 
     override def symbol: c.Symbol = value.symbol
 
-
     override def dependencies: List[List[(c.Symbol, Provider)]] = List.empty
 
     lazy val resultType: c.Type = typeCheckUtil.typeCheckIfNeeded(value)
@@ -144,10 +143,12 @@ trait CatsProviders[C <: blackbox.Context] {
   }
 
   class NotResolvedProvider(val resultType: c.Type, val symbol: c.Symbol) extends Provider {
-    override def dependencies: List[List[(c.Symbol, Provider)]] = c.abort(c.enclosingPosition, s"Internal Error: Not resolved provider for type [$resultType]")
-    override def ident: c.Tree = c.abort(c.enclosingPosition, s"Internal Error: Not resolved provider for type [$resultType]")
-    override def value: c.Tree = c.abort(c.enclosingPosition, s"Internal Error: Not resolved provider for type [$resultType]")
-
+    override def dependencies: List[List[(c.Symbol, Provider)]] =
+      c.abort(c.enclosingPosition, s"Internal Error: Not resolved provider for type [$resultType]")
+    override def ident: c.Tree =
+      c.abort(c.enclosingPosition, s"Internal Error: Not resolved provider for type [$resultType]")
+    override def value: c.Tree =
+      c.abort(c.enclosingPosition, s"Internal Error: Not resolved provider for type [$resultType]")
 
   }
 }
