@@ -4,12 +4,12 @@ import play.api.libs.json.Json
 import slick.driver.H2Driver.api._
 
 case class Supplier(
-  id: Int,
-  name: String,
-  street: String,
-  city: String,
-  state: String,
-  zip: String
+    id: Int,
+    name: String,
+    street: String,
+    city: String,
+    state: String,
+    zip: String
 )
 
 object Supplier {
@@ -24,5 +24,5 @@ class SupplierTable(tag: Tag) extends Table[Supplier](tag, "SUPPLIERS") {
   def state = column[String]("STATE")
   def zip = column[String]("ZIP")
   // Every table needs a * projection with the same type as the table's type parameter
-  def * = (id, name, street, city, state, zip)  <> ((Supplier.apply _).tupled, Supplier.unapply)
+  def * = (id, name, street, city, state, zip) <> ((Supplier.apply _).tupled, Supplier.unapply)
 }

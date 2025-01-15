@@ -142,7 +142,7 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
     val resolvedFMContext = resolveFactoryMethods(initContext)
 
     /** We assume that we cannot use input provider directly, so we create a result object with available constructors.
-      * It's a mimic of `wire`'s property
+      * It's a mimic of `wire` 's property
       */
 
     val (resolvedCtx, rootProvider) = maybeResolveWithFactoryMethod(resolvedFMContext)(
