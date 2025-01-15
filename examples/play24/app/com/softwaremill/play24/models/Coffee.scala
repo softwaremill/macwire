@@ -3,18 +3,17 @@ package com.softwaremill.play24.models
 import play.api.libs.json.Json
 import slick.driver.H2Driver.api._
 
-case class Coffee (
-  name: String,
-  supId: Int,
-  price: Double,
-  sales: Int,
-  total: Int
+case class Coffee(
+    name: String,
+    supId: Int,
+    price: Double,
+    sales: Int,
+    total: Int
 )
 
 object Coffee {
   implicit val format = Json.format[Coffee]
 }
-
 
 class CoffeeTable(tag: Tag) extends Table[Coffee](tag, "COFFEES") {
   def name = column[String]("COF_NAME", O.PrimaryKey)
