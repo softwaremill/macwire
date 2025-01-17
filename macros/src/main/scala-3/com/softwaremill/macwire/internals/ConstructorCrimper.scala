@@ -18,6 +18,8 @@ private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](using val q: Q)(
   private def isAccessibleConstructor(s: Symbol) =
     s.isClassConstructor && !(s.flags is Flags.Private) && !(s.flags is Flags.Protected)
 
+  private def isImplicit(f: Flags): Boolean = f.is(Flags.Implicit) || f.is(Flags.Given)
+
   lazy val publicConstructors: Iterable[Symbol] = {
     val ctors = targetType.typeSymbol.declarations
       .filter(isAccessibleConstructor)
@@ -96,7 +98,7 @@ private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](using val q: Q)(
 
   def wireConstructorParamsWithImplicitLookups(paramLists: List[List[(Symbol, TypeRepr)]]): List[List[Term]] =
     paramLists.map {
-      case params if params.forall(_._1.flags is Flags.Implicit) => params.map(resolveImplicitOrFail)
+      case params if params.forall(p => isImplicit(p._1.flags)) => params.map(resolveImplicitOrFail)
       case params => params.map(p => dependencyResolver.resolve(p._1, /*SI-4751*/ p._2))
     }
 
