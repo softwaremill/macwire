@@ -70,7 +70,7 @@ val javassist = "org.javassist" % "javassist" % "3.30.2-GA"
 val akkaActor = "com.typesafe.akka" %% "akka-actor" % "2.6.21"
 val pekkoActor = "org.apache.pekko" %% "pekko-actor" % "1.1.3"
 val javaxInject = "javax.inject" % "javax.inject" % "1"
-val cats = "org.typelevel" %% "cats-core" % "2.12.0"
+val cats = "org.typelevel" %% "cats-core" % "2.13.0"
 val catsEffect = "org.typelevel" %% "cats-effect" % "3.5.7"
 
 lazy val root = project
