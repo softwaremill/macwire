@@ -34,9 +34,12 @@ private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](using val q: Q)(
   }
 
   lazy val injectConstructors: Iterable[Symbol] = {
-    val isInjectAnnotation = (a: Term) => a.tpe.typeSymbol.fullName == "javax.inject.Inject"
+    val isInjectAnnotation = (a: Term) =>
+      a.tpe.typeSymbol.fullName == "javax.inject.Inject" || a.tpe.typeSymbol.fullName == "jakarta.inject.Inject"
     val ctors = publicConstructors.filter(_.annotations.exists(isInjectAnnotation))
-    log.withBlock(s"There are ${ctors.size} constructors annotated with @javax.inject.Inject") {
+    log.withBlock(
+      s"There are ${ctors.size} constructors annotated with @javax.inject.Inject or @jakarta.inject.Inject"
+    ) {
       ctors.foreach(c => log(showConstructor(c)))
     }
     ctors
@@ -44,7 +47,9 @@ private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](using val q: Q)(
 
   lazy val injectConstructor: Option[Symbol] =
     if (injectConstructors.size > 1)
-      abort(s"Ambiguous constructors annotated with @javax.inject.Inject for type [${targetType.typeSymbol.name}]")
+      abort(
+        s"Ambiguous constructors annotated with @javax.inject.Inject or @jakarta.inject.Inject for type [${targetType.typeSymbol.name}]"
+      )
     else injectConstructors.headOption
 
   lazy val constructor: Option[Symbol] = log.withBlock(s"Looking for constructor for $targetType") {
