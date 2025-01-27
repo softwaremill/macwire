@@ -33,7 +33,9 @@ class CompileTests extends CompileTestsSupport {
         "has no apply methods constructing target type",
         "[Target]"
       ),
-      "toManyInjectAnnotations" -> List("Ambiguous constructors annotated with @javax.inject.Inject for type [Target]"),
+      "toManyInjectAnnotations" -> List(
+        "Ambiguous constructors annotated with @javax.inject.Inject or @jakarta.inject.Inject for type [Target]"
+      ),
       "wireWithTwoParamsLists" -> List("Found:    Main.A => Main.B => Main.Test.C", "Required: Any => Main.Test.C"),
       "wireRecEmptyString" -> List(valueNotFound("String"))
     )

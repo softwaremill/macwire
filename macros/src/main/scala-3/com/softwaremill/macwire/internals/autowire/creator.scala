@@ -87,9 +87,12 @@ object Constructor:
           case c                               => None
 
         val injectConstructors: Iterable[Symbol] =
-          val isInjectAnnotation = (a: Term) => a.tpe.typeSymbol.fullName == "javax.inject.Inject"
+          val isInjectAnnotation = (a: Term) =>
+            a.tpe.typeSymbol.fullName == "javax.inject.Inject" || a.tpe.typeSymbol.fullName == "jakarta.inject.Inject"
           val ctors = publicConstructors.filter(_.annotations.exists(isInjectAnnotation))
-          log.withBlock(s"there are ${ctors.size} constructors annotated with @javax.inject.Inject") {
+          log.withBlock(
+            s"there are ${ctors.size} constructors annotated with @javax.inject.Inject or @jakarta.inject.Inject"
+          ) {
             ctors.foreach(c => log(c.toString))
           }
           ctors
@@ -97,7 +100,7 @@ object Constructor:
         val injectConstructor: Option[Symbol] =
           if injectConstructors.size > 1 then
             reportError(
-              s"multiple constructors annotated with @javax.inject.Inject for type: ${showTypeName(forType)}"
+              s"multiple constructors annotated with @javax.inject.Inject or @jakarta.inject.Inject for type: ${showTypeName(forType)}"
             )
           else injectConstructors.headOption
 

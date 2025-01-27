@@ -74,9 +74,12 @@ object ConstructorCrimper {
     lazy val primaryConstructor: Option[Symbol] = publicConstructors.find(_.asMethod.isPrimaryConstructor)
 
     lazy val injectConstructors: Iterable[Symbol] = {
-      val isInjectAnnotation = (a: Annotation) => a.toString == "javax.inject.Inject"
+      val isInjectAnnotation = (a: Annotation) =>
+        a.toString == "javax.inject.Inject" || a.toString == "jakarta.inject.Inject"
       val ctors = publicConstructors.filter(_.annotations.exists(isInjectAnnotation))
-      log.withBlock(s"There are ${ctors.size} constructors annotated with @javax.inject.Inject") {
+      log.withBlock(
+        s"There are ${ctors.size} constructors annotated with @javax.inject.Inject or @jakarta.inject.Inject"
+      ) {
         ctors.foreach(s => log(showConstructor(c)(s)))
       }
       ctors
@@ -86,7 +89,7 @@ object ConstructorCrimper {
       if (injectConstructors.size > 1)
         c.abort(
           c.enclosingPosition,
-          s"Ambiguous constructors annotated with @javax.inject.Inject for type [$targetType]"
+          s"Ambiguous constructors annotated with @javax.inject.Inject or @jakarta.inject.Inject for type [$targetType]"
         )
       else injectConstructors.headOption
 
