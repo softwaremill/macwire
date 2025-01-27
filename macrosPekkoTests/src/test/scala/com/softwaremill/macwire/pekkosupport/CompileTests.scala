@@ -28,13 +28,13 @@ class CompileTests extends CompileTestsSupport {
         "type arguments [NotActor] do not conform to macro method wireActor's type parameter bounds [T <: org.apache.pekko.actor.Actor]"
       ),
       "wireProps-11-toManyInjectAnnotations" -> List(
-        "Ambiguous constructors annotated with @javax.inject.Inject for type [SomeActor]"
+        "Ambiguous constructors annotated with @javax.inject.Inject or @jakarta.inject.Inject for type [SomeActor]"
       ),
       "wireAnonymousActor-11-toManyInjectAnnotations" -> List(
-        "Ambiguous constructors annotated with @javax.inject.Inject for type [SomeActor]"
+        "Ambiguous constructors annotated with @javax.inject.Inject or @jakarta.inject.Inject for type [SomeActor]"
       ),
       "wireActor-11-toManyInjectAnnotations" -> List(
-        "Ambiguous constructors annotated with @javax.inject.Inject for type [SomeActor]"
+        "Ambiguous constructors annotated with @javax.inject.Inject or @jakarta.inject.Inject for type [SomeActor]"
       ),
       "wireProps-12-noPublicConstructor" -> List("Cannot find a public constructor for [SomeActor]"),
       "wireAnonymousActor-12-noPublicConstructor" -> List("Cannot find a public constructor for [SomeActor]"),
@@ -54,7 +54,7 @@ class CompileTests extends CompileTestsSupport {
       "wireActorWithProducer-6-injectAnnotationButNoDependencyInScope" -> List("Cannot find a value of type: [C]"),
       "wireActorWithProducer-7-notActorProducer" -> List("wireActorWith does not support the type: [NotProducer]"),
       "wireActorWithProducer-11-toManyInjectAnnotations" -> List(
-        "Ambiguous constructors annotated with @javax.inject.Inject for type [SomeActorProducer]"
+        "Ambiguous constructors annotated with @javax.inject.Inject or @jakarta.inject.Inject for type [SomeActorProducer]"
       ),
       "wireActorWithProducer-12-noPublicConstructor" -> List(
         "Cannot find a public constructor for [SomeActorProducer]"
@@ -76,7 +76,7 @@ class CompileTests extends CompileTestsSupport {
         "wireAnonymousActorWith does not support the type: [NotProducer]"
       ),
       "wireAnonymousActorWithProducer-11-toManyInjectAnnotations" -> List(
-        "Ambiguous constructors annotated with @javax.inject.Inject for type [SomeActorProducer]"
+        "Ambiguous constructors annotated with @javax.inject.Inject or @jakarta.inject.Inject for type [SomeActorProducer]"
       ),
       "wireAnonymousActorWithProducer-12-noPublicConstructor" -> List(
         "Cannot find a public constructor for [SomeActorProducer]"
@@ -96,7 +96,7 @@ class CompileTests extends CompileTestsSupport {
       "wirePropsWithProducer-6-injectAnnotationButNoDependencyInScope" -> List("Cannot find a value of type: [C]"),
       "wirePropsWithProducer-7-notActorProducer" -> List("wirePropsWith does not support the type: [NotProducer]"),
       "wirePropsWithProducer-11-toManyInjectAnnotations" -> List(
-        "Ambiguous constructors annotated with @javax.inject.Inject for type [SomeActorProducer]"
+        "Ambiguous constructors annotated with @javax.inject.Inject or @jakarta.inject.Inject for type [SomeActorProducer]"
       ),
       "wirePropsWithProducer-12-noPublicConstructor" -> List(
         "Cannot find a public constructor for [SomeActorProducer]"
