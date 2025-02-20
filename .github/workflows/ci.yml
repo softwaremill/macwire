@@ -20,7 +20,7 @@ jobs:
       fail-fast: false
     with:
       java-version: ${{ matrix.java }}
-      java-opts: 'JAVA_OPTS=-Xmx5G --add-opens java.base/java.lang=ALL-UNNAMED'
+      java-opts: '-Xmx5G --add-opens java.base/java.lang=ALL-UNNAMED'
 
   publish:
     uses: softwaremill/github-actions-workflows/.github/workflows/publish-release.yml@main
