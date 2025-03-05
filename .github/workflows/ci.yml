@@ -6,110 +6,38 @@ on:
     branches: ['**']
     tags: [v*]
 jobs:
-  ci:
+  build:
+    uses: softwaremill/github-actions-workflows/.github/workflows/build-scala.yml@main
     # run on 1) push, 2) external PRs, 3) softwaremill-ci PRs
     # do not run on internal, non-steward PRs since those will be run by push to branch
     if: |
       github.event_name == 'push' || 
       github.event.pull_request.head.repo.full_name != github.repository ||
       github.event.pull_request.user.login == 'softwaremill-ci'
-    runs-on: ubuntu-22.04
     strategy:
       matrix:
         java: [ '11', '17', '21' ]
       fail-fast: false
-    steps:
-    - name: Set environment variables for Java
-      run: echo 'JAVA_OPTS=-Xmx5G --add-opens java.base/java.lang=ALL-UNNAMED' >> $GITHUB_ENV
-    - name: Checkout
-      uses: actions/checkout@v4
-    - name: Set up JDK
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'zulu'
-        java-version: ${{ matrix.java }}
-        cache: 'sbt'
-    - name: Compile
-      run: sbt -v compile
-    - name: Test
-      run: sbt -v test
+    with:
+      java-version: ${{ matrix.java }}
+      java-opts: '-Xmx5G --add-opens java.base/java.lang=ALL-UNNAMED'
 
   publish:
-    name: Publish release
-    needs: [ci]
+    uses: softwaremill/github-actions-workflows/.github/workflows/publish-release.yml@main
+    needs: [build]
     if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v'))
-    runs-on: ubuntu-22.04
-    env:
-      JAVA_OPTS: -Xmx5G
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-          cache: 'sbt'
-      - name: Compile
-        run: sbt compile
-      - name: Publish artifacts
-        run: sbt ci-release
-        env:
-          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
-          PGP_SECRET: ${{ secrets.PGP_SECRET }}
-          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-      - name: Extract version from commit message
-        run: |
-          version=${GITHUB_REF/refs\/tags\/v/}
-          echo "VERSION=$version" >> $GITHUB_ENV
-        env:
-          COMMIT_MSG: ${{ github.event.head_commit.message }}
-      - name: Publish release notes
-        uses: release-drafter/release-drafter@v5
-        with:
-          config-name: release-drafter.yml
-          publish: true
-          name: "v${{ env.VERSION }}"
-          tag: "v${{ env.VERSION }}"
-          version: "v${{ env.VERSION }}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    secrets: inherit
+    with:
+      java-version: '17'
+      java-opts: "-Xmx5G"
 
-  # `automerge` label is attached iff there is exactly one file changed by steward and this file belongs to a
-  # whitelist specified by `labeler.yml`
   label:
-    name: Attach automerge label
     # only for PRs by softwaremill-ci
     if: github.event.pull_request.user.login == 'softwaremill-ci'
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-      # count number of files changed
-      - name: Count number of files changed
-        id: count-changed-files
-        run: |
-          N=$(git diff --name-only -r HEAD^1 HEAD | wc -w)
-          echo "changed_files_num=$N" >> $GITHUB_OUTPUT
-      - name: Launch labeler
-        # skip if more than one file changed
-        if: steps.count-changed-files.outputs.changed_files_num == 1
-        uses: srvaroa/labeler@master
-        env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+    uses: softwaremill/github-actions-workflows/.github/workflows/label.yml@main
 
   auto-merge:
-    name: Auto merge
     # only for PRs by softwaremill-ci
     if: github.event.pull_request.user.login == 'softwaremill-ci'
-    needs: [ ci, label ]
-    runs-on: ubuntu-22.04
-    steps:
-      - id: automerge
-        name: automerge
-        uses: "pascalgn/automerge-action@v0.15.6"
-        env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-          MERGE_METHOD: "squash"
+    needs: [ build, label ]
+    uses: softwaremill/github-actions-workflows/.github/workflows/auto-merge.yml@main
