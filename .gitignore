@@ -10,3 +10,4 @@ out
 .vscode
 metals.sbt
 Workpad.scala
+.cursor
