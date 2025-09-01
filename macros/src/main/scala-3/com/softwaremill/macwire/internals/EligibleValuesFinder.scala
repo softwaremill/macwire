@@ -92,7 +92,7 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
         addTo.find(_ == t).fold(t :: addTo)(_ => addTo)
       }
 
-      trees.foldLeft(List.empty[Tree])(addIfUnique)
+      trees.foldLeft(List.empty[Tree])(addIfUnique).reverse // preserve order
     }
 
     def findInScope(tpe: TypeRepr, scope: Scope): Iterable[Tree] = {
@@ -116,7 +116,7 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
     def findInAllScope(tpe: TypeRepr): Iterable[Tree] = {
       @tailrec
       def accInScope(scope: Scope, acc: List[Tree]): List[Tree] = {
-        val newAcc = doFindInScope(tpe, scope) ++ acc
+        val newAcc = acc ++ doFindInScope(tpe, scope)
         if (!scope.isMax) accInScope(scope.widen, newAcc) else newAcc
       }
       uniqueTrees(accInScope(Scope.init, Nil))
@@ -163,7 +163,6 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
     private def buildEligibleValue(symbol: Symbol, scope: Scope): PartialFunction[Tree, EligibleValues] = {
       case m: ValDef =>
         merge(
-          inspectModule(scope.widen, m.rhs.map(_.tpe).getOrElse(m.tpt.tpe), m),
           EligibleValues(
             Map(
               scope -> List(
@@ -173,11 +172,11 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
                 )
               )
             )
-          )
+          ),
+          inspectModule(scope.widen, m.rhs.map(_.tpe).getOrElse(m.tpt.tpe), m)
         )
       case m: DefDef if m.termParamss.flatMap(_.params).isEmpty =>
         merge(
-          inspectModule(scope.widen, m.rhs.map(_.tpe).getOrElse(m.returnTpt.tpe), m),
           EligibleValues(
             Map(
               scope -> List(
@@ -187,7 +186,8 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
                 )
               )
             )
-          )
+          ),
+          inspectModule(scope.widen, m.rhs.map(_.tpe).getOrElse(m.returnTpt.tpe), m)
         )
     }
 
@@ -196,7 +196,12 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
     )
 
     def merge(ev1: EligibleValues, ev2: EligibleValues): EligibleValues =
-      EligibleValues((ev1.values.toSeq ++ ev2.values.toSeq).groupBy(_._1).view.mapValues(_.flatMap(_._2).toList).toMap)
+      EligibleValues(
+        (
+          for key <- ev1.values.keySet ++ ev2.values.keySet
+          yield key -> (ev1.values.getOrElse(key, Nil) ++ ev2.values.getOrElse(key, Nil))
+        ).toMap
+      )
   }
 }
 

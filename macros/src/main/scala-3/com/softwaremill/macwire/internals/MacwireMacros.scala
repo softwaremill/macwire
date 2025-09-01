@@ -87,15 +87,28 @@ object MacwireMacros {
     code
   }
 
-  def wireSet_impl[T: Type](using q: Quotes): Expr[Set[T]] = {
+  private def wireCollInstances[T: Type](using q: Quotes) = {
     import q.reflect.*
 
     val tpe = TypeRepr.of[T]
     val dependencyResolver = DependencyResolver.throwErrorOnResolutionFailure[q.type, T](log)
 
-    val instances = dependencyResolver.resolveAll(tpe)
+    dependencyResolver.resolveAll(tpe)
+  }
+
+  def wireSet_impl[T: Type](using q: Quotes): Expr[Set[T]] = {
+    val instances = wireCollInstances[T]
 
     val code = '{ ${ Expr.ofSeq(instances.toSeq.map(_.asExprOf[T])) }.toSet }
+
+    log(s"Generated code: ${code.show}")
+    code
+  }
+
+  def wireList_impl[T: Type](using q: Quotes): Expr[List[T]] = {
+    val instances = wireCollInstances[T]
+
+    val code = '{ ${ Expr.ofSeq(instances.toSeq.map(_.asExprOf[T])) }.toList }
 
     log(s"Generated code: ${code.show}")
     code
