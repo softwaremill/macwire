@@ -1,0 +1,33 @@
+#include commonSimpleClasses
+
+@Module class ModuleA1 { lazy val a: A = wire[A] }
+@Module class ModuleA2 { lazy val a: A = wire[A] }
+
+class AProvider { lazy val a: A = wire[A] }
+
+class App(ma1: ModuleA1,
+          ma2: ModuleA2) {
+
+    lazy val as: List[A] = wireList[A] // should look into modules and preserve order
+}
+
+class App2(ma1: ModuleA1, aProvider: AProvider) {
+
+    // local definitions or imports shouldn't shadow modules
+    import aProvider.{a => aProvided}
+    lazy val a: A = wire[A]
+
+    lazy val as: List[A] = wireList[A] // => List(a, ma1.a, aProvided) in some deterministic order
+}
+
+object Test {
+    val ma1 = wire[ModuleA1]
+    val ma2 = wire[ModuleA2]
+    val aProvider = wire[AProvider]
+    val app = wire[App]
+    val app2 = wire[App2]
+}
+
+// Test that wireList finds the expected instances (same as wireSet but as List)
+require(Test.app.as == List(Test.ma1.a, Test.ma2.a))
+require(Test.app2.as == List(Test.ma1.a, Test.app2.a, Test.aProvider.a))

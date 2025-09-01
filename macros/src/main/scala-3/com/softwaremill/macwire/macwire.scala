@@ -31,6 +31,11 @@ inline def wire[T]: T = ${ MacwireMacros.wireImpl[T] }
 /** Collect all instances of the given type, available in the surrounding context (trait/class/object). */
 inline def wireSet[T]: Set[T] = ${ MacwireMacros.wireSet_impl[T] }
 
+/** Collect all instances of the given type, available in the surrounding context (trait/class/object), preserving the
+  * order of definition.
+  */
+inline def wireList[T]: List[T] = ${ MacwireMacros.wireList_impl[T] }
+
 inline def wireWith[RES](inline factory: () => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }
 inline def wireWith[A, RES](inline factory: (A) => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }
 inline def wireWith[A, B, RES](inline factory: (A, B) => RES): RES = ${ MacwireMacros.wireWith_impl[RES]('factory) }

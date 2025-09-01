@@ -19,6 +19,8 @@ There's a couple of wiring variants that you can choose from:
 * `wire` create an instance of the given type, using dependencies from the context, within which it is called. 
   Dependencies are looked up in the enclosing trait/class/object and parents (via inheritance).
 * `wireRec` is a variant of `wire`, which creates missing dependencies using constructors.
+* `wireSet` collect all instances of the given type from the context and return them as a `Set`.
+* `wireList` collect all instances of the given type from the context and return them as a `List`, preserving order.
 
 In other words, `autowire` is context-free, while the `wire` family of macros is context-dependent.
 
@@ -56,7 +58,7 @@ To use, add the following dependency:
 	- [Accessing wired instances dynamically](#accessing-wired-instances-dynamically)
   - [Limitations](#limitations)
   - [Akka integration](#akka-integration)
-  - [Multi Wiring (wireSet)](#multi-wiring-wireset)
+  - [Multi Wiring (wireSet and wireList)](#multi-wiring-wireset-and-wirelist)
 - [Autowire for cats-effect](#autowire-for-cats-effect)  
 - [Interceptors](#interceptors)
 - [Qualifiers](#qualifiers)
@@ -724,15 +726,18 @@ object UserFinderActor {
 val theUserFinder = wireActorWith(UserFinderActor.get _)("userFinder")
 ```
 
-## Multi Wiring (wireSet)
+## Multi Wiring (wireSet and wireList)
 
 Using `wireSet` you can obtain a set of multiple instances of the same type. This is done without constructing the set explicitly. All instances of the same type which are found by MacWire are used to construct the set.
 
-Consider the below example. Let's suppose that you want to create a `RockBand(musicians: Set[Musician])` object. It's easy to do so using the `wireSet` functionality:
+Using `wireList` you can obtain a list of multiple instances of the same type, preserving the order of definition. This works similarly to `wireSet`, but returns a `List` instead of a `Set`, maintaining the order in which the instances are discovered during macro expansion. This method is available only in Scala 3.
+
+Consider the below example. Let's suppose that you want to create a `RockBand` object with musicians:
 
 ```scala
 trait Musician
 class RockBand(musicians: Set[Musician])
+class Orchestra(musicians: List[Musician])
 
 trait RockBandModule {
   lazy val singer    = new Musician {}
@@ -740,12 +745,23 @@ trait RockBandModule {
   lazy val drummer   = new Musician {}
   lazy val bassist   = new Musician {}
 
-  lazy val musicians = wireSet[Musician] // all above musicians will be wired together
-                                         // musicians has type Set[Musician]
+  lazy val musiciansSet = wireSet[Musician]  // all above musicians will be wired together
+                                             // musiciansSet has type Set[Musician] (unordered)
+
+  lazy val musiciansList = wireList[Musician] // all above musicians will be wired together
+                                              // musiciansList has type List[Musician] (preserves order)
 
   lazy val rockBand  = wire[RockBand]
+  lazy val orchestra = wire[Orchestra]
 }
 ```
+
+Both `wireSet` and `wireList` look for instances in the same places:
+- enclosing members (lazy vals, vals, defs without parameters)
+- enclosing imports
+- parent classes and traits
+
+The key difference is that `wireSet` returns an unordered `Set[T]` while `wireList` returns an ordered `List[T]` that preserves the order of definition discovery.
 
 # Autowire for cats-effect
 

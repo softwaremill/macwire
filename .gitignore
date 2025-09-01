@@ -11,3 +11,4 @@ out
 metals.sbt
 Workpad.scala
 .cursor
+.scala-build
