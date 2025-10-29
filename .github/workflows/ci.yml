@@ -8,12 +8,12 @@ on:
 jobs:
   build:
     uses: softwaremill/github-actions-workflows/.github/workflows/build-scala.yml@main
-    # run on 1) push, 2) external PRs, 3) softwaremill-ci PRs
+    # run on 1) push, 2) external PRs, 3) github-actions[bot] PRs
     # do not run on internal, non-steward PRs since those will be run by push to branch
     if: |
       github.event_name == 'push' || 
       github.event.pull_request.head.repo.full_name != github.repository ||
-      github.event.pull_request.user.login == 'softwaremill-ci'
+      github.event.pull_request.user.login == 'github-actions[bot]'
     strategy:
       matrix:
         java: [ '11', '17', '21' ]
@@ -32,12 +32,14 @@ jobs:
       java-opts: "-Xmx5G"
 
   label:
-    # only for PRs by softwaremill-ci
-    if: github.event.pull_request.user.login == 'softwaremill-ci'
+    # only for PRs by github-actions[bot]
+    if: github.event.pull_request.user.login == 'github-actions[bot]'
     uses: softwaremill/github-actions-workflows/.github/workflows/label.yml@main
+    secrets: inherit
 
   auto-merge:
-    # only for PRs by softwaremill-ci
-    if: github.event.pull_request.user.login == 'softwaremill-ci'
+    # only for PRs by github-actions[bot]
+    if: github.event.pull_request.user.login == 'github-actions[bot]'
     needs: [ build, label ]
     uses: softwaremill/github-actions-workflows/.github/workflows/auto-merge.yml@main
+    secrets: inherit
