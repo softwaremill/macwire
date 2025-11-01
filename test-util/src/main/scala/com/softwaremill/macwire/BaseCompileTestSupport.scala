@@ -92,7 +92,7 @@ private[macwire] trait BaseCompileTestsSupport extends AnyFlatSpec with Matchers
     val (successNames, nonSuccess) = names.partition(_.endsWith(".success"))
     val (warningNames, failureNames) = nonSuccess.partition(_.endsWith(".warning"))
     failureNames.filterNot(_.endsWith(".failure")) match {
-      case Nil => ()
+      case Nil                      => ()
       case neitherSuccessNorFailure =>
         sys.error(
           "Test case files must either end with .success, .failure or .warning:\n- " +

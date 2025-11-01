@@ -14,7 +14,7 @@ trait ThreadLocalScopeStorage extends Scope {
 
     storage.get(key) match {
       case Some(obj) => obj.asInstanceOf[T]
-      case None => {
+      case None      => {
         val obj = createT
         storage.set(key, obj)
         obj

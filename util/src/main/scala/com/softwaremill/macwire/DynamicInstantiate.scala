@@ -18,7 +18,7 @@ private[macwire] trait DynamicInstantiate {
               s"dependency of type ${paramCls.getName} cannot be found"
           )
         case inst :: Nil => inst.asInstanceOf[AnyRef]
-        case insts =>
+        case insts       =>
           throw new InstantiationException(
             s"Cannot instantiate ${cls.getName}, " +
               s"multiple dependencies of type ${paramCls.getName} found: ${insts.map(_.getClass.getName)}"

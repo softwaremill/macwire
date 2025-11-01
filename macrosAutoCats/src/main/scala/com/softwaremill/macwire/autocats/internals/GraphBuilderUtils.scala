@@ -46,8 +46,8 @@ trait GraphBuilderUtils[C <: blackbox.Context] { this: CatsProviders[C] =>
         .map(_.asRight[Provider])
 
       val result = (resolvedProviders ++ resolvedFMT) match {
-        case Nil          => None
-        case List(result) => Some(result)
+        case Nil                => None
+        case List(result)       => Some(result)
         case ambiguousProviders => {
           val duplicates = ambiguousProviders.map {
             case Left(value)  => value.resultType

@@ -18,7 +18,7 @@ object ProxyCreator {
     // not possible, we invoke any constructor with default values for arguments.
     val instance = UnsafeInstance match {
       case Some(unsafe) => unsafe.allocateInstance(proxiedClass)
-      case None =>
+      case None         =>
         val constructor = findBestConstructor(proxiedClass)
         constructor.newInstance(constructor.getParameterTypes.map(getDefaultValueForClass): _*)
     }
