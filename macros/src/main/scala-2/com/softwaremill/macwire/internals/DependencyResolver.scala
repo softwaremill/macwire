@@ -19,7 +19,7 @@ class DependencyResolver[C <: blackbox.Context, TypeC <: C#Type, TreeC <: C#Tree
     */
   def resolve(param: Symbol, t: Type): Tree = {
     eligibleValues.findInFirstScope(t).toList match {
-      case Nil => resolutionFallback(t.asInstanceOf[TypeC]).asInstanceOf[Tree]
+      case Nil          => resolutionFallback(t.asInstanceOf[TypeC]).asInstanceOf[Tree]
       case value :: Nil =>
         val forwardValues = eligibleValues.findInScope(t, LocalForward)
         if (forwardValues.nonEmpty) {

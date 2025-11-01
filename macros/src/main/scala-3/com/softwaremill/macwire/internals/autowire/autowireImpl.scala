@@ -14,7 +14,7 @@ def autowireImpl[T: Type](dependencies: Expr[Seq[Any]])(using q: Quotes): Expr[T
   // extracting the provided varargs - we need an explicitly provided list of dependencies
   val rawDependencies: Seq[Expr[Any]] = dependencies match
     case Varargs(exprs) => exprs
-    case _ =>
+    case _              =>
       report.errorAndAbort(
         s"depedencies need to be provided directly as parameters to the autowire call; got: $dependencies"
       )

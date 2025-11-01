@@ -14,7 +14,7 @@ package object internals {
 
     val (sym: Symbol, tpeArgs: List[Type]) = targetTypeD match {
       case TypeRef(_, sym, tpeArgs) => (sym, tpeArgs)
-      case t =>
+      case t                        =>
         c.abort(
           c.enclosingPosition,
           s"Target type not supported for wiring: $t. Please file a bug report with your use-case."

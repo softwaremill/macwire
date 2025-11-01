@@ -52,7 +52,7 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
           ctx.withProvider(sym, provider) { currentCtx =>
             provider match {
               case _: NotResolvedProvider => currentCtx.missingPath()
-              case _ =>
+              case _                      =>
                 provider.dependencies.foldLeft(currentCtx) { case (paramsCtx, deps) =>
                   deps.foldLeft(paramsCtx) { case (paramCtx, (sym, param)) => go(paramCtx)(sym, param) }
                 }
@@ -230,7 +230,7 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
       case ((currentCtx, resolvedParams), Param(paramSym, paramTpe)) =>
         currentCtx.resolve(paramTpe) match {
           case Some(Left(provider)) => (currentCtx, resolvedParams.:+((paramSym, provider)))
-          case Some(Right(fmt)) => {
+          case Some(Right(fmt))     => {
             val (updatedCtx, fm) = resolveFactoryMethod(currentCtx)(fmt)
 
             (updatedCtx, resolvedParams.:+((paramSym, fm)))
@@ -287,7 +287,7 @@ class CatsProvidersGraphContext[C <: blackbox.Context](val c: C, val log: Logger
   /** DFS based algorithm that resolves all `FactoryMethodTree`
     */
   private def resolveFactoryMethods(ctx: BuilderContext): BuilderContext = ctx.next() match {
-    case None => ctx
+    case None      => ctx
     case Some(fmt) => {
       val (updatedCtx, _) = resolveFactoryMethod(ctx)(fmt)
 

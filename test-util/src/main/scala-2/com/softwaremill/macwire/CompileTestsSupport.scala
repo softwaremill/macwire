@@ -34,9 +34,9 @@ trait CompileTestsSupport extends BaseCompileTestsSupport {
         val warnings = tb.frontEnd.infos.filter(_.severity == tb.frontEnd.WARNING).map(_.msg).toList
         lazy val warningsString = "\n - " + warnings.mkString("\n - ")
         (warnings, expectedWarningsFragments) match {
-          case (Nil, Nil) => () // ok
-          case (_, Nil)   => fail(s"Expected compilation to have no warning, but got:" + warningsString)
-          case (Nil, _)   => fail(s"Expected the following compile warnings fragments: $expectedWarningsFragments")
+          case (Nil, Nil)      => () // ok
+          case (_, Nil)        => fail(s"Expected compilation to have no warning, but got:" + warningsString)
+          case (Nil, _)        => fail(s"Expected the following compile warnings fragments: $expectedWarningsFragments")
           case (one :: Nil, _) =>
             expectedWarningsFragments.foreach(expectedWarning => one should include(expectedWarning))
           case (_, _) => fail(s"More than one warning found:" + warningsString)
