@@ -33,7 +33,7 @@ class AutowireProviders[Q <: Quotes](using val q: Q)(
     @tailrec
     def createProviders(deps: List[Expr[Any]], acc: Vector[Provider], seenTpes: Set[TypeRepr]): Vector[Provider] =
       deps match
-        case Nil => acc
+        case Nil              => acc
         case dep :: otherDeps =>
           val term = dep.asTerm
           val tpe = term.tpe.dealias.widen // dealias, and widen from singleton types

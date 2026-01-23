@@ -117,7 +117,7 @@ object MacwireMacros {
         .flatMap { m =>
           extractTypeFromNullaryType(m.typeSignature) match {
             case Some(tpe) => Some((m, tpe))
-            case None =>
+            case None      =>
               log(s"Cannot extract type from ${m.typeSignature} for member $m!")
               None
           }

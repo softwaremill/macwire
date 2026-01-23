@@ -105,7 +105,7 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
         findInScope(tpe, scope) match {
           case coll if coll.isEmpty && !scope.isMax => forScope(scope.widen)
           case coll if coll.isEmpty                 => log(s"Could not find $tpe in any scope"); Nil
-          case exprs =>
+          case exprs                                =>
             log(s"Found [${exprs.mkString(", ")}] of type [$tpe] in scope $scope")
             exprs
         }

@@ -16,7 +16,7 @@ private[macwire] class EligibleValuesFinder[C <: blackbox.Context](val c: C, log
 
     @tailrec
     def doFind(trees: List[(Scope, Tree)], values: EligibleValues): EligibleValues = trees match {
-      case Nil => values
+      case Nil                   => values
       case (scope, tree) :: tail =>
         tree match {
 
@@ -150,7 +150,7 @@ private[macwire] class EligibleValuesFinder[C <: blackbox.Context](val c: C, log
         pp ++ selfTypes
 
       case ModuleDef(_, _, Template(pp, _, _)) => pp
-      case e =>
+      case e                                   =>
         c.error(c.enclosingPosition, s"Unknown type of enclosing class: ${e.getClass}")
         Nil
     }
@@ -314,7 +314,7 @@ private[macwire] class EligibleValuesFinder[C <: blackbox.Context](val c: C, log
         findInScope(tpe, scope) match {
           case coll if coll.isEmpty && !scope.isMax => forScope(scope.widen)
           case coll if coll.isEmpty                 => log(s"Could not find $tpe in any scope"); Nil
-          case exprs =>
+          case exprs                                =>
             log(s"Found [${exprs.mkString(", ")}] of type [$tpe] in scope $scope")
             exprs
         }
@@ -348,7 +348,7 @@ private[macwire] class EligibleValuesFinder[C <: blackbox.Context](val c: C, log
   private def enclosingClassBody: List[Tree] = c.enclosingClass match {
     case ClassDef(_, _, _, Template(_, _, body)) => body
     case ModuleDef(_, _, Template(_, _, body))   => body
-    case e =>
+    case e                                       =>
       c.error(c.enclosingPosition, s"Unknown type of enclosing class: ${e.getClass}")
       Nil
   }
