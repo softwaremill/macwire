@@ -65,7 +65,7 @@ val testSettings = commonSettings ++ Seq(
 )
 
 val tagging = "com.softwaremill.common" %% "tagging" % "2.3.5"
-val scalatest = "org.scalatest" %% "scalatest" % "3.2.19"
+val scalatest = "org.scalatest" %% "scalatest" % "3.2.20"
 val javassist = "org.javassist" % "javassist" % "3.30.2-GA"
 val akkaActor = "com.typesafe.akka" %% "akka-actor" % "2.6.21"
 val pekkoActor = "org.apache.pekko" %% "pekko-actor" % "1.4.0"
