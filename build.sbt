@@ -63,7 +63,6 @@ val testSettings = Seq(
   // Otherwise when running tests in sbt, the macro is not visible
   // (both macro and usages are compiled in the same compiler run)
   Test / fork := true,
-  // compile tests list the test-case resources as files, which doesn't work with jars on the classpath (the sbt 2 default)
   exportJars := false,
   // in sbt 2 forked tests are run by a worker, so java.class.path doesn't contain the test classpath needed by the Scala 3 compile tests
   Test / javaOptions += {
@@ -73,7 +72,6 @@ val testSettings = Seq(
   }
 )
 
-// `%%` is platform-aware in sbt 2; the JVM artifacts are pinned to keep the dependencies of the published JS/Native modules unchanged
 val tagging = ("com.softwaremill.common" %% "tagging" % "2.3.5").platform(Platform.jvm)
 val scalatest = "org.scalatest" %% "scalatest" % "3.2.20"
 val javassist = "org.javassist" % "javassist" % "3.33.0-GA"
@@ -83,26 +81,9 @@ val javaxInject = "javax.inject" % "javax.inject" % "1"
 val cats = ("org.typelevel" %% "cats-core" % "2.13.0").platform(Platform.jvm)
 val catsEffect = ("org.typelevel" %% "cats-effect" % "3.7.1").platform(Platform.jvm)
 
-lazy val root = project
-  .in(file("."))
+lazy val root = rootProject
   .settings(name := "macwire", publishArtifact := false)
-  .aggregate(
-    List(
-      util,
-      macros,
-      proxy,
-      tests,
-      tests2,
-      testUtil,
-      utilTests,
-      macrosAkka,
-      macrosPekko,
-      macrosAkkaTests,
-      macrosPekkoTests,
-      macrosAutoCats,
-      macrosAutoCatsTests
-    ).flatMap(_.projectRefs)*
-  )
+  .autoAggregate
 
 lazy val util = projectMatrix
   .in(file("util"))
