@@ -5,7 +5,7 @@ import com.softwaremill.UpdateVersionInDocs
 import sbt._
 import sbt.Keys._
 
-excludeLintKeys in Global ++= Set(ideSkipProject)
+Global / excludeLintKeys ++= Set(ideSkipProject)
 
 val scala2_12 = "2.12.21"
 val scala2_13 = "2.13.18"
@@ -49,63 +49,51 @@ val versionSpecificScalaSources = {
   }
 }
 
-val commonSettings = commonSmlBuildSettings ++ ossPublishSettings ++ Seq(
-  organization := "com.softwaremill.macwire",
-  ideSkipProject := (scalaVersion.value != ideScalaVersion) || thisProjectRef.value.project.contains("JS"),
-  bspEnabled := !ideSkipProject.value,
-  scalacOptions ~= (_.filterNot(Set("-Wconf:cat=other-match-analysis:error"))) // doesn't play well with macros
-)
+commonSmlBuildSettings
+ossPublishSettings
 
-val testSettings = commonSettings ++ Seq(
+organization := "com.softwaremill.macwire"
+ideSkipProject := (scalaVersion.value != ideScalaVersion) || thisProjectRef.value.project.contains("JS")
+bspEnabled := !ideSkipProject.value
+scalacOptions ~= (_.filterNot(Set("-Wconf:cat=other-match-analysis:error"))) // doesn't play well with macros
+
+val testSettings = Seq(
   publishArtifact := false,
   scalacOptions ++= Seq("-Ywarn-dead-code"),
   // Otherwise when running tests in sbt, the macro is not visible
   // (both macro and usages are compiled in the same compiler run)
-  Test / fork := true
+  Test / fork := true,
+  exportJars := false,
+  // in sbt 2 forked tests are run by a worker, so java.class.path doesn't contain the test classpath needed by the Scala 3 compile tests
+  Test / javaOptions += {
+    val converter = fileConverter.value
+    val classpath = (Test / fullClasspath).value.map(a => converter.toPath(a.data).toString)
+    s"-Dmacwire.test.classpath=${classpath.mkString(java.io.File.pathSeparator)}"
+  }
 )
 
-val tagging = "com.softwaremill.common" %% "tagging" % "2.3.5"
+val tagging = ("com.softwaremill.common" %% "tagging" % "2.3.5").platform(Platform.jvm)
 val scalatest = "org.scalatest" %% "scalatest" % "3.2.20"
 val javassist = "org.javassist" % "javassist" % "3.33.0-GA"
-val akkaActor = "com.typesafe.akka" %% "akka-actor" % "2.6.21"
-val pekkoActor = "org.apache.pekko" %% "pekko-actor" % "1.7.0"
+val akkaActor = ("com.typesafe.akka" %% "akka-actor" % "2.6.21").platform(Platform.jvm)
+val pekkoActor = ("org.apache.pekko" %% "pekko-actor" % "1.7.0").platform(Platform.jvm)
 val javaxInject = "javax.inject" % "javax.inject" % "1"
-val cats = "org.typelevel" %% "cats-core" % "2.13.0"
-val catsEffect = "org.typelevel" %% "cats-effect" % "3.7.1"
+val cats = ("org.typelevel" %% "cats-core" % "2.13.0").platform(Platform.jvm)
+val catsEffect = ("org.typelevel" %% "cats-effect" % "3.7.1").platform(Platform.jvm)
 
-lazy val root = project
-  .in(file("."))
-  .settings(commonSettings)
+lazy val root = rootProject
   .settings(name := "macwire", publishArtifact := false)
-  .aggregate(
-    List(
-      util,
-      macros,
-      proxy,
-      tests,
-      tests2,
-      testUtil,
-      utilTests,
-      macrosAkka,
-      macrosPekko,
-      macrosAkkaTests,
-      macrosPekkoTests,
-      macrosAutoCats,
-      macrosAutoCatsTests
-    ).flatMap(_.projectRefs): _*
-  )
+  .autoAggregate
 
 lazy val util = projectMatrix
   .in(file("util"))
   .settings(libraryDependencies += tagging)
-  .settings(commonSettings)
   .jvmPlatform(scalaVersions = scala2And3Versions)
   .jsPlatform(scalaVersions = scala2And3Versions)
   .nativePlatform(scalaVersions = scala2And3Versions)
 
 lazy val macros = projectMatrix
   .in(file("macros"))
-  .settings(commonSettings)
   .settings(
     libraryDependencies ++= reflectLibrary(scalaVersion.value),
     versionSpecificScalaSources
@@ -117,7 +105,6 @@ lazy val macros = projectMatrix
 
 lazy val proxy = projectMatrix
   .in(file("proxy"))
-  .settings(commonSettings)
   .settings(
     libraryDependencies ++= Seq(javassist, scalatest % Test),
     compileOrder := CompileOrder.JavaThenScala,
@@ -162,7 +149,6 @@ lazy val tests2 = projectMatrix
 
 lazy val macrosAkka = projectMatrix
   .in(file("macrosAkka"))
-  .settings(commonSettings)
   .settings(libraryDependencies ++= Seq(akkaActor % "provided"))
   .dependsOn(macros)
   .jvmPlatform(scalaVersions = scala2)
@@ -170,7 +156,6 @@ lazy val macrosAkka = projectMatrix
 
 lazy val macrosPekko = projectMatrix
   .in(file("macrosPekko"))
-  .settings(commonSettings)
   .settings(libraryDependencies ++= Seq(pekkoActor % "provided"))
   .dependsOn(macros)
   .jvmPlatform(scalaVersions = scala2)
@@ -204,7 +189,6 @@ lazy val macrosPekkoTests = projectMatrix
 
 lazy val macrosAutoCats = projectMatrix
   .in(file("macrosAutoCats"))
-  .settings(commonSettings)
   .settings(libraryDependencies ++= Seq(catsEffect, cats))
   .dependsOn(macros)
   .jvmPlatform(scalaVersions = scala2)

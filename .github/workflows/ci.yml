@@ -16,7 +16,7 @@ jobs:
       github.event.pull_request.user.login == 'softwaremill-ci'
     strategy:
       matrix:
-        java: [ '11', '17', '21' ]
+        java: [ '17', '21' ]
       fail-fast: false
     with:
       java-version: ${{ matrix.java }}
