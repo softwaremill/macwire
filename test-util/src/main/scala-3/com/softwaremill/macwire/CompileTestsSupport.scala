@@ -10,7 +10,6 @@ import scala.io.Source
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.Files
-import java.nio.file.OpenOption
 import java.nio.file.StandardOpenOption
 
 import dotty.tools.dotc.reporting.{ThrowingReporter, Diagnostic}
@@ -52,10 +51,17 @@ trait CompileTestsSupport extends BaseCompileTestsSupport with OptionValues {
         val testReporter = new TestReporter
         val reporter = testReporter
         val classpath = Array("-classpath", Properties.currentClasspath)
+        // The test cases are shared with Scala 2, so they use syntax which Scala 3.4+ reports with migration warnings.
+        val sharedSyntaxWconf = Array(
+          "-Wconf:msg=for eta-expansion is unnecessary:s",
+          "-Wconf:msg=with as a type operator has been deprecated:s"
+        )
 
-        driver.process(classpath :+ path.toString, reporter)
+        driver.process(classpath ++ sharedSyntaxWconf :+ path.toString, reporter)
 
-        val infos = testReporter.storedInfos
+        // Newer Scala 3 versions (checked with 3.9) also report the "N warnings/errors found" summary is also reported as a (position-less) diagnostic
+        def isSummary(d: Diagnostic) = !d.pos.exists && d.message.matches("""\S+ (warning|error)s? found""")
+        val infos = testReporter.storedInfos.filterNot(isSummary)
 
         def verifyInfo(level: Int, expected: List[String]) = {
           val actual = infos.filter(_.level == level).map(_.message)
