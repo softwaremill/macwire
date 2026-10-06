@@ -17,6 +17,6 @@ class Wired(protected val instanceFactoryMap: InstanceFactoryMap) extends Instan
 }
 
 object Wired {
-  private[macwire] type InstanceFactoryMap = Map[Class[_], () => AnyRef]
+  private[macwire] type InstanceFactoryMap = Map[Class[?], () => AnyRef]
   def apply(implsByClass: InstanceFactoryMap) = new Wired(implsByClass)
 }

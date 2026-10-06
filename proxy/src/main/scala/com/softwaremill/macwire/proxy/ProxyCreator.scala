@@ -27,12 +27,12 @@ object ProxyCreator {
     instance.asInstanceOf[T]
   }
 
-  private def findBestConstructor(cls: Class[_]) = {
+  private def findBestConstructor(cls: Class[?]) = {
     val ctors = cls.getConstructors
     ctors.find(_.getParameterTypes.size == 0).getOrElse(ctors.head)
   }
 
-  private val TypeDefaults = Map[Class[_], AnyRef](
+  private val TypeDefaults = Map[Class[?], AnyRef](
     java.lang.Byte.TYPE -> java.lang.Byte.valueOf(0.toByte),
     java.lang.Short.TYPE -> java.lang.Short.valueOf(0.toShort),
     java.lang.Integer.TYPE -> java.lang.Integer.valueOf(0),
@@ -41,7 +41,7 @@ object ProxyCreator {
     java.lang.Boolean.TYPE -> java.lang.Boolean.FALSE
   )
 
-  private def getDefaultValueForClass(cls: Class[_]): AnyRef = TypeDefaults.getOrElse(cls, null)
+  private def getDefaultValueForClass(cls: Class[?]): AnyRef = TypeDefaults.getOrElse(cls, null)
 
   private val UnsafeInstance: Option[Unsafe] = {
     try {

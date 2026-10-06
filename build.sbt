@@ -57,6 +57,17 @@ ideSkipProject := (scalaVersion.value != ideScalaVersion) || thisProjectRef.valu
 bspEnabled := !ideSkipProject.value
 scalacOptions ~= (_.filterNot(Set("-Wconf:cat=other-match-analysis:error"))) // doesn't play well with macros
 
+// TODO(scala-3.9): shared (Scala 2.12/2.13/3) sources use `xs: _*` vararg splices and `A with B` types, which Scala 3.4+
+// warns about; the Scala 3 replacements (`xs*`, `A & B`) don't compile on Scala 2.12. Remove once Scala 2.12 is dropped.
+val scala3SharedSourcesWconf = scalacOptions ++= {
+  if (scalaVersion.value == scala3)
+    Seq(
+      "-Wconf:msg=is no longer supported for vararg splices:s",
+      "-Wconf:msg=with as a type operator has been deprecated:s"
+    )
+  else Nil
+}
+
 val testSettings = Seq(
   publishArtifact := false,
   scalacOptions ++= Seq("-Ywarn-dead-code"),
@@ -87,7 +98,7 @@ lazy val root = rootProject
 
 lazy val util = projectMatrix
   .in(file("util"))
-  .settings(libraryDependencies += tagging)
+  .settings(libraryDependencies += tagging, scala3SharedSourcesWconf)
   .jvmPlatform(scalaVersions = scala2And3Versions)
   .jsPlatform(scalaVersions = scala2And3Versions)
   .nativePlatform(scalaVersions = scala2And3Versions)
@@ -108,6 +119,7 @@ lazy val proxy = projectMatrix
   .settings(
     libraryDependencies ++= Seq(javassist, scalatest % Test),
     compileOrder := CompileOrder.JavaThenScala,
+    scala3SharedSourcesWconf,
     javaOptions += "--add-opens java.base/java.lang=ALL-UNNAMED"
   )
   .dependsOn(macros % Test)
@@ -135,7 +147,7 @@ lazy val tests = projectMatrix
 
 lazy val utilTests = projectMatrix
   .in(file("util-tests"))
-  .settings(testSettings)
+  .settings(testSettings, scala3SharedSourcesWconf)
   .dependsOn(macros % "provided", util % Test, testUtil % Test)
   .jvmPlatform(scalaVersions = scala2And3Versions)
 

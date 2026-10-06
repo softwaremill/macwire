@@ -27,7 +27,7 @@ class AutowireProviders[Q <: Quotes](using val q: Q)(
       raw: Option[Expr[Any]] = None
   )
 
-  private val classTypeRepr = TypeRepr.of[Class[_]]
+  private val classTypeRepr = TypeRepr.of[Class[?]]
 
   private val providersFromRawDependencies =
     @tailrec
@@ -88,7 +88,7 @@ class AutowireProviders[Q <: Quotes](using val q: Q)(
         !member.fullName.contains("$default$") && // default params for copy on case classes
         !member.fullName.matches(".*_\\d+") // tuple methods on case classes
 
-    def isPublic(member: Symbol): Boolean = !((member.flags is Flags.Private) || (member.flags is Flags.Protected))
+    def isPublic(member: Symbol): Boolean = !(member.flags.is(Flags.Private) || member.flags.is(Flags.Protected))
 
     log.withBlock(s"detected a membersOf provider"):
       val Apply(_, List(membersOf)) = t: @unchecked

@@ -21,8 +21,8 @@ private[macwire] class CompanionCrimper[Q <: Quotes, T: Type](using val q: Q)(
 
   def isCompanionApply(method: Symbol): Boolean =
     method.isDefDef &&
-      !(method.flags is Flags.Private) &&
-      !(method.flags is Flags.Protected) &&
+      !method.flags.is(Flags.Private) &&
+      !method.flags.is(Flags.Protected) &&
       returnType(method) <:< targetType &&
       method.name == "apply"
 

@@ -62,7 +62,7 @@ private[macwire] class EligibleValuesFinder[Q <: Quotes](log: Logger)(using val 
   }
 
   private def isPublic(member: Symbol): Boolean = {
-    !((member.flags is Flags.Private) || (member.flags is Flags.Protected))
+    !(member.flags.is(Flags.Private) || member.flags.is(Flags.Protected))
   }
 
   case class EligibleValue(tpe: TypeRepr, expr: Tree) {
