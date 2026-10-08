@@ -13,6 +13,7 @@ import java.nio.file.Files
 import java.nio.file.StandardOpenOption
 
 import dotty.tools.dotc.reporting.{ThrowingReporter, Diagnostic}
+import dotty.tools.dotc.interfaces.Diagnostic.WARNING
 import dotty.tools.dotc.Driver
 import java.io.IOException
 
@@ -53,12 +54,11 @@ trait CompileTestsSupport extends BaseCompileTestsSupport with OptionValues {
         val classpath = Array("-classpath", Properties.currentClasspath)
         driver.process(classpath :+ path.toString, reporter)
 
-        // Newer Scala 3 versions (checked with 3.9) also report the "N warnings/errors found" summary is also reported as a (position-less) diagnostic
-        def isSummary(d: Diagnostic) = !d.pos.exists && d.message.matches("""\S+ (warning|error)s? found""")
-        val infos = testReporter.storedInfos.filterNot(isSummary)
+        // since Scala 3.9 update, the "N errors" found summary is reported as a position-less warning
+        val infosWithoutSummary = testReporter.storedInfos.filterNot(msg => msg.level == WARNING && !msg.pos.exists)
 
         def verifyInfo(level: Int, expected: List[String]) = {
-          val actual = infos.filter(_.level == level).map(_.message)
+          val actual = infosWithoutSummary.filter(_.level == level).map(_.message)
 
           if (expected.size > 0) {
             val info = actual.mkString("\n")
