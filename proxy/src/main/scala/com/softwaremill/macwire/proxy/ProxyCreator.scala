@@ -20,7 +20,7 @@ object ProxyCreator {
       case Some(unsafe) => unsafe.allocateInstance(proxiedClass)
       case None         =>
         val constructor = findBestConstructor(proxiedClass)
-        constructor.newInstance(constructor.getParameterTypes.map(getDefaultValueForClass): _*)
+        constructor.newInstance(constructor.getParameterTypes.map(getDefaultValueForClass)*)
     }
 
     instance.asInstanceOf[ProxyObject].setHandler(methodHandler)

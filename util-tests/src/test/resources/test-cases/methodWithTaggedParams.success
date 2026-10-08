@@ -3,7 +3,7 @@
 object Module {
   def create(blueberryArg: Berry @@ Blue) = {
     def inner(blackberryArg: Berry @@ Black): BlueberryBasket = wire[BlueberryBasket]
-    inner _
+    (arg: Berry @@ Black) => inner(arg)
   }
 }
 

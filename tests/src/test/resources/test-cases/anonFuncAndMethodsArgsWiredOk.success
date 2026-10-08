@@ -5,7 +5,7 @@ object Module {
     def b(b: B) = {
         wire[C]
     }
-    b _
+    (bArg: B) => b(bArg)
   }
 }
 

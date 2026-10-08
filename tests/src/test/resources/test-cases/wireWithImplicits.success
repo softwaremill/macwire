@@ -7,4 +7,4 @@ object A {
 lazy val n = 0
 implicit lazy val s: String = "s"
 
-wireWith(A.make _)
+wireWith((n: Int) => A.make(n))

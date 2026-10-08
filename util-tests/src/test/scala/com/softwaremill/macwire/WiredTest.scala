@@ -8,7 +8,7 @@ class WiredTest extends AnyFlatSpec with Matchers {
   import WiredTest._
 
   def createInstanceFactoryMap(instances: AnyRef*): InstanceFactoryMap = Map(
-    instances.map(i => i.getClass -> (() => i)): _*
+    instances.map(i => i.getClass -> (() => i))*
   )
 
   val implsMap1 = createInstanceFactoryMap(new X, new Y, new Z)

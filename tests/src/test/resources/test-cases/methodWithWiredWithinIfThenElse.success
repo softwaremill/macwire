@@ -7,7 +7,7 @@ object Module {
       if (useWire) wire[C]
       else new C(new A, new B)
     }
-    b _
+    (bArg: B) => (useWire: Boolean) => b(bArg)(useWire)
   }
 }
 

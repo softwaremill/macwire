@@ -13,7 +13,7 @@ trait ModuleSimple { this : AProvider =>
     lazy val c = wire[C]
 }
 
-trait ModuleMultiple { this : AProvider with BProvider =>
+trait ModuleMultiple { this : AProvider & BProvider =>
     lazy val c = wire[C]
 }
 
@@ -38,7 +38,7 @@ require(TestMultiple.c.a == TestMultiple.a)
 require(TestMultiple.c.b == TestMultiple.b)
 
 object ProviderAliasing {
-  type AAndB = AProvider with BProvider
+  type AAndB = AProvider & BProvider
 }
 
 trait AliasedMultiModule { this: ProviderAliasing.AAndB =>

@@ -17,6 +17,6 @@ package object tagging {
 
   implicit class AndTagger[T, U](t: T @@ U) {
     @deprecated("Use com.softwaremill.tagging instead")
-    def andTaggedWith[V]: T @@ (U with V) = new com.softwaremill.tagging.AndTagger[T, U](t).andTaggedWith[V]
+    def andTaggedWith[V]: T @@ (U & V) = new com.softwaremill.tagging.AndTagger[T, U](t).andTaggedWith[V]
   }
 }

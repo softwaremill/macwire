@@ -26,7 +26,7 @@ private[macwire] trait DynamicInstantiate {
       }
     }
 
-    ctor.newInstance(params: _*).asInstanceOf[T]
+    ctor.newInstance(params*).asInstanceOf[T]
   }
 
   protected def lookup[T](cls: Class[T]): List[T]
