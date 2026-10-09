@@ -4,5 +4,5 @@ import scala.reflect.ClassTag
 
 object NoOpScope extends Scope {
   def apply[T](createT: => T)(implicit tag: ClassTag[T]) = createT
-  def get[T](key: String, createT: => T) = throw new RuntimeException("Should never be called!")
+  def get[T](key: String, createT: => T): Nothing = throw new RuntimeException("Should never be called!")
 }

@@ -16,7 +16,7 @@ private[macwire] class ConstructorCrimper[Q <: Quotes, T: Type](using val q: Q)(
   lazy val targetTypeD = targetType.dealias
 
   private def isAccessibleConstructor(s: Symbol) =
-    s.isClassConstructor && !(s.flags is Flags.Private) && !(s.flags is Flags.Protected)
+    s.isClassConstructor && !s.flags.is(Flags.Private) && !s.flags.is(Flags.Protected)
 
   private def isImplicit(f: Flags): Boolean = f.is(Flags.Implicit) || f.is(Flags.Given)
 

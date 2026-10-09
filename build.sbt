@@ -11,7 +11,7 @@ val scala2_12 = "2.12.21"
 val scala2_13 = "2.13.18"
 
 val scala2 = List(scala2_12, scala2_13)
-val scala3 = "3.3.8"
+val scala3 = "3.9.0"
 
 val scala2And3Versions = scala2 :+ scala3
 
@@ -57,6 +57,10 @@ ideSkipProject := (scalaVersion.value != ideScalaVersion) || thisProjectRef.valu
 bspEnabled := !ideSkipProject.value
 scalacOptions ~= (_.filterNot(Set("-Wconf:cat=other-match-analysis:error"))) // doesn't play well with macros
 
+val scala2Source3 = scalacOptions ++= {
+  if (scalaVersion.value == scala3) Nil else Seq("-Xsource:3")
+}
+
 val testSettings = Seq(
   publishArtifact := false,
   scalacOptions ++= Seq("-Ywarn-dead-code"),
@@ -87,7 +91,7 @@ lazy val root = rootProject
 
 lazy val util = projectMatrix
   .in(file("util"))
-  .settings(libraryDependencies += tagging)
+  .settings(libraryDependencies += tagging, scala2Source3)
   .jvmPlatform(scalaVersions = scala2And3Versions)
   .jsPlatform(scalaVersions = scala2And3Versions)
   .nativePlatform(scalaVersions = scala2And3Versions)
@@ -108,6 +112,7 @@ lazy val proxy = projectMatrix
   .settings(
     libraryDependencies ++= Seq(javassist, scalatest % Test),
     compileOrder := CompileOrder.JavaThenScala,
+    scala2Source3,
     javaOptions += "--add-opens java.base/java.lang=ALL-UNNAMED"
   )
   .dependsOn(macros % Test)
@@ -135,7 +140,7 @@ lazy val tests = projectMatrix
 
 lazy val utilTests = projectMatrix
   .in(file("util-tests"))
-  .settings(testSettings)
+  .settings(testSettings, scala2Source3)
   .dependsOn(macros % "provided", util % Test, testUtil % Test)
   .jvmPlatform(scalaVersions = scala2And3Versions)
 

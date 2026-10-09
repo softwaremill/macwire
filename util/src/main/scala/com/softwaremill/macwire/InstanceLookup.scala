@@ -15,10 +15,10 @@ private[macwire] trait InstanceLookup {
     case l       => throw new RuntimeException(s"Found multiple implementations of class $cls: $l!")
   }
 
-  private def prepareLookupMap: Map[Class[_], List[() => AnyRef]] = {
+  private def prepareLookupMap: Map[Class[?], List[() => AnyRef]] = {
     instanceFactoryMap.toList
       .flatMap { case (startingCls, impl) =>
-        def allSuperClasses(cls: Class[_]): List[Class[_]] = {
+        def allSuperClasses(cls: Class[?]): List[Class[?]] = {
           if (cls == null) {
             Nil
           } else {

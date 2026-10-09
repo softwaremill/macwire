@@ -10,10 +10,10 @@ import scala.io.Source
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.Files
-import java.nio.file.OpenOption
 import java.nio.file.StandardOpenOption
 
 import dotty.tools.dotc.reporting.{ThrowingReporter, Diagnostic}
+import dotty.tools.dotc.interfaces.Diagnostic.WARNING
 import dotty.tools.dotc.Driver
 import java.io.IOException
 
@@ -52,13 +52,13 @@ trait CompileTestsSupport extends BaseCompileTestsSupport with OptionValues {
         val testReporter = new TestReporter
         val reporter = testReporter
         val classpath = Array("-classpath", Properties.currentClasspath)
-
         driver.process(classpath :+ path.toString, reporter)
 
-        val infos = testReporter.storedInfos
+        // since Scala 3.9 update, the "N errors" found summary is reported as a position-less warning
+        val infosWithoutSummary = testReporter.storedInfos.filterNot(msg => msg.level == WARNING && !msg.pos.exists)
 
         def verifyInfo(level: Int, expected: List[String]) = {
-          val actual = infos.filter(_.level == level).map(_.message)
+          val actual = infosWithoutSummary.filter(_.level == level).map(_.message)
 
           if (expected.size > 0) {
             val info = actual.mkString("\n")

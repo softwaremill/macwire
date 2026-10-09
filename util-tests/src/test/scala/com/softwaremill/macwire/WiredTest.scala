@@ -8,7 +8,7 @@ class WiredTest extends AnyFlatSpec with Matchers {
   import WiredTest._
 
   def createInstanceFactoryMap(instances: AnyRef*): InstanceFactoryMap = Map(
-    instances.map(i => i.getClass -> (() => i)): _*
+    instances.map(i => i.getClass -> (() => i))*
   )
 
   val implsMap1 = createInstanceFactoryMap(new X, new Y, new Z)
@@ -47,7 +47,7 @@ class WiredTest extends AnyFlatSpec with Matchers {
     testLookup(implsMap4, classOf[Y], 0)
   }
 
-  def testLookup(map: InstanceFactoryMap, cls: Class[_], expectedCount: Int): Unit = {
+  def testLookup(map: InstanceFactoryMap, cls: Class[?], expectedCount: Int): Unit = {
     val result = new Wired(map).lookup(cls)
     result should have size (expectedCount)
     result.foreach(r => cls.isAssignableFrom(r.getClass) should be(true))

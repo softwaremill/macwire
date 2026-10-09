@@ -17,5 +17,5 @@ object Test extends BProvider {
     }
 
     lazy val a: A = wire[A]
-    lazy val c: C = wireWith(C.factory _)
+    lazy val c: C = wireWith((a: A) => (b: B) => C.factory(a)(b))
 }

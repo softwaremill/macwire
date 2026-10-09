@@ -22,7 +22,7 @@ trait CompileTestsSupport extends BaseCompileTestsSupport {
       val cm = universe.runtimeMirror(getClass.getClassLoader)
 
       import scala.tools.reflect.ToolBox
-      val tb = cm.mkToolBox()
+      val tb = cm.mkToolBox(options = "-Xsource:3")
 
       val source = loadTest("/test-cases/" + testName, imports)
 

@@ -52,7 +52,7 @@ object Constructor:
       import q.reflect.*
 
       def isAccessibleConstructor(s: Symbol) =
-        s.isClassConstructor && !(s.flags is Flags.Private) && !(s.flags is Flags.Protected)
+        s.isClassConstructor && !s.flags.is(Flags.Private) && !s.flags.is(Flags.Protected)
 
       /** In some cases there is one extra (phantom) constructor. This happens when extended trait has implicit param:
         *
@@ -73,7 +73,7 @@ object Constructor:
         */
       def isPhantomConstructor(constructor: Symbol): Boolean = constructor.fullName.endsWith("$init$")
 
-      if forType.typeSymbol.flags is Flags.Trait then None
+      if forType.typeSymbol.flags.is(Flags.Trait) then None
       else
         val publicConstructors: Iterable[Symbol] =
           val ctors = forType.typeSymbol.declarations
@@ -124,8 +124,8 @@ object Companion:
 
       def isCompanionApply(method: Symbol): Boolean =
         method.isDefDef &&
-          !(method.flags is Flags.Private) &&
-          !(method.flags is Flags.Protected) &&
+          !method.flags.is(Flags.Private) &&
+          !method.flags.is(Flags.Protected) &&
           returnType(method) <:< forType &&
           method.name == "apply"
 

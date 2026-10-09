@@ -13,7 +13,7 @@ trait ProxyingScope extends Scope {
     val methodHandler = new MethodHandler() {
       def invoke(self: Any, thisMethod: Method, proceed: Method, args: Array[AnyRef]) = {
         val instance = get(key, createT)
-        thisMethod.invoke(instance, args: _*)
+        thisMethod.invoke(instance, args*)
       }
     }
 

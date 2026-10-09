@@ -12,10 +12,10 @@ trait ProxyingInterceptor extends Interceptor {
       def invoke(self: AnyRef, thisMethod: Method, _proceed: Method, args: Array[AnyRef]) = {
         val invocationContext = new InvocationContext {
           def parameters = args
-          def target = intercepted
+          def target: AnyRef = intercepted
           def method = thisMethod
 
-          def proceedWithParameters(parameters: Array[AnyRef]) = thisMethod.invoke(intercepted, parameters: _*)
+          def proceedWithParameters(parameters: Array[AnyRef]) = thisMethod.invoke(intercepted, parameters*)
         }
 
         handle(invocationContext)
